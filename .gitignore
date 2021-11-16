@@ -2,6 +2,7 @@ data/
 logs/
 .idea/
 venv/
+index/
 
 # standart gitignore template for python
 

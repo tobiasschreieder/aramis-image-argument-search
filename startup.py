@@ -1,6 +1,9 @@
+import datetime
 import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
+
+from indexing.index import Index
 
 
 def init_logging():
@@ -40,8 +43,18 @@ def main():
     """
     logger.info('do main stuff')
 
+    then = datetime.datetime.now()
+    Index.create_index(10).save()
+    dur = datetime.datetime.now() - then
+    Index.load(10)
+    logger.info(dur)
+
 
 if __name__ == '__main__':
     init_logging()
     logger = logging.getLogger('startup')
-    main()
+    try:
+        main()
+    except Exception as e:
+        logger.error(e, exc_info=True)
+        raise e
