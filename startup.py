@@ -3,7 +3,9 @@ import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
 
-from indexing.index import Index
+from frontend import start_server
+from indexing import Index
+from retrieval import RetrievalSystem, DirichletLM
 
 
 def init_logging():
@@ -36,25 +38,33 @@ def init_logging():
     root.info('Logging initialised')
 
 
+def index_creation(max_images: int) -> None:
+    log.info('Start index creation')
+    then = datetime.datetime.now()
+    Index.create_index(max_images).save()
+    dur = datetime.datetime.now() - then
+    log.info('Time for index creation %s', dur)
+
+
 def main():
     """
-    normal programm run
+    normal program run
     :return:
     """
-    logger.info('do main stuff')
+    log.info('do main stuff')
+    index = Index.load(1000)
 
-    then = datetime.datetime.now()
-    Index.create_index(100).save()
-    dur = datetime.datetime.now() - then
-    # Index.load(10)
-    logger.info(dur)
+    system = RetrievalSystem(index, DirichletLM(index))
+    # res = system.query('test', 10)
+    # log.info(res)
+    start_server(system)
 
 
 if __name__ == '__main__':
     init_logging()
-    logger = logging.getLogger('startup')
+    log = logging.getLogger('startup')
     try:
         main()
     except Exception as e:
-        logger.error(e, exc_info=True)
+        log.error(e, exc_info=True)
         raise e
