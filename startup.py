@@ -55,7 +55,7 @@ def main():
     index = Index.load(1000)
 
     system = RetrievalSystem(index, DirichletLM(index))
-    # res = system.query('test', 10)
+    # res = system.query('drugs good', 10)
     # log.info(res)
     start_server(system)
 

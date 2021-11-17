@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 from flask import Flask, render_template, send_from_directory, request
@@ -22,19 +23,19 @@ def start_server(system: RetrievalSystem, debug: bool = True, host: str = '0.0.0
 
 @app.route('/', methods=['POST', 'GET'])
 def index():
-    # if request.method == 'GET':
-    #     id_list = DataEntry.get_image_ids(10)
-    #     pro_images = [DataEntry.load(iid) for iid in id_list]
-    #     return render_template('index.html', pros=[], cons=[])
-
     if request.method == 'POST':
         if retrieval_system is not None:
             if 'query' in request.form.keys():
+                then = datetime.datetime.now()
                 pro_result = retrieval_system.query(request.form['query'] + ' good', top_k=20)
                 con_result = retrieval_system.query(request.form['query'] + ' anti', top_k=20)
+                now = datetime.datetime.now()
                 pro_images = [DataEntry.load(iid[0]) for iid in pro_result]
                 con_images = [DataEntry.load(iid[0]) for iid in con_result]
-                return render_template('index.html', pros=pro_images, cons=con_images)
+                return render_template('index.html',
+                                       pros=pro_images, cons=con_images,
+                                       search_value=request.form['query'],
+                                       time_request=str(now-then))
 
     return render_template('index.html', pros=[], cons=[])
 

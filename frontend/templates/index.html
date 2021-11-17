@@ -17,47 +17,52 @@
                 <span class="fs-4">Aramis ImArg</span>
             </a>
             <form class="col-5 me-auto mb-3 mb-lg-0" data-children-count="1" name="query_form" method="post">
-                <input type="search" class="form-control" placeholder="Search..." aria-label="Search" name="query">
+                <input type="search" class="form-control" placeholder="Search..." aria-label="Search" name="query" value="{{ search_value }}">
             </form>
         </div>
     </header>
 
     <main>
-        <div class="container">
-            <div class="row">
-<!--                Pro-->
-                <div class="col align-items-center border-end">
-                    <span class="fs-2 text-success">PRO</span>
-                    <div class="container">
-                        <div class="row row-cols-2">
-                            {% for pro_image in pros %}
-                                <div class="col mb-3">
-                                    <a href="{{ pro_image.pages[0].url }}">
-                                        <img src={{ pro_image.png_path }} class="img-thumbnail img-fluid">
-                                    </a>
-                                </div>
-                            {% endfor %}
+        {% if search_value %}
+            <div class="container">
+                <span class="fs-6">Search results for: {{ search_value }} ({{ time_request }})</span>
+            </div>
+            <div class="container">
+                <div class="row">
+    <!--                Pro-->
+                    <div class="col align-items-center border-end">
+                        <span class="fs-2 text-success">PRO</span>
+                        <div class="container">
+                            <div class="row row-cols-2">
+                                {% for pro_image in pros %}
+                                    <div class="col mb-3">
+                                        <a href="{{ pro_image.pages[0].url }}">
+                                            <img src={{ pro_image.png_path }} class="img-thumbnail img-fluid">
+                                        </a>
+                                    </div>
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-<!--                Con-->
-                <div class="col align-items-center">
-                    <span class="fs-2 text-danger">CON</span>
-                    <div class="container">
-                        <div class="row row-cols-2">
-                            {% for con_image in cons %}
-                                <div class="col mb-3">
-                                    <a href="{{ con_image.pages[0].url }}">
-                                        <img src={{ con_image.png_path }} class="img-thumbnail img-fluid">
-                                    </a>
-                                </div>
-                            {% endfor %}
+    <!--                Con-->
+                    <div class="col align-items-center">
+                        <span class="fs-2 text-danger">CON</span>
+                        <div class="container">
+                            <div class="row row-cols-2">
+                                {% for con_image in cons %}
+                                    <div class="col mb-3">
+                                        <a href="{{ con_image.pages[0].url }}">
+                                            <img src={{ con_image.png_path }} class="img-thumbnail img-fluid">
+                                        </a>
+                                    </div>
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        {% endif %}
     </main>
 </body>
 </html>
