@@ -19,9 +19,7 @@ class Preprocessor:
         :param file: The file to preprocess
         :return: List of stemmed tokens
         """
-        tokens = []
         log.debug('Preprocess file %s', file)
         with file.open(encoding='UTF8') as html_text:
-            for line in html_text:
-                tokens += [token.lemma_.lower() for token in self.nlp(line) if not (token.is_stop or token.is_punct)]
-        return tokens
+            return [token.lemma_.lower() for token in self.nlp(html_text.read())
+                    if not (token.is_stop or token.is_punct)]

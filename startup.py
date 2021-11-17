@@ -44,9 +44,9 @@ def main():
     logger.info('do main stuff')
 
     then = datetime.datetime.now()
-    Index.create_index(10).save()
+    Index.create_index(100).save()
     dur = datetime.datetime.now() - then
-    Index.load(10)
+    # Index.load(10)
     logger.info(dur)
 
 

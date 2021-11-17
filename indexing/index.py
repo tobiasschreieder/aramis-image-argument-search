@@ -1,9 +1,12 @@
+import gc
 import logging
 from pathlib import Path
 from typing import AnyStr, Hashable, List
 
 import numpy as np
+from joblib import Parallel, delayed
 
+from utils import MemmappStore
 from .data_entry import DataEntry
 from .preprocessing import Preprocessor
 
@@ -30,33 +33,81 @@ class Index:
         index = cls()
 
         log.debug('create index with max_images %s', max_images)
-        index.document_ids = np.array(DataEntry.get_image_ids(max_size=max_images))
+        index.document_ids = np.array(sorted(DataEntry.get_image_ids(max_size=max_images)))
         prep = Preprocessor()
-        doc_terms = dict()
 
-        # TODO: parallel execution for preprocessing
-        for doc_id in index.document_ids:
-            log.debug('Process %s', doc_id)
+        # # -------------------------------------------------- Single
+        # doc_terms = []
+        #
+        # for doc_id in index.document_ids:
+        #     log.debug('Process %s', doc_id)
+        #     data = DataEntry.load(doc_id)
+        #     tokens = []
+        #     for page in data.pages:
+        #         tokens += prep.preprocess_file(page.snapshot_path.joinpath('text.txt'))
+        #     doc_terms.append(tokens)
+
+        # ---------------------------------------------------- Parallel
+        def process_document(doc_id: str) -> List[str]:
             data = DataEntry.load(doc_id)
             tokens = []
             for page in data.pages:
                 tokens += prep.preprocess_file(page.snapshot_path.joinpath('text.txt'))
-            doc_terms[doc_id] = tokens
-        index.index_terms = np.array(list({term for terms in doc_terms.values() for term in terms}))
+            return tokens
+
+        with Parallel(n_jobs=-2, verbose=2) as parallel:
+            doc_terms = parallel(delayed(process_document)(doc_id) for doc_id in index.document_ids)
+
+        index.index_terms = np.array(list({term for terms in doc_terms for term in terms}))
         index.num_docs = index.document_ids.shape[0]
         index.num_terms = index.index_terms.shape[0]
 
         log.debug('build doc-term matrix')
         # Build the document-term matrix
-        X = np.zeros(shape=(index.num_docs, index.num_terms), dtype=np.int32)
-        for i in range(index.num_docs):
+
+        # # ------------------------------------------ Single
+        # X = np.zeros(shape=(index.num_docs, index.num_terms), dtype=np.int32)
+        # for i in range(index.num_docs):
+        #     for j in range(index.num_terms):
+        #         X[i, j] = doc_terms[i].count(index.index_terms[j])
+
+        # # ---------------------------------------------- Parallel
+        # def calc_term_frequencies(doc_number) -> np.ndarray:
+        #     freq = np.zeros(shape=index.num_terms, dtype=np.int32)
+        #     for j in range(index.num_terms):
+        #         freq[j] = doc_terms[doc_number].count(index.index_terms[j])
+        #     return freq
+        #
+        # with Parallel(n_jobs=-2, verbose=2, max_nbytes=None) as parallel:
+        #     y = parallel(delayed(calc_term_frequencies)(doc_number) for doc_number in range(index.num_docs))
+        #
+        # x_para = np.array(y, dtype=np.int32)
+
+        # ---------------------------------------------- Parallel Memmapping
+        # Memmapping to save memory
+        mem_store = MemmappStore()
+        mem_doc_terms = mem_store.store_in_memmap(doc_terms, 'doc_terms')
+        mem_index_terms = mem_store.store_in_memmap(index.index_terms, 'index_terms')
+
+        del doc_terms
+        gc.collect()
+
+        def calc_term_frequencies(doc_number) -> np.ndarray:
+            freq = np.zeros(shape=index.num_terms, dtype=np.int32)
             for j in range(index.num_terms):
-                X[i, j] = doc_terms[index.document_ids[i]].count(index.index_terms[j])
+                freq[j] = mem_doc_terms[doc_number].count(mem_index_terms[j])
+            return freq
+
+        with Parallel(n_jobs=-2, verbose=2, max_nbytes=None) as parallel:
+            y = parallel(delayed(calc_term_frequencies)(doc_number) for doc_number in range(index.num_docs))
+
+        x = np.array(y, dtype=np.int32)
+        mem_store.cleanup()
 
         # Build the inverted index based on the document-term matrix
         # Note that since we dont do any compression or sparse matrices,
         # this is just the transposed document-term matrix
-        index.inverted = X.transpose()
+        index.inverted = x.transpose()
 
         return index
 
