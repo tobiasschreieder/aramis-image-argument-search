@@ -21,5 +21,13 @@ class Preprocessor:
         """
         log.debug('Preprocess file %s', file)
         with file.open(encoding='UTF8') as html_text:
-            return [token.lemma_.lower() for token in self.nlp(html_text.read())
-                    if not (token.is_stop or token.is_punct)]
+            return self.preprocess(html_text.read())
+
+    def preprocess(self, text: str) -> List[str]:
+        """
+        Preprocesses a text and returns the found tokens without stop words and punctuation
+
+        :param text: The text to process
+        :return: List of stemmed tokens
+        """
+        return [token.lemma_.lower() for token in self.nlp(text) if not (token.is_stop or token.is_punct)]
