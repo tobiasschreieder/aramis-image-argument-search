@@ -9,12 +9,14 @@ class WebPage:
     url_hash: str
     url: str
     snapshot_path: Path
+    snapshot_screenshot: Path
 
     @classmethod
-    def load(cls, page_path: Path) -> 'WebPage':
+    def load(cls, page_path: Path, image_id: str) -> 'WebPage':
         """
         Create a WebPage object for the given page path.
 
+        :param image_id: The id of the parent image
         :param page_path: The path from witch the new object is generated
         :return: WebPage for given page path
         :raises ValueError: if page_path doesn't exists or isn't a directory
@@ -25,10 +27,14 @@ class WebPage:
         with page_path.joinpath('page-url.txt').open() as file:
             url = file.readline()
 
+        screenshot = Path('data/touche22-images-screenshots/images/' + image_id[0:3] + '/' + image_id + '/pages')\
+            .joinpath(page_path.name).joinpath('snapshot/screenshot.png')
+
         return cls(
             url_hash=page_path.name,
             url=url,
             snapshot_path=page_path.joinpath('snapshot'),
+            snapshot_screenshot=screenshot,
         )
 
 
@@ -59,7 +65,7 @@ class DataEntry:
 
         pages = []
         for page in Path('data/touche22-images-main/').joinpath(im_path).joinpath('pages').iterdir():
-            pages.append(WebPage.load(page))
+            pages.append(WebPage.load(page, image_id))
 
         return cls(
             url_hash=image_id,

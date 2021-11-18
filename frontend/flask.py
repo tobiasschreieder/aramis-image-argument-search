@@ -25,19 +25,23 @@ def start_server(system: RetrievalSystem, debug: bool = True, host: str = '0.0.0
 def index():
     if request.method == 'POST':
         if retrieval_system is not None:
-            if 'query' in request.form.keys():
+            if 'query' in request.form.keys() and 'topK' in request.form.keys():
                 then = datetime.datetime.now()
-                pro_result = retrieval_system.query(request.form['query'] + ' good', top_k=20)
-                con_result = retrieval_system.query(request.form['query'] + ' anti', top_k=20)
+                try:
+                    top_k = int(request.form['topK'])
+                except ValueError:
+                    top_k = 20
+                pro_result = retrieval_system.query(request.form['query'] + ' good', top_k=top_k)
+                con_result = retrieval_system.query(request.form['query'] + ' anti', top_k=top_k)
                 now = datetime.datetime.now()
                 pro_images = [DataEntry.load(iid[0]) for iid in pro_result]
                 con_images = [DataEntry.load(iid[0]) for iid in con_result]
                 return render_template('index.html',
                                        pros=pro_images, cons=con_images,
-                                       search_value=request.form['query'],
+                                       search_value=request.form['query'], topK=top_k,
                                        time_request=str(now-then))
 
-    return render_template('index.html', pros=[], cons=[])
+    return render_template('index.html', pros=[], cons=[], topK=20)
 
 
 @app.route('/data/<path:name>')

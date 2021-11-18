@@ -16,8 +16,19 @@
             <a href="/" class="d-flex align-items-center col-4 mb-3 mb-lg-0 text-dark text-decoration-none">
                 <span class="fs-4">Aramis ImArg</span>
             </a>
-            <form class="col-5 me-auto mb-3 mb-lg-0" data-children-count="1" name="query_form" method="post">
-                <input type="search" class="form-control" placeholder="Search..." aria-label="Search" name="query" value="{{ search_value }}">
+            <form class="col-7 me-auto mb-3 mb-lg-0 container" data-children-count="1" name="query_form" method="post">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-8">
+                            <input type="search" class="form-control" placeholder="Search..." aria-label="Search" name="query" value="{{ search_value }}">
+                        </div>
+                        <div class="col-2"></div>
+                        <div class="col-2">
+                            <input type="number" class="form-control" aria-label="Number off shown results" name="topK" value="{{ topK }}">
+                        </div>
+                        <input type="submit" hidden>
+                    </div>
+                </div>
             </form>
         </div>
     </header>
@@ -25,7 +36,7 @@
     <main>
         {% if search_value %}
             <div class="container">
-                <span class="fs-6">Search results for: {{ search_value }} ({{ time_request }})</span>
+                <span class="fs-6">First {{ topK }} search results for: {{ search_value }} ({{ time_request }})</span>
             </div>
             <div class="container">
                 <div class="row">
@@ -36,9 +47,20 @@
                             <div class="row row-cols-2">
                                 {% for pro_image in pros %}
                                     <div class="col mb-3">
-                                        <a href="{{ pro_image.pages[0].url }}">
-                                            <img src={{ pro_image.png_path }} class="img-thumbnail img-fluid">
-                                        </a>
+                                        <div class="dropdown dropend">
+                                            <a href="#" role="button" id="dropdown-{{ pro_image.url_hash }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <img src={{ pro_image.png_path }} class="img-thumbnail img-fluid">
+                                            </a>
+
+                                            <ul class="dropdown-menu" aria-labelledby="dropdown-{{ pro_image.url_hash }}">
+                                                <li><a class="dropdown-item" href="{{ pro_image.pages[0].url }}">Page</a></li>
+                                                <li><a class="dropdown-item" href="{{ pro_image.pages[0].snapshot_path }}/dom.html">Page Snapshot</a></li>
+                                                <li><a class="dropdown-item" href="{{ pro_image.pages[0].snapshot_screenshot }}">Page Screenshot</a></li>
+                                            </ul>
+                                        </div>
+<!--                                        <a href="{{ pro_image.pages[0].url }}">-->
+<!--                                            <img src={{ pro_image.png_path }} class="img-thumbnail img-fluid">-->
+<!--                                        </a>-->
                                     </div>
                                 {% endfor %}
                             </div>
