@@ -1,13 +1,13 @@
 import logging
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 
 from indexing import Index
 
 
-class Model:
-    log = logging.getLogger('retirval.model')
+class TopicModel:
+    log = logging.getLogger('TopicModel')
 
     def __init__(self, index: Index):
         """
@@ -25,8 +25,24 @@ class Model:
         """
         return 1.0
 
+    def query(self, query: List[str], top_k: int = -1) -> List[Tuple[str, float]]:
+        """
+        Queries a given query against the index using a model scoring function
 
-class DirichletLM(Model):
+        :param query: preprocessed query in list representation to calculate the relevance for
+        :param top_k: number of top results to return
+        :return: list of (doc_id, score) tuples descending by score for all documents in the vector space
+        """
+        self.log.debug('start topic process for query %s', query)
+        scores = {}
+        top_k = max(min(len(self.index.get_document_ids()), top_k), 0)
+        for doc_id in self.index.get_document_ids():
+            scores[doc_id] = self.score(query, doc_id)
+        self.log.debug('scoring done, start sorting')
+        return sorted(scores.items(), key=lambda item: item[1], reverse=True)[:top_k]
+
+
+class DirichletLM(TopicModel):
     log = logging.getLogger('DirichletLM model')
 
     def __init__(self, index: Index, alpha: int = 1000):

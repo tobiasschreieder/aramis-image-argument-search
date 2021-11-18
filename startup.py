@@ -5,7 +5,10 @@ from logging.handlers import TimedRotatingFileHandler
 
 from frontend import start_server
 from indexing import Index
-from retrieval import RetrievalSystem, DirichletLM
+from retrieval import RetrievalSystem
+from retrieval.argument import ArgumentModel
+from retrieval.stance import StanceModel
+from retrieval.topic import DirichletLM
 
 
 def init_logging():
@@ -54,7 +57,10 @@ def main():
     log.info('do main stuff')
     index = Index.load(1000)
 
-    system = RetrievalSystem(index, DirichletLM(index))
+    system = RetrievalSystem(index,
+                             topic_model=DirichletLM(index),
+                             argument_model=ArgumentModel(index),
+                             stance_model=StanceModel(index))
     # res = system.query('drugs good', 10)
     # log.info(res)
     start_server(system)

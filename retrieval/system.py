@@ -1,35 +1,41 @@
 import logging
+from typing import List, Tuple
 
-from indexing import Preprocessor, Index
-from .models import Model
+from indexing import Index
+from .argument import ArgumentModel
+from .stance import StanceModel
+from .topic import TopicModel
 
 log = logging.getLogger('retrievalSystem')
 
 
 class RetrievalSystem:
 
-    def __init__(self, index: Index, model: Model):
+    def __init__(self, index: Index, topic_model: TopicModel,
+                 argument_model: ArgumentModel, stance_model: StanceModel):
         """
         Constructor
         :param index: index to get relevance data from
-        :param model: retrieval model to calculate retrieval scores with
+        :param topic_model: topic model to calculate topic scores with
         """
-        self.preprocessor = Preprocessor()
         self.index = index
-        self.model = model
+        self.topic_model = topic_model
+        self.argument_model = argument_model
+        self.stance_model = stance_model
 
-    def query(self, text, top_k=-1):
+    def query(self, text: str, top_k: int = -1) -> List[Tuple[str, float]]:
         """
-        Queries a given text against the index using a Dirichlet smoothed language model
+        Queries a given text against the index
         :param text: query text
         :param top_k: number of top results to return
         :return: list of (doc_id, score) tuples descending by score for all documents in the vector space
         """
         log.debug('start retrieval for query "%s"', text)
-        query = self.preprocessor.preprocess(text)
-        scores = {}
+        query = self.index.prep.preprocess(text)
         top_k = max(min(len(self.index.get_document_ids()), top_k), 0)
-        for doc_id in self.index.get_document_ids():
-            scores[doc_id] = self.model.score(query, doc_id)
-        log.debug('scoring done, start sorting')
-        return sorted(scores.items(), key=lambda item: item[1], reverse=True)[:top_k]
+
+        topic_scores = self.topic_model.query(query, top_k)
+        argument_scores = self.argument_model.query(query, topic_scores, top_k)
+        stance_scores = self.stance_model.query(query, argument_scores, top_k)
+
+        return stance_scores

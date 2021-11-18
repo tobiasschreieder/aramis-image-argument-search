@@ -8,7 +8,7 @@ from joblib import Parallel, delayed
 
 from utils import MemmappStore
 from .data_entry import DataEntry
-from .preprocessing import Preprocessor
+from .preprocessing import Preprocessor, SpacyPreprocessor, get_preprocessor
 
 log = logging.getLogger('index')
 
@@ -20,21 +20,23 @@ class Index:
     num_docs: np.ndarray
     num_terms: np.ndarray
     inverted: np.ndarray
+    prep: Preprocessor
 
     @classmethod
-    def create_index(cls, max_images: int = -1) -> 'Index':
+    def create_index(cls, max_images: int = -1, prep: Preprocessor = SpacyPreprocessor()) -> 'Index':
         """
         Create in index object from the stored data.
         If max_images is < 1 use all images found else stop after max_images.
 
+        :param prep: Preprocessor to use, default SpacyPreprocessor
         :param max_images: Number to determine the maximal number of images to index
         :return: An index object
         """
         index = cls()
+        index.prep = prep
 
         log.debug('create index with max_images %s', max_images)
         index.document_ids = np.array(sorted(DataEntry.get_image_ids(max_size=max_images)))
-        prep = Preprocessor()
 
         # # -------------------------------------------------- Single
         # doc_terms = []
@@ -48,15 +50,9 @@ class Index:
         #     doc_terms.append(tokens)
 
         # ---------------------------------------------------- Parallel
-        def process_document(doc_id: str) -> List[str]:
-            data = DataEntry.load(doc_id)
-            tokens = []
-            for page in data.pages:
-                tokens += prep.preprocess_file(page.snapshot_path.joinpath('text.txt'))
-            return tokens
 
         with Parallel(n_jobs=-2, verbose=2) as parallel:
-            doc_terms = parallel(delayed(process_document)(doc_id) for doc_id in index.document_ids)
+            doc_terms = parallel(delayed(prep.preprocess_doc)(doc_id) for doc_id in index.document_ids)
 
         index.index_terms = np.array(list({term for terms in doc_terms for term in terms}))
         index.num_docs = index.document_ids.shape[0]
@@ -119,23 +115,25 @@ class Index:
         """
         log.debug('save index to file')
         Path('index').mkdir(exist_ok=True)
-        np.savez_compressed(Path('index/index_{}'.format(self.inverted.shape[1])), inverted=self.inverted,
-                            index_terms=self.index_terms, doc_ids=self.document_ids)
+        np.savez_compressed(Path('index/index_{}_{}'.format(self.prep.get_name(), self.inverted.shape[1])),
+                            inverted=self.inverted, index_terms=self.index_terms, doc_ids=self.document_ids)
         log.debug('Done')
 
     @classmethod
-    def load(cls, indexed_images: int) -> 'Index':
+    def load(cls, indexed_images: int, prep_name: str = SpacyPreprocessor.get_name(), **prep_kwargs) -> 'Index':
         """
         Loads an index from a file.
 
+        :param prep_name:
         :param indexed_images: number of indexed images in saved index
         :return: Index object loaded from file
         :raise ValueError: if file for index with number of indexed images doesn't exists
         """
-        file = Path('index/index_{}.npz'.format(indexed_images))
+        file = Path('index/index_{}_{}.npz'.format(prep_name, indexed_images))
 
         if not file.exists():
-            raise ValueError('No saved index with {} indexed images'.format(indexed_images))
+            raise ValueError('No saved index with {} indexed images and {} preprocessor'
+                             .format(indexed_images, prep_name))
 
         log.debug('Load index from file %s', file)
         loaded = np.load(file)
@@ -145,6 +143,8 @@ class Index:
         index.num_docs = index.document_ids.shape[0]
         index.num_terms = index.index_terms.shape[0]
         index.inverted = loaded['inverted']
+
+        index.prep = get_preprocessor(prep_name)(**prep_kwargs)
 
         log.debug('Done')
         return index

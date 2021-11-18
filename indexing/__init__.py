@@ -1,3 +1,3 @@
 from .data_entry import DataEntry, WebPage
 from .index import Index
-from .preprocessing import Preprocessor
+from .preprocessing import Preprocessor, SpacyPreprocessor, get_preprocessor
