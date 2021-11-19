@@ -87,7 +87,7 @@ class SpacyPreprocessor(Preprocessor):
         data = DataEntry.load(doc_id)
         tokens = []
         for page in data.pages:
-            tokens += self.preprocess_file(page.snapshot_path.joinpath('text.txt'))
+            tokens += self.preprocess_file(page.snp_text)
         return tokens
 
     def preprocess_file(self, file: Path) -> List[str]:

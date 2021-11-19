@@ -53,14 +53,17 @@
                                             </a>
 
                                             <ul class="dropdown-menu" aria-labelledby="dropdown-{{ pro_image.url_hash }}">
-                                                <li><a class="dropdown-item" href="{{ pro_image.pages[0].url }}">Page</a></li>
-                                                <li><a class="dropdown-item" href="{{ pro_image.pages[0].snapshot_path }}/dom.html">Page Snapshot</a></li>
-                                                <li><a class="dropdown-item" href="{{ pro_image.pages[0].snapshot_screenshot }}">Page Screenshot</a></li>
+                                                {% for page in pro_image.pages %}
+                                                    {% if not loop.index0 == 0 %}
+                                                        <li><hr class="dropdown-divider"></li>
+                                                    {% endif %}
+                                                    <li><h6 class="dropdown-header">Page {{ loop.index }}</h6></li>
+                                                    <li><a class="dropdown-item" href="{{ page.url }}">Page</a></li>
+                                                    <li><a class="dropdown-item" href="{{ page.snp_dom }}">Page Snapshot</a></li>
+                                                    <li><a class="dropdown-item" href="{{ page.snp_screenshot }}">Page Screenshot</a></li>
+                                                {% endfor %}
                                             </ul>
                                         </div>
-<!--                                        <a href="{{ pro_image.pages[0].url }}">-->
-<!--                                            <img src={{ pro_image.png_path }} class="img-thumbnail img-fluid">-->
-<!--                                        </a>-->
                                     </div>
                                 {% endfor %}
                             </div>
@@ -74,9 +77,23 @@
                             <div class="row row-cols-2">
                                 {% for con_image in cons %}
                                     <div class="col mb-3">
-                                        <a href="{{ con_image.pages[0].url }}">
-                                            <img src={{ con_image.png_path }} class="img-thumbnail img-fluid">
-                                        </a>
+                                        <div class="dropdown dropend">
+                                            <a href="#" role="button" id="dropdown-{{ con_image.url_hash }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <img src={{ con_image.png_path }} class="img-thumbnail img-fluid">
+                                            </a>
+
+                                            <ul class="dropdown-menu" aria-labelledby="dropdown-{{ con_image.url_hash }}">
+                                                {% for page in con_image.pages %}
+                                                    {% if not loop.index0 == 0 %}
+                                                        <li><hr class="dropdown-divider"></li>
+                                                    {% endif %}
+                                                    <li><h6 class="dropdown-header">Page {{ loop.index }}</h6></li>
+                                                    <li><a class="dropdown-item" href="{{ page.url }}">Page</a></li>
+                                                    <li><a class="dropdown-item" href="{{ page.snp_dom }}">Page Snapshot</a></li>
+                                                    <li><a class="dropdown-item" href="{{ page.snp_screenshot }}">Page Screenshot</a></li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
                                     </div>
                                 {% endfor %}
                             </div>
