@@ -3,8 +3,7 @@ import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
 
-from frontend import start_server
-from indexing import Index
+from indexing import StandardIndex
 from retrieval import RetrievalSystem
 from retrieval.argument import ArgumentModel
 from retrieval.stance import StanceModel
@@ -44,7 +43,7 @@ def init_logging():
 def index_creation(max_images: int) -> None:
     log.info('Start index creation')
     then = datetime.datetime.now()
-    Index.create_index(max_images).save()
+    StandardIndex.create_index(max_images).save()
     dur = datetime.datetime.now() - then
     log.info('Time for index creation %s', dur)
 
