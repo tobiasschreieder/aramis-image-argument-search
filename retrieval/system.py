@@ -32,7 +32,10 @@ class RetrievalSystem:
         """
         log.debug('start retrieval for query "%s"', text)
         query = self.index.prep.preprocess(text)
-        top_k = max(min(len(self.index.get_document_ids()), top_k), 0)
+        if top_k < 0:
+            top_k = len(self.index.get_document_ids())
+        else:
+            top_k = min(len(self.index.get_document_ids()), top_k)
 
         topic_scores = self.topic_model.query(query, top_k)
         argument_scores = self.argument_model.query(query, topic_scores, top_k)

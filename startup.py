@@ -54,15 +54,28 @@ def main():
     :return:
     """
     log.info('do main stuff')
-    index = Index.load(1000)
 
-    system = RetrievalSystem(index,
-                             topic_model=DirichletLM(index),
-                             argument_model=ArgumentModel(index),
-                             stance_model=StanceModel(index))
-    # res = system.query('drugs good', 10)
-    # log.info(res)
-    start_server(system)
+    # topic_index = TopicQueryIndex.create_index()
+    # topic_index.save()
+    topic_index = TopicQueryIndex.load()
+
+    system = RetrievalSystem(topic_index,
+                             topic_model=DirichletLM(topic_index),
+                             argument_model=ArgumentModel(topic_index),
+                             stance_model=StanceModel(topic_index))
+
+    result = system.query('teachers')
+    print()
+
+    # index = Index.load(1000)
+    #
+    # system = RetrievalSystem(index,
+    #                          topic_model=DirichletLM(index),
+    #                          argument_model=ArgumentModel(index),
+    #                          stance_model=StanceModel(index))
+    # # res = system.query('drugs good', 10)
+    # # log.info(res)
+    # start_server(system)
 
 
 if __name__ == '__main__':
