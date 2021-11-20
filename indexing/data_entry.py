@@ -61,7 +61,7 @@ class WebPage:
         path_main = Path('data/touche22-images-main')
         path_from_image = Path('images/' + image_id[0:3] + '/' + image_id + '/pages').joinpath(page_path.name)
 
-        with page_path.joinpath('page-url.txt').open() as file:
+        with page_path.joinpath('page-url.txt').open(encoding='utf8') as file:
             url = file.readline()
 
         snp_dom = path_main.joinpath(path_from_image).joinpath('snapshot/dom.html')

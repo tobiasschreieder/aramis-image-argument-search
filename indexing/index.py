@@ -1,5 +1,6 @@
 import gc
 import logging
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import AnyStr, Hashable, List
 
@@ -7,13 +8,12 @@ import numpy as np
 from joblib import Parallel, delayed
 
 from utils import MemmappStore
-from .data_entry import DataEntry
+from . import DataEntry
 from .preprocessing import Preprocessor, SpacyPreprocessor, get_preprocessor
 
-log = logging.getLogger('index')
 
-
-class Index:
+class Index(ABC):
+    log = logging.getLogger('index')
 
     document_ids: np.ndarray
     index_terms: np.ndarray
@@ -23,119 +23,154 @@ class Index:
     prep: Preprocessor
 
     @classmethod
-    def create_index(cls, max_images: int = -1, prep: Preprocessor = SpacyPreprocessor()) -> 'Index':
+    @abstractmethod
+    def create_index(cls, prep: Preprocessor = SpacyPreprocessor(), **kwargs) -> 'Index':
         """
         Create in index object from the stored data.
-        If max_images is < 1 use all images found else stop after max_images.
 
         :param prep: Preprocessor to use, default SpacyPreprocessor
-        :param max_images: Number to determine the maximal number of images to index
         :return: An index object
         """
-        index = cls()
-        index.prep = prep
+        pass
 
-        log.debug('create index with max_images %s', max_images)
-        index.document_ids = np.array(sorted(DataEntry.get_image_ids(max_size=max_images)))
+    def _get_doc_terms_single(self) -> List[List[str]]:
+        """
+        Calculates the document terms in a single process.
+        Returns a list of lists, where L[i] the list of tokens for the document self.document_ids[i] represents.
 
-        # # -------------------------------------------------- Single
-        # doc_terms = []
-        #
-        # for doc_id in index.document_ids:
-        #     log.debug('Process %s', doc_id)
-        #     data = DataEntry.load(doc_id)
-        #     tokens = []
-        #     for page in data.pages:
-        #         tokens += prep.preprocess_file(page.snapshot_path.joinpath('text.txt'))
-        #     doc_terms.append(tokens)
+        :return: List of document terms
+        """
+        doc_terms = []
 
-        # ---------------------------------------------------- Parallel
+        for doc_id in self.document_ids:
+            self.log.debug('Process %s', doc_id)
+            data = DataEntry.load(doc_id)
+            tokens = []
+            for page in data.pages:
+                tokens += self.prep.preprocess_file(page.snp_text)
+            doc_terms.append(tokens)
+        return doc_terms
 
-        with Parallel(n_jobs=-2, verbose=2) as parallel:
-            doc_terms = parallel(delayed(prep.preprocess_doc)(doc_id) for doc_id in index.document_ids)
+    def _gen_doc_terms_parallel(self, n_jobs: int = -2) -> List[List[str]]:
+        """
+        Calculates the document terms in n_jobs process's.
+        Returns a list of lists, where L[i] the list of tokens for the document self.document_ids[i] represents.
 
-        index.index_terms = np.array(list({term for terms in doc_terms for term in terms}))
-        index.num_docs = index.document_ids.shape[0]
-        index.num_terms = index.index_terms.shape[0]
+        :param n_jobs: the number of processes to use, if -1 use all,
+            if < -1 use max_processes+1+n_jobs, example n_jobs = -2 -> use all processors except 1.
+            see joblib.parallel.Parallel
+        :return: List of document terms
+        """
+        with Parallel(n_jobs=n_jobs, verbose=2) as parallel:
+            doc_terms = parallel(delayed(self.prep.preprocess_doc)(doc_id) for doc_id in self.document_ids)
+        return doc_terms
 
-        log.debug('build doc-term matrix')
-        # Build the document-term matrix
+    def _build_matrix_single(self, doc_terms: np.ndarray) -> np.ndarray:
+        """
+        Calculates the document x terms matrix in a single process.
 
-        # # ------------------------------------------ Single
-        # X = np.zeros(shape=(index.num_docs, index.num_terms), dtype=np.int32)
-        # for i in range(index.num_docs):
-        #     for j in range(index.num_terms):
-        #         X[i, j] = doc_terms[i].count(index.index_terms[j])
+        :return: the document x term matrix
+        """
+        x = np.zeros(shape=(self.num_docs, self.num_terms), dtype=np.int32)
+        for i in range(self.num_docs):
+            for j in range(self.num_terms):
+                x[i, j] = doc_terms[i].count(self.index_terms[j])
 
-        # # ---------------------------------------------- Parallel
-        # def calc_term_frequencies(doc_number) -> np.ndarray:
-        #     freq = np.zeros(shape=index.num_terms, dtype=np.int32)
-        #     for j in range(index.num_terms):
-        #         freq[j] = doc_terms[doc_number].count(index.index_terms[j])
-        #     return freq
-        #
-        # with Parallel(n_jobs=-2, verbose=2, max_nbytes=None) as parallel:
-        #     y = parallel(delayed(calc_term_frequencies)(doc_number) for doc_number in range(index.num_docs))
-        #
-        # x_para = np.array(y, dtype=np.int32)
+        return x
 
-        # ---------------------------------------------- Parallel Memmapping
-        # Memmapping to save memory
+    def _build_matrix_parallel(self, doc_terms: np.ndarray, n_jobs: int = -2) -> np.ndarray:
+        """
+        Calculates the document x terms matrix in n_jobs process's.
+
+        :param n_jobs: the number of processes to use, if -1 use all,
+            if < -1 use max_processes+1+n_jobs, example n_jobs = -2 -> use all processors except 1.
+            see joblib.parallel.Parallel
+        :return: the document x term matrix
+        """
+        def calc_term_frequencies(doc_number) -> np.ndarray:
+            freq = np.zeros(shape=self.num_terms, dtype=np.int32)
+            for j in range(self.num_terms):
+                freq[j] = doc_terms[doc_number].count(self.index_terms[j])
+            return freq
+
+        with Parallel(n_jobs=n_jobs, verbose=2, max_nbytes=None) as parallel:
+            y = parallel(delayed(calc_term_frequencies)(doc_number) for doc_number in range(self.num_docs))
+
+        return np.array(y, dtype=np.int32)
+
+    def _build_matrix_parallel_memmapping(self, doc_terms: np.ndarray, n_jobs: int = -2) -> np.ndarray:
+        """
+        Calculates the document x terms matrix in n_jobs process's. Using joblib's memmapping functions.
+
+        :param n_jobs: the number of processes to use, if -1 use all,
+            if < -1 use max_processes+1+n_jobs, example n_jobs = -2 -> use all processors except 1.
+            see joblib.parallel.Parallel
+        :return: the document x term matrix
+        """
         mem_store = MemmappStore()
         mem_doc_terms = mem_store.store_in_memmap(doc_terms, 'doc_terms')
-        mem_index_terms = mem_store.store_in_memmap(index.index_terms, 'index_terms')
+        mem_index_terms = mem_store.store_in_memmap(self.index_terms, 'index_terms')
 
         del doc_terms
         gc.collect()
 
         def calc_term_frequencies(doc_number) -> np.ndarray:
-            freq = np.zeros(shape=index.num_terms, dtype=np.int32)
-            for j in range(index.num_terms):
+            freq = np.zeros(shape=self.num_terms, dtype=np.int32)
+            for j in range(self.num_terms):
                 freq[j] = mem_doc_terms[doc_number].count(mem_index_terms[j])
             return freq
 
-        with Parallel(n_jobs=-2, verbose=2, max_nbytes=None) as parallel:
-            y = parallel(delayed(calc_term_frequencies)(doc_number) for doc_number in range(index.num_docs))
+        with Parallel(n_jobs=n_jobs, verbose=2, max_nbytes=None) as parallel:
+            y = parallel(delayed(calc_term_frequencies)(doc_number) for doc_number in range(self.num_docs))
 
         x = np.array(y, dtype=np.int32)
         mem_store.cleanup()
+        return x
 
-        # Build the inverted index based on the document-term matrix
-        # Note that since we dont do any compression or sparse matrices,
-        # this is just the transposed document-term matrix
-        index.inverted = x.transpose()
-
-        return index
-
-    def save(self) -> None:
+    @abstractmethod
+    def save(self, **kwargs) -> None:
         """
         Saves the object in a file.
 
         :return: None
         """
-        log.debug('save index to file')
-        Path('index').mkdir(exist_ok=True)
-        np.savez_compressed(Path('index/index_{}_{}'.format(self.prep.get_name(), self.inverted.shape[1])),
-                            inverted=self.inverted, index_terms=self.index_terms, doc_ids=self.document_ids)
-        log.debug('Done')
+        pass
+
+    def _save(self, file: Path) -> None:
+        """
+        Saves the object in a file.
+
+        :return: None
+        """
+        self.log.debug('save index to file')
+        file.mkdir(exist_ok=True, parents=True)
+        np.savez_compressed(file, inverted=self.inverted,
+                            index_terms=self.index_terms, doc_ids=self.document_ids)
+        self.log.debug('Done')
+
+    @abstractmethod
+    def load(self, **kwargs) -> 'Index':
+        """
+        Loads an index from a file.
+
+        :return: Index object loaded from file
+        """
+        pass
 
     @classmethod
-    def load(cls, indexed_images: int, prep_name: str = SpacyPreprocessor.get_name(), **prep_kwargs) -> 'Index':
+    def _load(cls, file: Path, prep_name: str = SpacyPreprocessor.get_name(), **prep_kwargs) -> 'Index':
         """
         Loads an index from a file.
 
         :param prep_name:
-        :param indexed_images: number of indexed images in saved index
         :return: Index object loaded from file
         :raise ValueError: if file for index with number of indexed images doesn't exists
         """
-        file = Path('index/index_{}_{}.npz'.format(prep_name, indexed_images))
 
         if not file.exists():
-            raise ValueError('No saved index with {} indexed images and {} preprocessor'
-                             .format(indexed_images, prep_name))
+            raise ValueError('No saved index for file {}'.format(file))
 
-        log.debug('Load index from file %s', file)
+        cls.log.debug('Load index from file %s', file)
         loaded = np.load(file)
         index = cls()
         index.document_ids = loaded['doc_ids']
@@ -146,7 +181,7 @@ class Index:
 
         index.prep = get_preprocessor(prep_name)(**prep_kwargs)
 
-        log.debug('Done')
+        cls.log.debug('Done')
         return index
 
     def get_term_frequency(self, term: AnyStr, doc_id: Hashable) -> int:
