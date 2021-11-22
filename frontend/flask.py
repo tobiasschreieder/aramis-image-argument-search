@@ -46,4 +46,9 @@ def index():
 
 @app.route('/data/<path:name>')
 def data(name):
+    # cfg = Config.get()
+    # path = cfg.data_location
+    # if not path.is_absolute():
+    #     path = Path(os.path.abspath(__file__)).joinpath(path)
+    # return send_from_directory(path, name)
     return send_from_directory('../data', name)

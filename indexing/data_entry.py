@@ -1,6 +1,37 @@
 import dataclasses
+import json
 from pathlib import Path
 from typing import List
+
+from config import Config
+
+cfg = Config.get()
+
+
+@dataclasses.dataclass
+class Ranking:
+
+    query: str
+    topic: int
+    rank: int
+
+    @classmethod
+    def load(cls, ranking: str) -> 'Ranking':
+        """
+        Create a Ranking object for the given ranking string.
+
+        :param ranking: the string to parse
+        :return: Ranking for given string
+        """
+        j_rank = json.loads(ranking)
+        try:
+            return cls(
+                query=j_rank['query'],
+                topic=int(j_rank['topic']),
+                rank=int(j_rank['rank']),
+            )
+        except KeyError or ValueError or json.JSONDecodeError:
+            raise ValueError("The given string isn't correctly formalized.")
 
 
 @dataclasses.dataclass
@@ -8,8 +39,15 @@ class WebPage:
 
     url_hash: str
     url: str
-    snapshot_path: Path
-    snapshot_screenshot: Path
+
+    snp_dom: Path
+    snp_image_xpath: Path
+    snp_nodes: Path
+    snp_screenshot: Path
+    snp_text: Path
+    snp_archive: Path
+
+    rankings: List[Ranking]
 
     @classmethod
     def load(cls, page_path: Path, image_id: str) -> 'WebPage':
@@ -24,17 +62,32 @@ class WebPage:
         if not (page_path.exists() and page_path.is_dir()):
             raise ValueError('{} is not a valid directory'.format(page_path))
 
-        with page_path.joinpath('page-url.txt').open() as file:
+        path_main = cfg.data_location.joinpath(Path('touche22-images-main'))
+        path_from_image = Path('images/' + image_id[0:3] + '/' + image_id + '/pages').joinpath(page_path.name)
+
+        with page_path.joinpath('page-url.txt').open(encoding='utf8') as file:
             url = file.readline()
 
-        screenshot = Path('data/touche22-images-screenshots/images/' + image_id[0:3] + '/' + image_id + '/pages')\
-            .joinpath(page_path.name).joinpath('snapshot/screenshot.png')
+        snp_dom = path_main.joinpath(path_from_image).joinpath('snapshot/dom.html')
+        snp_image_xpath = path_main.joinpath(path_from_image).joinpath('snapshot/image-xpath.txt')
+        snp_nodes = cfg.data_location.joinpath(Path('touche22-images-nodes/').joinpath(path_from_image)
+                                               .joinpath('snapshot/nodes.jsonl'))
+        snp_screenshot = cfg.data_location.joinpath(Path('touche22-images-screenshots/').joinpath(path_from_image))\
+            .joinpath('snapshot/screenshot.png')
+        snp_text = path_main.joinpath(path_from_image).joinpath('snapshot/text.txt')
+        snp_archive = cfg.data_location.joinpath(Path('touche22-images-archives/').joinpath(path_from_image))\
+            .joinpath('snapshot/web-archive.warc.gz')
+
+        with cfg.data_location.joinpath(Path('touche22-images-rankings/')).joinpath(path_from_image)\
+                .joinpath('rankings.jsonl').open() as file:
+            rankings = [Ranking.load(line) for line in file]
 
         return cls(
             url_hash=page_path.name,
             url=url,
-            snapshot_path=page_path.joinpath('snapshot'),
-            snapshot_screenshot=screenshot,
+            snp_dom=snp_dom, snp_image_xpath=snp_image_xpath, snp_nodes=snp_nodes,
+            snp_screenshot=snp_screenshot, snp_text=snp_text, snp_archive=snp_archive,
+            rankings=rankings,
         )
 
 
@@ -57,21 +110,26 @@ class DataEntry:
         :raises ValueError: if image_id doesn't exists
         """
         im_path = 'images/{}/{}/'.format(image_id[0:3], image_id)
-        if not Path('data/touche22-images-main/').joinpath(im_path).exists():
+        if not cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path).exists():
             raise ValueError('{} is not a valid image hash'.format(image_id))
 
-        with Path('data/touche22-images-main/').joinpath(im_path).joinpath('image-url.txt').open() as file:
+        with cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path)\
+                .joinpath('image-url.txt').open() as file:
             url = file.readline()
 
         pages = []
-        for page in Path('data/touche22-images-main/').joinpath(im_path).joinpath('pages').iterdir():
+        for page in cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path)\
+                .joinpath('pages').iterdir():
             pages.append(WebPage.load(page, image_id))
+
+        png = cfg.data_location.joinpath(Path('touche22-images-png-images/')).joinpath(im_path).joinpath('image.png')
+        webp = cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path).joinpath('image.webp')
 
         return cls(
             url_hash=image_id,
             url=url,
-            png_path=Path('data/touche22-images-png-images/').joinpath(im_path).joinpath('image.png'),
-            webp_path=Path('data/touche22-images-main/').joinpath(im_path).joinpath('image.webp'),
+            png_path=png,
+            webp_path=webp,
             pages=pages,
         )
 
@@ -84,7 +142,7 @@ class DataEntry:
         :return: List of image ids as strings
         """
         id_list = []
-        main_path = Path('data/touche22-images-main/images')
+        main_path = cfg.data_location.joinpath(Path('touche22-images-main/images'))
         count = 0
         check_length = max_size > 0
         for idir in main_path.iterdir():
