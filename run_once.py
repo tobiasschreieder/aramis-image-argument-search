@@ -1,4 +1,4 @@
-# This file has to run just once for initialising the roject
+# This file has to run just once for initialising the project
 
 import nltk
 

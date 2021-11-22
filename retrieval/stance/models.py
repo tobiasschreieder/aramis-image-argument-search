@@ -24,14 +24,15 @@ class StanceModel:
         return 1.0
 
     def query(self, query: List[str], argument_relevant: List[Tuple[str, float]],
-              top_k: int = -1) -> List[Tuple[str, float]]:
+              top_k: int = -1) -> Tuple[List[Tuple[str, float]], List[Tuple[str, float]]]:
         """
         Queries a given preprocessed query against the index using a model scoring function
 
         :param argument_relevant: List of scored document ids
         :param query: preprocessed query in list representation to calculate the relevance for
         :param top_k: number of top results to return
-        :return: list of (doc_id, score) tuples descending by score for all documents in the vector space
+        :return: (list of pro (doc_id, score), list of con (doc_id, score))
+         tuples descending by score for all documents in the vector space
         """
         self.log.debug('start stance process for query %s', query)
-        return argument_relevant
+        return argument_relevant, argument_relevant

@@ -22,18 +22,19 @@ class RetrievalSystem:
         self.argument_model = argument_model
         self.stance_model = stance_model
 
-    def query(self, text: str, top_k: int = -1) -> List[Tuple[str, float]]:
+    def query(self, text: str, top_k: int = -1) -> Tuple[List[Tuple[str, float]], List[Tuple[str, float]]]:
         """
         Queries a given text against the index
         :param text: query text
         :param top_k: number of top results to return
-        :return: list of (doc_id, score) tuples descending by score for all documents in the vector space
+        :return: (list of pro (doc_id, score), list of con (doc_id, score))
+         tuples descending by score for all documents in the vector space
         """
         log.debug('start retrieval for query "%s"', text)
         query = self.prep.preprocess(text)
 
         topic_scores = self.topic_model.query(query, top_k)
         argument_scores = self.argument_model.query(query, topic_scores, top_k)
-        stance_scores = self.stance_model.query(query, argument_scores, top_k)
+        pro_scores, con_scores = self.stance_model.query(query, argument_scores, top_k)
 
-        return stance_scores
+        return pro_scores, con_scores

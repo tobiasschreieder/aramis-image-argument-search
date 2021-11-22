@@ -31,8 +31,8 @@ def index():
                     top_k = int(request.form['topK'])
                 except ValueError:
                     top_k = 20
-                pro_result = retrieval_system.query(request.form['query'] + ' good', top_k=top_k)
-                con_result = retrieval_system.query(request.form['query'] + ' anti', top_k=top_k)
+                pro_result = retrieval_system.query(request.form['query'] + ' good', top_k=top_k)[0]
+                con_result = retrieval_system.query(request.form['query'] + ' anti', top_k=top_k)[1]
                 now = datetime.datetime.now()
                 pro_images = [DataEntry.load(iid[0]) for iid in pro_result]
                 con_images = [DataEntry.load(iid[0]) for iid in con_result]
