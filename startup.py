@@ -3,6 +3,7 @@ import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
 
+from config import Config
 from frontend import start_server
 from indexing import StandardIndex, TopicQueryIndex, get_all_topic_indexes
 from retrieval import RetrievalSystem
@@ -73,6 +74,7 @@ if __name__ == '__main__':
     init_logging()
     log = logging.getLogger('startup')
     try:
+        Config.get()
         main()
     except Exception as e:
         log.error(e, exc_info=True)

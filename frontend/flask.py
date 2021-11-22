@@ -1,7 +1,9 @@
 import datetime
 import logging
+import os
+from pathlib import Path
 
-from flask import Flask, render_template, send_from_directory, request
+from flask import Flask, render_template, request, send_file, abort
 
 from indexing import DataEntry
 from retrieval import RetrievalSystem
@@ -10,6 +12,7 @@ log = logging.getLogger('frontend.flask')
 app = Flask(__name__)
 
 retrieval_system: RetrievalSystem = None
+image_ids = DataEntry.get_image_ids()
 
 
 def start_server(system: RetrievalSystem, debug: bool = True, host: str = '0.0.0.0', port: int = 5000):
@@ -44,11 +47,38 @@ def index():
     return render_template('index.html', pros=[], cons=[], topK=20)
 
 
-@app.route('/data/<path:name>')
-def data(name):
-    # cfg = Config.get()
-    # path = cfg.data_location
-    # if not path.is_absolute():
-    #     path = Path(os.path.abspath(__file__)).joinpath(path)
-    # return send_from_directory(path, name)
-    return send_from_directory('../data', name)
+def get_abs_data_path(path):
+    if not path.is_absolute():
+        path = Path(os.path.abspath(__file__)).parent.parent.joinpath(path)
+    return path
+
+
+@app.route('/data/image/<path:image_id>')
+def data_image(image_id):
+    if image_id not in image_ids:
+        return abort(404)
+    entry = DataEntry.load(image_id)
+    return send_file(get_abs_data_path(entry.png_path))
+
+
+@app.route('/data/screenshot/<path:image_id>/<path:page_id>')
+def data_snp_screenshot(image_id, page_id):
+    if image_id not in image_ids:
+        return abort(404)
+    entry = DataEntry.load(image_id)
+    for page in entry.pages:
+        if page.url_hash == page_id:
+            return send_file(get_abs_data_path(page.snp_screenshot))
+    return abort(404)
+
+
+@app.route('/data/dom/<path:image_id>/<path:page_id>')
+def data_snp_dom(image_id, page_id):
+    if image_id not in image_ids:
+        return abort(404)
+    entry = DataEntry.load(image_id)
+    for page in entry.pages:
+        if page.url_hash == page_id:
+            return send_file(get_abs_data_path(page.snp_dom))
+    return abort(404)
+
