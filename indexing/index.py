@@ -143,13 +143,14 @@ class Index(ABC):
         :return: None
         """
         self.log.debug('save index to file')
-        file.mkdir(exist_ok=True, parents=True)
+        file.parent.mkdir(exist_ok=True, parents=True)
         np.savez_compressed(file, inverted=self.inverted,
                             index_terms=self.index_terms, doc_ids=self.document_ids)
         self.log.debug('Done')
 
+    @classmethod
     @abstractmethod
-    def load(self, **kwargs) -> 'Index':
+    def load(cls, **kwargs) -> 'Index':
         """
         Loads an index from a file.
 

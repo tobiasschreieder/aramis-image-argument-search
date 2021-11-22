@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from typing import Dict
 
 import numpy as np
 from joblib import Parallel, delayed
@@ -99,6 +100,7 @@ class TopicIndex(Index):
         :param prep: Preprocessor to use, default SpacyPreprocessor
         :return: An index object
         """
+        cls.log.debug('create topic index for topic {}'.format(topic_id))
         index = cls()
         index.prep = prep
         index.topic_id = topic_id
@@ -137,7 +139,7 @@ class TopicIndex(Index):
 
         :return: None
         """
-        self._save(Path('index/topic_index_{}_{}.npz'.format(self.topic_id, self.prep.get_name())))
+        self._save(Path('index/topic_index/t_index_{}_{}.npz'.format(self.topic_id, self.prep.get_name())))
 
     @classmethod
     def load(cls, topic_id: int = 1, prep_name: str = SpacyPreprocessor.get_name(), **prep_kwargs) -> 'Index':
@@ -149,7 +151,7 @@ class TopicIndex(Index):
         :return: Index object loaded from file
         :raise ValueError: if file for index with number of indexed images doesn't exists
         """
-        file = Path('index/topic_index_{}_{}.npz'.format(topic_id, prep_name))
+        file = Path('index/topic_index/t_index_{}_{}.npz'.format(topic_id, prep_name))
 
         if not file.exists():
             raise ValueError('No saved topic query index for topic {} with {} preprocessor'
@@ -158,3 +160,14 @@ class TopicIndex(Index):
         loaded = cls._load(file, prep_name, **prep_kwargs)
         loaded.topic_id = topic_id
         return loaded
+
+
+def get_all_topic_indexes() -> Dict[int, TopicIndex]:
+    indexes = {}
+    for i in range(1, 51):
+        try:
+            indexes[i] = TopicIndex.load(i)
+        except ValueError:
+            indexes[i] = TopicIndex.create_index(i)
+            indexes[i].save()
+    return indexes

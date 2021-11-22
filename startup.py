@@ -3,11 +3,12 @@ import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
 
-from indexing import StandardIndex
+from frontend import start_server
+from indexing import StandardIndex, TopicQueryIndex, get_all_topic_indexes
 from retrieval import RetrievalSystem
 from retrieval.argument import ArgumentModel
 from retrieval.stance import StanceModel
-from retrieval.topic import DirichletLM
+from retrieval.topic import TopicRankingDirichlet
 
 
 def init_logging():
@@ -55,27 +56,17 @@ def main():
     """
     log.info('do main stuff')
 
-    # topic_index = TopicQueryIndex.create_index()
-    # topic_index.save()
-    topic_index = TopicQueryIndex.load()
+    # tq_index = TopicQueryIndex.create_index()
+    # tq_index.save()
+    tq_index = TopicQueryIndex.load()
+    topic_indexes = get_all_topic_indexes()
 
-    system = RetrievalSystem(topic_index,
-                             topic_model=DirichletLM(topic_index),
-                             argument_model=ArgumentModel(topic_index),
-                             stance_model=StanceModel(topic_index))
+    system = RetrievalSystem(tq_index.prep,
+                             topic_model=TopicRankingDirichlet(t_indexes=topic_indexes, tq_index=tq_index),
+                             argument_model=ArgumentModel(tq_index),
+                             stance_model=StanceModel(tq_index))
 
-    result = system.query('teachers')
-    print()
-
-    # index = Index.load(1000)
-    #
-    # system = RetrievalSystem(index,
-    #                          topic_model=DirichletLM(index),
-    #                          argument_model=ArgumentModel(index),
-    #                          stance_model=StanceModel(index))
-    # # res = system.query('drugs good', 10)
-    # # log.info(res)
-    # start_server(system)
+    start_server(system)
 
 
 if __name__ == '__main__':

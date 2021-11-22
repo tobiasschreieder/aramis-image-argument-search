@@ -1,1 +1,1 @@
-from .models import TopicModel, DirichletLM
+from .models import TopicModel, DirichletLM, TopicRankingDirichlet
