@@ -3,6 +3,7 @@ logs/
 .idea/
 venv/
 index/
+config.json
 
 # standart gitignore template for python
 
