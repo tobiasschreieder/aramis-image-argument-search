@@ -1,7 +1,7 @@
 import logging
 from typing import List, Tuple
 
-from indexing import Index
+from indexing import Preprocessor
 from .argument import ArgumentModel
 from .stance import StanceModel
 from .topic import TopicModel
@@ -11,14 +11,13 @@ log = logging.getLogger('retrievalSystem')
 
 class RetrievalSystem:
 
-    def __init__(self, index: Index, topic_model: TopicModel,
+    def __init__(self, prep: Preprocessor, topic_model: TopicModel,
                  argument_model: ArgumentModel, stance_model: StanceModel):
         """
         Constructor
-        :param index: index to get relevance data from
         :param topic_model: topic model to calculate topic scores with
         """
-        self.index = index
+        self.prep = prep
         self.topic_model = topic_model
         self.argument_model = argument_model
         self.stance_model = stance_model
@@ -31,8 +30,7 @@ class RetrievalSystem:
         :return: list of (doc_id, score) tuples descending by score for all documents in the vector space
         """
         log.debug('start retrieval for query "%s"', text)
-        query = self.index.prep.preprocess(text)
-        top_k = max(min(len(self.index.get_document_ids()), top_k), 0)
+        query = self.prep.preprocess(text)
 
         topic_scores = self.topic_model.query(query, top_k)
         argument_scores = self.argument_model.query(query, topic_scores, top_k)

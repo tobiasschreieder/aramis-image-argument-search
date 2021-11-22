@@ -1,4 +1,6 @@
 import logging
+import math
+import re
 from pathlib import Path
 from typing import List, Type
 
@@ -108,4 +110,11 @@ class SpacyPreprocessor(Preprocessor):
         :param text: The text to process
         :return: List of stemmed tokens
         """
+        if len(text) > self.nlp.max_length:
+            p = re.compile('\n')
+            middle = math.floor(len(text)/2)
+            i = p.search(text, middle)
+            if i is None:
+                return self.preprocess(text[:middle]) + self.preprocess(text[middle + 1:])
+            return self.preprocess(text[:i.start()]) + self.preprocess(text[i.end()+1:])
         return [token.lemma_.lower() for token in self.nlp(text) if not (token.is_stop or token.is_punct)]
