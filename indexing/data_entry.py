@@ -3,6 +3,10 @@ import json
 from pathlib import Path
 from typing import List
 
+from config import Config
+
+cfg = Config.get()
+
 
 @dataclasses.dataclass
 class Ranking:
@@ -58,7 +62,7 @@ class WebPage:
         if not (page_path.exists() and page_path.is_dir()):
             raise ValueError('{} is not a valid directory'.format(page_path))
 
-        path_main = Path('data/touche22-images-main')
+        path_main = cfg.data_location.joinpath(Path('touche22-images-main'))
         path_from_image = Path('images/' + image_id[0:3] + '/' + image_id + '/pages').joinpath(page_path.name)
 
         with page_path.joinpath('page-url.txt').open(encoding='utf8') as file:
@@ -66,14 +70,16 @@ class WebPage:
 
         snp_dom = path_main.joinpath(path_from_image).joinpath('snapshot/dom.html')
         snp_image_xpath = path_main.joinpath(path_from_image).joinpath('snapshot/image-xpath.txt')
-        snp_nodes = Path('data/touche22-images-nodes/').joinpath(path_from_image).joinpath('snapshot/nodes.jsonl')
-        snp_screenshot = Path('data/touche22-images-screenshots/').joinpath(path_from_image)\
+        snp_nodes = cfg.data_location.joinpath(Path('touche22-images-nodes/').joinpath(path_from_image)
+                                               .joinpath('snapshot/nodes.jsonl'))
+        snp_screenshot = cfg.data_location.joinpath(Path('touche22-images-screenshots/').joinpath(path_from_image))\
             .joinpath('snapshot/screenshot.png')
         snp_text = path_main.joinpath(path_from_image).joinpath('snapshot/text.txt')
-        snp_archive = Path('data/touche22-images-archives/').joinpath(path_from_image)\
+        snp_archive = cfg.data_location.joinpath(Path('touche22-images-archives/').joinpath(path_from_image))\
             .joinpath('snapshot/web-archive.warc.gz')
 
-        with Path('data/touche22-images-rankings/').joinpath(path_from_image).joinpath('rankings.jsonl').open() as file:
+        with cfg.data_location.joinpath(Path('touche22-images-rankings/')).joinpath(path_from_image)\
+                .joinpath('rankings.jsonl').open() as file:
             rankings = [Ranking.load(line) for line in file]
 
         return cls(
@@ -104,21 +110,26 @@ class DataEntry:
         :raises ValueError: if image_id doesn't exists
         """
         im_path = 'images/{}/{}/'.format(image_id[0:3], image_id)
-        if not Path('data/touche22-images-main/').joinpath(im_path).exists():
+        if not cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path).exists():
             raise ValueError('{} is not a valid image hash'.format(image_id))
 
-        with Path('data/touche22-images-main/').joinpath(im_path).joinpath('image-url.txt').open() as file:
+        with cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path)\
+                .joinpath('image-url.txt').open() as file:
             url = file.readline()
 
         pages = []
-        for page in Path('data/touche22-images-main/').joinpath(im_path).joinpath('pages').iterdir():
+        for page in cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path)\
+                .joinpath('pages').iterdir():
             pages.append(WebPage.load(page, image_id))
+
+        png = cfg.data_location.joinpath(Path('touche22-images-png-images/')).joinpath(im_path).joinpath('image.png')
+        webp = cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path).joinpath('image.webp')
 
         return cls(
             url_hash=image_id,
             url=url,
-            png_path=Path('data/touche22-images-png-images/').joinpath(im_path).joinpath('image.png'),
-            webp_path=Path('data/touche22-images-main/').joinpath(im_path).joinpath('image.webp'),
+            png_path=png,
+            webp_path=webp,
             pages=pages,
         )
 
@@ -131,7 +142,7 @@ class DataEntry:
         :return: List of image ids as strings
         """
         id_list = []
-        main_path = Path('data/touche22-images-main/images')
+        main_path = cfg.data_location.joinpath(Path('touche22-images-main/images'))
         count = 0
         check_length = max_size > 0
         for idir in main_path.iterdir():

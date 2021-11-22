@@ -3,6 +3,7 @@ import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
 
+from frontend import start_server
 from indexing import StandardIndex
 from retrieval import RetrievalSystem
 from retrieval.argument import ArgumentModel
@@ -54,7 +55,7 @@ def main():
     :return:
     """
     log.info('do main stuff')
-    index = Index.load(1000)
+    index = StandardIndex.load(100)
 
     system = RetrievalSystem(index,
                              topic_model=DirichletLM(index),
