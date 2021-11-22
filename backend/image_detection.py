@@ -9,14 +9,19 @@ import numpy as np
 pytesseract.pytesseract.tesseract_cmd = 'tesseract/tesseract.exe'
 
 
+def read_image(path):
+    img = cv2.imread(str("images/" + path))
+    return img
+
+
 def clean_text(text):
     text = re.sub('[^A-Za-z0-9" "]+', ' ', text)
 
     words = text.split(' ')
-    correct_words = []
+    correct_words = ""
     for word in words:
         if len(word) > 2:
-            correct_words.append(word)
+            correct_words += " " + word
 
     return correct_words
 
@@ -53,10 +58,8 @@ def deskew(image):
 
 
 def text_from_image(image):
-    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     image = cv2.resize(image, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-
-    preprocessed_image = erode_dilate(image)
+    preprocessed_image = erode_dilate(get_grayscale(image))
 
     text = pytesseract.image_to_string(preprocessed_image, lang='eng', config='--psm 11')
     text = clean_text(text)
@@ -65,21 +68,22 @@ def text_from_image(image):
     return text
 
 
-def textposition_from_image(image):
+def textposition_from_image(image, plot=False):
     h, w, c = image.shape
     boxes = pytesseract.image_to_boxes(image)
-    print(boxes)
-    for b in boxes.splitlines():
-        b = b.split(' ')
-        image = cv2.rectangle(image, (int(b[1]), h - int(b[2])), (int(b[3]), h - int(b[4])), (0, 255, 0), 2)
+    if plot:
+        for b in boxes.splitlines():
+            b = b.split(' ')
+            image = cv2.rectangle(image, (int(b[1]), h - int(b[2])), (int(b[3]), h - int(b[4])), (0, 255, 0), 2)
 
-    cv2.imshow('Result', image)
-    cv2.waitKey(0)
+        cv2.imshow('Result', image)
+        cv2.waitKey(0)
 
     return boxes
 
 
-def shapes_from_image(image):
+def shapes_from_image(image, plot=False):
+    h_image, w_image, _ = image.shape
 
     # converting image into grayscale image
     gray = get_grayscale(image)
@@ -98,7 +102,7 @@ def shapes_from_image(image):
 
         area = cv2.contourArea(contour)
 
-        if area > 2000:
+        if area > ((h_image*w_image)*0.001):
 
             # here we are ignoring first counter because
             # findcontour function detects whole image as shape
@@ -110,7 +114,8 @@ def shapes_from_image(image):
             approx = cv2.approxPolyDP(
                 contour, 0.01 * cv2.arcLength(contour, True), True)
 
-            cv2.drawContours(image, [contour], 0, (0, 0, 255), 5)
+            if plot:
+                cv2.drawContours(image, [contour], 0, (0, 0, 255), 5)
 
             # finding center point of shape
             M = cv2.moments(contour)
@@ -133,14 +138,14 @@ def shapes_from_image(image):
             else:
                 shapes.append(('Circle', x, y))
 
-    print(shapes)
-    cv2.imshow('shapes', image)
-    cv2.waitKey(0)
+    if plot:
+        cv2.imshow('shapes', image)
+        cv2.waitKey(0)
+
     return shapes
 
 
-def diagramms_from_image(image):
-    rois = []
+def diagramms_from_image(image, plot=False):
     h_image, w_image, _ = image.shape
 
     gray = get_grayscale(image)
@@ -153,11 +158,13 @@ def diagramms_from_image(image):
     # Find contours and remove non-diagram contours
     cnts = cv2.findContours(dilate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cnts = cnts[0] if len(cnts) == 2 else cnts[1]
-    for c in cnts:
-        x, y, w, h = cv2.boundingRect(c)
-        area = cv2.contourArea(c)
-        if w / h > 2 and area > 10000:
-            cv2.drawContours(dilate, [c], -1, (0, 0, 0), -1)
+
+    if plot:
+        for c in cnts:
+            x, y, w, h = cv2.boundingRect(c)
+            area = cv2.contourArea(c)
+            if w / h > 2 and area > ((h_image*w_image)*0.01):
+                cv2.drawContours(dilate, [c], -1, (0, 0, 0), -1)
 
     # Iterate through diagram contours and form single bounding box
     boxes = []
@@ -167,19 +174,24 @@ def diagramms_from_image(image):
         x, y, w, h = cv2.boundingRect(c)
         boxes.append([x, y, x + w, y + h])
 
-    boxes = np.asarray(boxes)
-    x = np.min(boxes[:, 0])
-    y = np.min(boxes[:, 1])
-    w = np.max(boxes[:, 2]) - x
-    h = np.max(boxes[:, 3]) - y
+    try:
+        boxes = np.asarray(boxes)
+        x = np.min(boxes[:, 0])
+        y = np.min(boxes[:, 1])
+        w = np.max(boxes[:, 2]) - x
+        h = np.max(boxes[:, 3]) - y
 
-    if w*h < w_image*h_image*0.8:
-        # Extract ROI
-        rois.append([x, y, w, h])
+        roi_area = (w*h) / (w_image*h_image)
+
+        # use dichtefunktion in future
+        if not roi_area < 0.8:
+            roi_area = 0
+    except:
+        roi_area = 0
+
+    if plot:
         ROI = image[y:y + h, x:x + w]
-
         cv2.imshow('ROI', ROI)
         cv2.waitKey()
 
-    print(rois)
-    return rois
+    return roi_area

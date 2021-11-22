@@ -8,9 +8,6 @@ Created on Thu Nov 11 15:17:43 2021
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 
-#nltk.download('vader_lexicon')
-
-
 test1 = "This is a stupid exampletext. I hate it"
 test2 = "This is a cool exampletext."
 test3 = "Expenses Total Income Elalemelaat deductions Income"

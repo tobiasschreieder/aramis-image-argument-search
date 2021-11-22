@@ -12,3 +12,5 @@ or from the [Uni-Mannheim-page](https://github.com/UB-Mannheim/tesseract/wiki) a
 
 You can install the application directly into ``\backend`` or install it anywhere and copy the ``tesserac`` folder into ``backend/``.
 Check, if the ``tesseract/tesseract.exe`` exists, but if you have done everything correctly this file should be there.
+
+At least please run the ``run_once.py`` just once. After that everything is set up to have fun :D
