@@ -1,9 +1,12 @@
+import math
+
 from cv2 import cv2
 from deskew import determine_skew
 from skimage.transform import rotate
 import pytesseract
 import re
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 pytesseract.pytesseract.tesseract_cmd = 'tesseract/tesseract.exe'
@@ -57,13 +60,13 @@ def deskew(image):
     return rotated.astype(np.uint8)
 
 
-def text_from_image(image):
+def text_from_image(image, plot=False):
     image = cv2.resize(image, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
     preprocessed_image = erode_dilate(get_grayscale(image))
 
     text = pytesseract.image_to_string(preprocessed_image, lang='eng', config='--psm 11')
     text = clean_text(text)
-    print("Text detected: ", text)
+    print("Words detected: ", len(text.split(" ")) - 1, text)
 
     return text
 
@@ -152,7 +155,7 @@ def diagramms_from_image(image, plot=False):
     threshold = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
 
     # Dilate with horizontal kernel
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 10))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (int(h_image/100), int(w_image/100)))
     dilate = cv2.dilate(threshold, kernel, iterations=2)
 
     # Find contours and remove non-diagram contours
@@ -195,3 +198,77 @@ def diagramms_from_image(image, plot=False):
         cv2.waitKey()
 
     return roi_area
+
+
+def detect_image_type(image, plot=False):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = cv2.resize(image, (200, 200), interpolation=cv2.INTER_AREA)
+    w, h, _ = image.shape
+
+    if plot:
+        figure, axis = plt.subplots(2)
+        histr = cv2.calcHist([image], [0], None, [256], [0, 256])
+        axis[0].plot(histr)
+        axis[1].hist(image.ravel(), 256, [0, 256])
+        plt.show()
+
+    colors, count = np.unique(image.reshape(-1, image.shape[-1]), axis=0, return_counts=True)
+    most_used_colors = list(zip(list(count.tolist()), list(colors.tolist())))
+    used_area = sum(x[0] for x in sorted(most_used_colors, key=lambda x: x[0], reverse=True)[:10])/float((w*h))
+
+    if used_area < 0.3:
+        image_type = "photo"
+    else:
+        image_type = "clipart"
+
+    return image_type
+
+
+
+def color_mood(image, image_type='clipArt', plot=False):
+    # image_type ('clipart', 'photo')
+
+    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    average = rgb.mean(axis=0).mean(axis=0)
+
+    distance_to_green = math.sqrt((average[0] - 0) ** 2 + (average[1] - 255) ** 2 + (average[2] - 0) ** 2)
+    distance_to_red = math.sqrt((average[0] - 255) ** 2 + (average[1] - 0) ** 2 + (average[2] - 0) ** 2)
+    distance_to_black = math.sqrt((average[0] - 0) ** 2 + (average[1] - 0) ** 2 + (average[2] - 0) ** 2)
+    distance_to_white = math.sqrt((average[0] - 255) ** 2 + (average[1] - 255) ** 2 + (average[2] - 255) ** 2)
+
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    mask_green = cv2.inRange(hsv, (40, 20, 80), (70, 255, 255))
+    mask_red_1 = cv2.inRange(hsv, (0, 150, 80), (15, 255, 255))
+    mask_red_2 = cv2.inRange(hsv, (150, 150, 80), (255, 255, 255))
+    mask_red = cv2.bitwise_or(mask_red_1, mask_red_2)
+    mask_bright = cv2.inRange(hsv, (0, 0, 200), (255, 80, 255))
+    mask_dark = cv2.inRange(hsv, (0, 0, 0), (255, 255, 100))
+
+    number_pixels = hsv.size/3
+    percentage_green = (cv2.countNonZero(mask_green) / number_pixels) * 100
+    percentage_red = (cv2.countNonZero(mask_red) / number_pixels) * 100
+    percentage_bright = (cv2.countNonZero(mask_bright) / number_pixels) * 100
+    percentage_dark = (cv2.countNonZero(mask_dark) / number_pixels) * 100
+
+    if plot:
+        '''
+        cv2.imshow(str('Green = ' + str(percentage_green)), mask_green)
+        cv2.imshow(str('Red = ' + str(percentage_red)), mask_red)
+        cv2.imshow(str('Bright = ' + str(percentage_bright)), mask_bright)
+        cv2.imshow(str('Dark = ' + str(percentage_dark)), mask_dark)
+        cv2.waitKey()
+        '''
+
+        print("percentage_green: ", percentage_green, "  // (100/distance_to_green) = ", (100/distance_to_green), "  // product = ", (percentage_green * (100/distance_to_green)))
+        print("percentage_red: ", percentage_red, "  // (100/distance_to_red) = ", (100/distance_to_red), "  // product = ", (percentage_red * (100/distance_to_red)))
+        print("percentage_bright: ", percentage_bright, "  // (100/distance_to_white) = ", (100 / distance_to_white), "  // product = ", (percentage_bright * (100/distance_to_white)))
+        print("percentage_dark: ", percentage_dark, "  // (100/distance_to_black) = ", (100 / distance_to_black), "  // product = ", (percentage_dark * (100/distance_to_black)))
+
+    if image_type == 'clipart':
+        color_mood = (percentage_green * (100/distance_to_green)) - (percentage_red * (100/distance_to_red))
+    elif image_type == 'photo':
+        hue_factor = 0.2
+        color_mood = ((percentage_green * (100/distance_to_green)) - (percentage_red * (100/distance_to_red))) + \
+                     hue_factor*((percentage_bright * (100/distance_to_white)) - (percentage_dark * (100/distance_to_black)))
+
+    return color_mood
