@@ -10,7 +10,7 @@ from lxml import etree
 from indexing import DataEntry
 
 # texts bellow images shorter than min_len_texts will be ignored
-min_len_texts = 10
+min_len_texts = 50
 
 
 # open HTML-File
@@ -31,77 +31,132 @@ def read_xpath(path):
     f.close()
 
     # use first useful xpath
-    xpath = str()
+    xpathes = list()
     for path in pathes:
-        if ('"' not in path and ':' not in path and len(xpath) == 0):
-            xpath = path
+        if '"' not in path and ':' not in path:
+            xpathes.append(path)
 
-    return xpath
+    return xpathes
+
+
+# return xpath without last tag
+def cut_last_tag(xpath):
+    counter = xpath.count("/")
+    pos = 0
+
+    for p in range(0, counter):
+        pos = xpath.find("/", pos)
+        pos += 1
+
+    last_tag = xpath[pos:]
+    new_xpath = xpath[:len(xpath) - len(last_tag) - 1]
+
+    return new_xpath
 
 
 # extract all texts from the following tags: <figure>, <picture>, <img> in a preprocessed form
-def get_image_html_text(doc, xpath):
+def get_image_html_text(doc, xpathes):
     texts = list()
-
-    # figure, picture, img in xpath
-    f = False
-    p = False
-    i = False
-
-    # position of figure, picture, img in html
-    f_pos = int()
-    p_pos = int()
-    i_pos = int()
-
-    doc = etree.HTML(str(doc))
-    xpath = xpath.lower()
-
-    # bring xpath to basic form (without figure, picture, img)
-    if ("figure" in xpath):
-        f = True
-        for j in range(1, 5):
-            if ("figure[" + str(j) in xpath):
-                xpath = xpath.replace("/figure[" + str(j) + "]", "")
-                f_pos = j
-    if ("picture" in xpath):
-        p = True
-        for j in range(1, 5):
-            if ("picture[" + str(j) in xpath):
-                xpath = xpath.replace("/picture[" + str(j) + "]", "")
-                p_pos = j
-    if ("img" in xpath):
-        i = True
-        for j in range(1, 5):
-            if ("img[" + str(j) in xpath):
-                xpath = xpath.replace("/img[" + str(j) + "]", "")
-                i_pos = j
-
-    # create specific xpaths
-    xpath_figure = str()
-    xpath_picture = str()
-    xpath_img = str()
-
-    # receive texts from html for figure, picture, img
-    if (f == True):
-        xpath_figure = "normalize-space(" + xpath + "/figure[" + str(f_pos) + "])"
-        text = str(doc.xpath(xpath_figure))
-        if (len(text) >= min_len_texts):
-            texts.append(text)
-    if (p == True):
-        xpath_picture = "normalize-space(" + xpath + "/picture[" + str(p_pos) + "])"
-        text = str(doc.xpath(xpath_picture))
-        if (len(text) >= min_len_texts):
-            texts.append(text)
-    if (i == True):
-        xpath_img = "normalize-space(" + xpath + "/img[" + str(i_pos) + "])"
-        text = str(doc.xpath(xpath_img))
-        if (len(text) >= min_len_texts):
-            texts.append(text)
-
     final_text = str()
 
+    for xpath in xpathes:
+        # figure, picture, img in xpath
+        f = False
+        p = False
+        i = False
+        m = False
+
+        # position of figure, picture, img in html
+        f_pos = int()
+        p_pos = int()
+        i_pos = int()
+        m_pos = int()
+
+        doc_original = doc
+        doc = etree.HTML(str(doc))
+        xpath = xpath.lower()
+        xpath_original = xpath
+
+        # bring xpath to basic form (without figure, picture, img)
+        if "figure" in xpath:
+            f = True
+            for j in range(1, 5):
+                if "figure[" + str(j) in xpath:
+                    xpath = xpath.replace("/figure[" + str(j) + "]", "")
+                    f_pos = j
+        if "picture" in xpath:
+            p = True
+            for j in range(1, 5):
+                if "picture[" + str(j) in xpath:
+                    xpath = xpath.replace("/picture[" + str(j) + "]", "")
+                    p_pos = j
+        if "img" in xpath:
+            i = True
+            for j in range(1, 5):
+                if "img[" + str(j) in xpath:
+                    xpath = xpath.replace("/img[" + str(j) + "]", "")
+                    i_pos = j
+        if "meta" in xpath:
+            m = True
+            for j in range(1, 50):
+                if "meta[" + str(j) in xpath:
+                    xpath = xpath.replace("/meta[" + str(j) + "]", "")
+                    m_pos = j
+
+        # create specific xpaths
+        xpath_figure = str()
+        xpath_picture = str()
+        xpath_img = str()
+        xpath_meta = str()
+
+        # receive texts from html for figure, picture, img
+        if f:
+            xpath_figure = "normalize-space(" + xpath + "/figure[" + str(f_pos) + "])"
+            text = str(doc.xpath(xpath_figure))
+            if len(text) >= min_len_texts:
+                texts.append(text)
+        '''
+        if p:
+            xpath_picture = "normalize-space(" + xpath + "/picture[" + str(p_pos) + "])"
+            text = str(doc.xpath(xpath_picture))
+            if len(text) >= min_len_texts:
+                texts.append(text)       
+        if i:
+            xpath_img = "normalize-space(" + xpath + "/img[" + str(i_pos) + "])"
+            text = str(doc.xpath(xpath_img))
+            if len(text) >= min_len_texts:
+                texts.append(text)
+        if m:
+            xpath_meta = "normalize-space(" + xpath + "/meta[" + str(m_pos) + "])"
+            text = str(doc.xpath(xpath_meta))
+            if len(text) >= min_len_texts:
+                texts.append(text)
+        '''
+
+        shorter_xpath = xpath_original
+        shorter_xpath_texts = list()
+
+        get_texts_range = round(shorter_xpath.count("/") * 0.5)
+        if get_texts_range < 1:
+            get_texts_range = 1
+
+        for i in range(0, get_texts_range):
+            shorter_xpath = cut_last_tag(shorter_xpath)
+            text = str(doc.xpath("normalize-space(" + shorter_xpath + ")"))
+            if len(text) > min_len_texts:
+                shorter_xpath_texts.append(text)
+
+        if len(shorter_xpath_texts) > 0:
+            doc_texts = doc_original.getText()
+            doc_texts_list = doc_texts.splitlines()
+
+            for text in doc_texts_list:
+                if len(text) > min_len_texts and text in shorter_xpath_texts:
+                    texts.append(text)
+
     for text in texts:
-        final_text += text + "\n"
+        if text not in final_text:
+            final_text += text + "\n"
 
     return final_text
 
@@ -115,15 +170,14 @@ def run_html_preprocessing(image_id):
     xpath = read_xpath(xpath_path)
 
     text = get_image_html_text(doc, xpath)
-    print(text)
+    #print(text)
 
     return text
 
 
-'''
 # get test sample of data (just for testing)
 def get_pathes():
-    data = DataEntry.get_image_ids(50)
+    data = DataEntry.get_image_ids(1000)
 
     dataset = dict()
 
@@ -142,7 +196,6 @@ def html_test():
     data = get_pathes()
     counter = int()
     for d in data:
-        print(d)
         doc = read_html(data[d]["snp_dom"])
         xpath = read_xpath(data[d]["snp_xpath"])
         text = get_image_html_text(doc, xpath)
@@ -154,4 +207,3 @@ def html_test():
     print(str(counter) + " : " + str(len(data)))
 
     return data
-'''
