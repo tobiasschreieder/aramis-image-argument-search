@@ -1,3 +1,4 @@
+pandas
 nltk
 spacy~=3.2.0
 numpy~=1.21.4

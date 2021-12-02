@@ -14,7 +14,7 @@ pytesseract.pytesseract.tesseract_cmd = 'tesseract/tesseract.exe'
 
 
 def read_image(path):
-    img = cv2.imread(str("images/" + path))
+    img = cv2.imread(path)
     return img
 
 
@@ -59,17 +59,6 @@ def deskew(image):
     angle = determine_skew(thresholding(grayscale))
     rotated = rotate(grayscale, angle, resize=True) * 255
     return rotated.astype(np.uint8)
-
-
-def text_from_image(image, plot=False):
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    image = cv2.resize(image, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-    preprocessed_image = erode_dilate(get_grayscale(image))
-
-    text = pytesseract.image_to_string(preprocessed_image, lang='eng', config='--psm 11')
-    text = clean_text(text)
-
-    return text
 
 
 def textposition_from_image(image, plot=False):
@@ -150,9 +139,6 @@ def shapes_from_image(image, plot=False):
 
 
 def diagramms_from_image(image, plot=False):
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    image = cv2.resize(image, (200, 200), interpolation=cv2.INTER_AREA)
-
     h_image, w_image, _ = image.shape
 
     gray = get_grayscale(image)
@@ -205,8 +191,6 @@ def diagramms_from_image(image, plot=False):
 
 
 def detect_image_type(image, plot=False):
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    image = cv2.resize(image, (200, 200), interpolation=cv2.INTER_AREA)
     w, h, _ = image.shape
 
     if plot:
@@ -231,7 +215,6 @@ def detect_image_type(image, plot=False):
 def color_mood(image, image_type='clipArt', plot=False):
     # image_type ('clipart', 'photo')
 
-    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     average = rgb.mean(axis=0).mean(axis=0)
 
     distance_to_green = math.sqrt((average[0] - 0) ** 2 + (average[1] - 255) ** 2 + (average[2] - 0) ** 2)
@@ -294,7 +277,12 @@ def color_mood(image, image_type='clipArt', plot=False):
 
 
 def text_analysis(image):
-    text = text_from_image(image)
+    image = cv2.resize(image, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+    preprocessed_image = erode_dilate(get_grayscale(image))
+
+    text = pytesseract.image_to_string(preprocessed_image, lang='eng', config='--psm 11')
+    text = clean_text(text)
+
     text_len = len(text.split(" "))
     text_sentiment_score = sentiment_detection.sentiment_nltk(text)
 

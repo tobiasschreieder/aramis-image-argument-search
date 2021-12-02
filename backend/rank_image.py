@@ -1,9 +1,7 @@
 import math
-import matplotlib.pyplot as plt
-import numpy as np
 
 import backend.image_detection as image_detection
-import retrieval.stance.sentiment_detection as sentiment_detection
+import indexing.sentiment_detection as sentiment_detection
 
 
 
