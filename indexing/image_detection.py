@@ -14,6 +14,7 @@ pytesseract.pytesseract.tesseract_cmd = 'properties/tesseract/tesseract.exe'
 
 
 def read_image(path):
+    print(path)
     img = cv2.imread(str(path))
     return img
 
@@ -215,7 +216,7 @@ def detect_image_type(image, plot=False):
 def color_mood(image, image_type='clipArt', plot=False):
     # image_type ('clipart', 'photo')
 
-    average = rgb.mean(axis=0).mean(axis=0)
+    average = image.mean(axis=0).mean(axis=0)
 
     distance_to_green = math.sqrt((average[0] - 0) ** 2 + (average[1] - 255) ** 2 + (average[2] - 0) ** 2)
     distance_to_red = math.sqrt((average[0] - 255) ** 2 + (average[1] - 0) ** 2 + (average[2] - 0) ** 2)

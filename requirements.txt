@@ -13,3 +13,4 @@ pytesseract
 opencv-python
 deskew
 scikit-image
+tables

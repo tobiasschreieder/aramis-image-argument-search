@@ -5,7 +5,7 @@ import pandas as pd
 
 # HEY JAN! Das ist die Methode, die irgendwo hin muss und die du vervollständigen musst :)
 def create_index():
-    ids = DataEntry.get_image_ids(10)
+    ids = DataEntry.get_image_ids(2)
 
     '''
     FEATURES
@@ -80,9 +80,10 @@ def save_index():
     print("finished index")
     print(index_df)
 
-    index_df.to_hdf('index.h5', key='df')
+    index_df.to_hdf('index.h5', key='df', mode='w')
 
 
 def load_index():
-    pd.read_hdf('index.h5', 'df')
+    index_df = pd.read_hdf('index.h5', 'df')
+    return index_df
 
