@@ -10,7 +10,7 @@ After the virtualenv installation with ``python -m pip install -r requirements.t
 To run the image-detection you have to download the tesseract5-installer [directly](https://digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-w64-setup-v5.0.0-rc1.20211030.exe)
 or from the [Uni-Mannheim-page](https://github.com/UB-Mannheim/tesseract/wiki) and install it. Please do not use tesseract 4 or a version below because i don't know what will happend. Maybe the whole project makes boom.
 
-You can install the application directly into ``\indexing\properties`` or install it anywhere and copy the ``tesserac`` folder into ``\indexing\properties``.
-Check, if the ``\indexing\properties\tesseract\tesseract.exe`` exists, but if you have done everything correctly this file should be there.
+You can install the application directly into ``\properties`` or install it anywhere and copy the ``tesserac`` folder into ``\properties``.
+Check, if the ``\properties\tesseract\tesseract.exe`` exists, but if you have done everything correctly this file should be there.
 
 At least please run the ``run_once.py`` just once. After that everything is set up to have fun :D
