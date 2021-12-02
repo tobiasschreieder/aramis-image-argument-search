@@ -71,7 +71,9 @@ def main():
 
     start_server(system)
     '''
-    create_index_tobiLorenz.save_index()
+    index = create_index_tobiLorenz.load_index()
+    print("argument: ", create_index_tobiLorenz.calculate_argument(index, 'I000330ba4ea0ad13'))
+    print("stance: ", create_index_tobiLorenz.calculate_stance(index, 'I000330ba4ea0ad13'))
 
 
 if __name__ == '__main__':
