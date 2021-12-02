@@ -80,5 +80,3 @@ def calculate_pro_con(path, print_calculation):
     return score
 
 
-def create_index():
-    for id in all_ids:
