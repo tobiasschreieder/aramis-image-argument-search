@@ -1,3 +1,7 @@
+lxml
+beautifulsoup4
+matplotlib
+scikit-learn
 pandas
 nltk
 spacy~=3.2.0

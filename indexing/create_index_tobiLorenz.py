@@ -80,13 +80,9 @@ def save_index():
     print("finished index")
     print(index_df)
 
-    index_df.to_hdf('index.h5')
+    index_df.to_hdf('index.h5', key='df')
 
 
 def load_index():
     pd.read_hdf('index.h5', 'df')
-
-
-save_index()
-
 

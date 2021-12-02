@@ -5,7 +5,7 @@ from logging.handlers import TimedRotatingFileHandler
 
 from config import Config
 from frontend import start_server
-from indexing import StandardIndex, TopicQueryIndex, get_all_topic_indexes
+from indexing import StandardIndex, TopicQueryIndex, get_all_topic_indexes, create_index_tobiLorenz
 from retrieval import RetrievalSystem
 from retrieval.argument import ArgumentModel
 from retrieval.stance import StanceModel
@@ -55,6 +55,8 @@ def main():
     normal program run
     :return:
     """
+
+    '''
     log.info('do main stuff')
 
     # tq_index = TopicQueryIndex.create_index()
@@ -68,6 +70,8 @@ def main():
                              stance_model=StanceModel(tq_index))
 
     start_server(system)
+    '''
+    create_index_tobiLorenz.save_index()
 
 
 if __name__ == '__main__':

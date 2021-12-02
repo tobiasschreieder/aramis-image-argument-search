@@ -10,11 +10,11 @@ from sklearn.cluster import KMeans
 
 import indexing.sentiment_detection as sentiment_detection
 
-pytesseract.pytesseract.tesseract_cmd = 'tesseract/tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = 'properties/tesseract/tesseract.exe'
 
 
 def read_image(path):
-    img = cv2.imread(path)
+    img = cv2.imread(str(path))
     return img
 
 
