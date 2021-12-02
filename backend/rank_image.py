@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import backend.image_detection as image_detection
-import backend.sentiment_detection as sentiment_detection
+import retrieval.stance.sentiment_detection as sentiment_detection
 
 
 
@@ -80,8 +80,5 @@ def calculate_pro_con(path, print_calculation):
     return score
 
 
-for i in range(1, 32):
-    print(i)
-    print("## argumentativness: ", calculate_argumentativeness(str("image_" + str(i) + ".png"), print_calculation=True))
-    print("## pro-con: ", calculate_pro_con(str("image_" + str(i) + ".png"), print_calculation=True))
-    print("---")
+def create_index():
+    for id in all_ids:

@@ -1,5 +1,4 @@
 import math
-
 from cv2 import cv2
 from deskew import determine_skew
 from skimage.transform import rotate
@@ -7,7 +6,9 @@ import pytesseract
 import re
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
 
+import retrieval.stance.sentiment_detection as sentiment_detection
 
 pytesseract.pytesseract.tesseract_cmd = 'tesseract/tesseract.exe'
 
@@ -61,12 +62,12 @@ def deskew(image):
 
 
 def text_from_image(image, plot=False):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = cv2.resize(image, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
     preprocessed_image = erode_dilate(get_grayscale(image))
 
     text = pytesseract.image_to_string(preprocessed_image, lang='eng', config='--psm 11')
     text = clean_text(text)
-    print("Words detected: ", len(text.split(" ")) - 1, text)
 
     return text
 
@@ -105,7 +106,7 @@ def shapes_from_image(image, plot=False):
 
         area = cv2.contourArea(contour)
 
-        if area > ((h_image*w_image)*0.001):
+        if area > ((h_image * w_image) * 0.001):
 
             # here we are ignoring first counter because
             # findcontour function detects whole image as shape
@@ -149,13 +150,16 @@ def shapes_from_image(image, plot=False):
 
 
 def diagramms_from_image(image, plot=False):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = cv2.resize(image, (200, 200), interpolation=cv2.INTER_AREA)
+
     h_image, w_image, _ = image.shape
 
     gray = get_grayscale(image)
     threshold = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
 
     # Dilate with horizontal kernel
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (int(h_image/100), int(w_image/100)))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (int(h_image / 100), int(w_image / 100)))
     dilate = cv2.dilate(threshold, kernel, iterations=2)
 
     # Find contours and remove non-diagram contours
@@ -166,7 +170,7 @@ def diagramms_from_image(image, plot=False):
         for c in cnts:
             x, y, w, h = cv2.boundingRect(c)
             area = cv2.contourArea(c)
-            if w / h > 2 and area > ((h_image*w_image)*0.01):
+            if w / h > 2 and area > ((h_image * w_image) * 0.01):
                 cv2.drawContours(dilate, [c], -1, (0, 0, 0), -1)
 
     # Iterate through diagram contours and form single bounding box
@@ -184,7 +188,7 @@ def diagramms_from_image(image, plot=False):
         w = np.max(boxes[:, 2]) - x
         h = np.max(boxes[:, 3]) - y
 
-        roi_area = (w*h) / (w_image*h_image)
+        roi_area = (w * h) / (w_image * h_image)
 
         # use dichtefunktion in future
         if not roi_area < 0.8:
@@ -214,7 +218,7 @@ def detect_image_type(image, plot=False):
 
     colors, count = np.unique(image.reshape(-1, image.shape[-1]), axis=0, return_counts=True)
     most_used_colors = list(zip(list(count.tolist()), list(colors.tolist())))
-    used_area = sum(x[0] for x in sorted(most_used_colors, key=lambda x: x[0], reverse=True)[:10])/float((w*h))
+    used_area = sum(x[0] for x in sorted(most_used_colors, key=lambda x: x[0], reverse=True)[:10]) / float((w * h))
 
     if used_area < 0.3:
         image_type = "photo"
@@ -222,7 +226,6 @@ def detect_image_type(image, plot=False):
         image_type = "clipart"
 
     return image_type
-
 
 
 def color_mood(image, image_type='clipArt', plot=False):
@@ -244,7 +247,7 @@ def color_mood(image, image_type='clipArt', plot=False):
     mask_bright = cv2.inRange(hsv, (0, 0, 200), (255, 80, 255))
     mask_dark = cv2.inRange(hsv, (0, 0, 0), (255, 255, 100))
 
-    number_pixels = hsv.size/3
+    number_pixels = hsv.size / 3
     percentage_green = (cv2.countNonZero(mask_green) / number_pixels) * 100
     percentage_red = (cv2.countNonZero(mask_red) / number_pixels) * 100
     percentage_bright = (cv2.countNonZero(mask_bright) / number_pixels) * 100
@@ -259,16 +262,90 @@ def color_mood(image, image_type='clipArt', plot=False):
         cv2.waitKey()
         '''
 
-        print("percentage_green: ", percentage_green, "  // (100/distance_to_green) = ", (100/distance_to_green), "  // product = ", (percentage_green * (100/distance_to_green)))
-        print("percentage_red: ", percentage_red, "  // (100/distance_to_red) = ", (100/distance_to_red), "  // product = ", (percentage_red * (100/distance_to_red)))
-        print("percentage_bright: ", percentage_bright, "  // (100/distance_to_white) = ", (100 / distance_to_white), "  // product = ", (percentage_bright * (100/distance_to_white)))
-        print("percentage_dark: ", percentage_dark, "  // (100/distance_to_black) = ", (100 / distance_to_black), "  // product = ", (percentage_dark * (100/distance_to_black)))
+        print("percentage_green: ", percentage_green, "  // (100/distance_to_green) = ", (100 / distance_to_green),
+              "  // product = ", (percentage_green * (100 / distance_to_green)))
+        print("percentage_red: ", percentage_red, "  // (100/distance_to_red) = ", (100 / distance_to_red),
+              "  // product = ", (percentage_red * (100 / distance_to_red)))
+        print("percentage_bright: ", percentage_bright, "  // (100/distance_to_white) = ", (100 / distance_to_white),
+              "  // product = ", (percentage_bright * (100 / distance_to_white)))
+        print("percentage_dark: ", percentage_dark, "  // (100/distance_to_black) = ", (100 / distance_to_black),
+              "  // product = ", (percentage_dark * (100 / distance_to_black)))
 
+    color_mood = {
+        "percentage_green": percentage_green,
+        "percentage_red": percentage_red,
+        "percentage_bright": percentage_bright,
+        "percentage_dark": percentage_dark,
+        "average_color": average
+    }
+
+    # use following code for calculation in runtime
+    '''
     if image_type == 'clipart':
-        color_mood = (percentage_green * (100/distance_to_green)) - (percentage_red * (100/distance_to_red))
+        color_mood = (percentage_green * (100 / distance_to_green)) - (percentage_red * (100 / distance_to_red))
     elif image_type == 'photo':
         hue_factor = 0.2
-        color_mood = ((percentage_green * (100/distance_to_green)) - (percentage_red * (100/distance_to_red))) + \
-                     hue_factor*((percentage_bright * (100/distance_to_white)) - (percentage_dark * (100/distance_to_black)))
+        color_mood = ((percentage_green * (100 / distance_to_green)) - (percentage_red * (100 / distance_to_red))) + \
+                     hue_factor * ((percentage_bright * (100 / distance_to_white)) - (
+                    percentage_dark * (100 / distance_to_black)))
+    '''
 
     return color_mood
+
+
+def text_analysis(image):
+    text = text_from_image(image)
+    text_len = len(text.split(" "))
+    text_sentiment_score = sentiment_detection.sentiment_nltk(text)
+
+    text_analysis = {
+        "text_len": text_len,
+        "text_sentiment_score": text_sentiment_score
+    }
+    return text_analysis
+
+
+def dominant_colors(image):
+    image = cv2.resize(image, (150, 150), interpolation=cv2.INTER_AREA)
+    height, width, _ = np.shape(image)
+
+    # reshape the image to be a simple list of RGB pixels
+    image = image.reshape((height * width, 3))
+
+    # we'll pick the 5 most common colors
+    num_clusters = 5
+    clusters = KMeans(n_clusters=num_clusters)
+    clusters.fit(image)
+
+    # count the dominant colors and put them in "buckets"
+    numLabels = np.arange(0, len(np.unique(clusters.labels_)) + 1)
+    hist, _ = np.histogram(clusters.labels_, bins=numLabels)
+    hist = hist.astype('float32')
+    hist /= hist.sum()
+    histogram = hist
+    # then sort them, most-common first
+    combined = zip(histogram, clusters.cluster_centers_)
+    combined = sorted(combined, key=lambda x: x[0], reverse=True)
+
+    # finally, we'll output a graphic showing the colors in order
+    bars = []
+    hsv_values = []
+    for index, rows in enumerate(combined):
+
+        height, width, color = 100, 100, rows[1]
+        bar = np.zeros((height, width, 3), np.uint8)
+        bar[:] = color
+        red, green, blue = int(color[2]), int(color[1]), int(color[0])
+        hsv_bar = cv2.cvtColor(bar, cv2.COLOR_BGR2HSV)
+        hue, sat, val = hsv_bar[0][0]
+        rgb = (red, green, blue)
+        hsv = (hue, sat, val)
+
+        print(f'Bar {index + 1}')
+        print(f'  RGB values: {rgb}')
+        print(f'  HSV values: {hsv}')
+        hsv_values.append(hsv)
+        bars.append(bar)
+
+    cv2.imshow(f'{num_clusters} Most Common Colors', np.hstack(bars))
+    cv2.waitKey(0)
