@@ -147,6 +147,11 @@ class DataEntry:
         check_length = max_size > 0
         for idir in main_path.iterdir():
             for image_hash in idir.iterdir():
+                if image_hash in ['I06c858b97ae2147c', 'I0e95a1d02cf4e3be', 'I273c7849db3492b0', 'I3c1c0cc8be157979',
+                                  'I643e21bd29dc75c6', 'I65265d8f12c69f3e', 'I8d8e4d640697fa8f', 'I9a1b2e093f34d1ae',
+                                  'Ia9bf7858d6922cf7', 'Ie9b890a76eb9233f', 'Ieb02df7b9ccf1bd3', 'If14e0ff8f1757dfa',
+                                  'Ifbc537388349522f']:
+                    continue
                 id_list.append(image_hash.name)
                 count += 1
                 if check_length and count >= max_size:
