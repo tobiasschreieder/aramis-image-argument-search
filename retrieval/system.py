@@ -34,7 +34,9 @@ class RetrievalSystem:
         query = self.prep.preprocess(text)
 
         topic_scores = self.topic_model.query(query, top_k)
+        # nutze erste k elemente für argument
         argument_scores = self.argument_model.query(query, topic_scores, top_k)
+        # nutze elemete die größer als 0 sind
         pro_scores, con_scores = self.stance_model.query(query, argument_scores, top_k)
 
         return pro_scores, con_scores

@@ -1,13 +1,13 @@
 import logging
 from typing import List, Tuple
 
-from indexing import Index
+from indexing import TermIndex
 
 
 class ArgumentModel:
     log = logging.getLogger('ArgumentModel')
 
-    def __init__(self, index: Index):
+    def __init__(self, index: TermIndex):
         """
         Constructor for model base class,
         :param index: index to get relevance data from

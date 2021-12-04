@@ -99,9 +99,9 @@ class FeatureIndex:
 
         index.dataframe = index.dataframe.astype(dtype={
             'image_id': pd.StringDtype(),
-            'html_sentiment_score': np.int,
+            'html_sentiment_score': np.float,
             'image_text_len': np.int,
-            'image_text_sentiment_score': np.int,
+            'image_text_sentiment_score': np.float,
             'image_percentage_green': np.float,
             'image_percentage_red': np.float,
             'image_percentage_bright': np.float,

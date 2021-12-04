@@ -1,7 +1,6 @@
 data/
 logs/
 .idea/
-venv/
 index/
 config.json
 properties/

@@ -3,13 +3,13 @@ from typing import List, Tuple, Dict
 
 import numpy as np
 
-from indexing import TopicIndex, TopicQueryIndex, Index
+from indexing import TopicTermIndex, TopicQueryTermIndex, TermIndex
 
 
 class TopicModel:
     log = logging.getLogger('TopicModel')
 
-    def __init__(self, index: Index):
+    def __init__(self, index: TermIndex):
         """
         Constructor for model base class,
         :param index: index to get relevance data from
@@ -48,7 +48,7 @@ class TopicModel:
 class DirichletLM(TopicModel):
     log = logging.getLogger('DirichletLM model')
 
-    def __init__(self, index: Index, alpha: int = 1000):
+    def __init__(self, index: TermIndex, alpha: int = 1000):
         """
         Constructor for a DirichletLM model.
 
@@ -101,15 +101,16 @@ class DirichletLM(TopicModel):
 class TopicRankingDirichlet(TopicModel):
     log = logging.getLogger('TopicModel')
 
-    t_indexes: Dict[int, TopicIndex]
+    t_indexes: Dict[int, TopicTermIndex]
     tq_dirichlet: DirichletLM
     alpha: int
 
-    def __init__(self, t_indexes: Dict[int, TopicIndex], tq_index: TopicQueryIndex, alpha: int = 1000):
+    def __init__(self, t_indexes: Dict[int, TopicTermIndex], tq_index: TopicQueryTermIndex, alpha: int = 1000):
         """
         Constructor for a TopicRankingDirichlet model.
 
-        :param index: index to get relevance data from
+        :param t_indexes: dict with topic indexes to get relevance data from
+        :param tq_index: topic query term index to get topic data from
         :param alpha: alpha parameter for Dirichlet smoothing
         """
         super().__init__(None)
@@ -121,7 +122,6 @@ class TopicRankingDirichlet(TopicModel):
         """
         Calculates the relevance score for a document (given by index and doc_id) and query (give ans query term list)
         :param query: preprocessed query in list representation to calculate the relevance for
-        :param doc_id: document to calculate the relevance for
         :return: relevance score
         """
         return self.tq_dirichlet.query(query)
