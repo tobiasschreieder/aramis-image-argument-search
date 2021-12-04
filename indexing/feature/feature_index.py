@@ -4,6 +4,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
 
 from . import html_preprocessing, sentiment_detection, image_detection
 from ..data_entry import DataEntry
@@ -15,12 +16,15 @@ class FeatureIndex:
     dataframe: pd.DataFrame
 
     @classmethod
-    def create_index(cls, max_images: int = -1) -> 'FeatureIndex':
+    def create_index(cls, max_images: int = -1, n_jobs: int = -2) -> 'FeatureIndex':
         """
         Create a feature index object from the stored data.
         If max_images is < 1 use all images found else stop after max_images.
 
         :param max_images: Number to determine the maximal number of images to index
+        :param n_jobs: the number of processes to use, if -1 use all,
+            if < -1 use max_processes+1+n_jobs, example n_jobs = -2 -> use all processors except 1.
+            see joblib.parallel.Parallel
         :return: An index object
         """
 
@@ -39,12 +43,9 @@ class FeatureIndex:
         - image_type
         - image_roi_area
         '''
-
-        index_list = []
-
         index = cls()
 
-        for image_id in image_ids:
+        def calc_doc_features(image_id) -> list:
             index.log.debug("indexing document id = %s", image_id)
 
             text = html_preprocessing.run_html_preprocessing(image_id)
@@ -80,22 +81,25 @@ class FeatureIndex:
                 image_type.value,
                 roi_area
             ]
-            index_list.append(id_list)
+            return id_list
 
-        index.dataframe = pd.DataFrame(index_list, columns=['image_id',
-                                                            'html_sentiment_score',
-                                                            'image_text_len',
-                                                            'image_text_sentiment_score',
-                                                            'image_percentage_green',
-                                                            'image_percentage_red',
-                                                            'image_percentage_bright',
-                                                            'image_percentage_dark',
-                                                            'image_average_color_r',
-                                                            'image_average_color_g',
-                                                            'image_average_color_b',
-                                                            'image_type',
-                                                            'image_roi_area',
-                                                            ])
+        with Parallel(n_jobs=n_jobs, verbose=2) as parallel:
+            data = parallel(delayed(calc_doc_features)(image_id) for image_id in image_ids)
+
+        index.dataframe = pd.DataFrame(data, columns=['image_id',
+                                                      'html_sentiment_score',
+                                                      'image_text_len',
+                                                      'image_text_sentiment_score',
+                                                      'image_percentage_green',
+                                                      'image_percentage_red',
+                                                      'image_percentage_bright',
+                                                      'image_percentage_dark',
+                                                      'image_average_color_r',
+                                                      'image_average_color_g',
+                                                      'image_average_color_b',
+                                                      'image_type',
+                                                      'image_roi_area',
+                                                      ])
 
         index.dataframe = index.dataframe.astype(dtype={
             'image_id': pd.StringDtype(),
@@ -163,6 +167,9 @@ class FeatureIndex:
         index.dataframe = pd.read_hdf(file, 'dataframe')
         index.log.debug('Done')
         return index
+
+    def __len__(self) -> int:
+        return len(self.dataframe)
 
     def get_html_sentiment_score(self, image_id: str) -> float:
         """

@@ -15,9 +15,12 @@ class Config:
     def get(cls) -> 'Config':
         cfg = cls()
         if Config._save_path.exists():
-            with open(Config._save_path, 'r') as f:
-                cfg_json = json.load(f)
-            cfg.data_location = Path(cfg_json.get('data_location', cfg.data_location))
+            try:
+                with open(Config._save_path, 'r') as f:
+                    cfg_json = json.load(f)
+                cfg.data_location = Path(cfg_json.get('data_location', cfg.data_location))
+            except json.JSONDecodeError:
+                pass
         log.debug('Config loaded')
 
         cfg.save()

@@ -7,10 +7,20 @@ from config import Config
 
 cfg = Config.get()
 
+faulty_ids = []
+
+# Error with cv2
+faulty_ids += ['I37377d0aa6480791', 'I8d5ddcc5ee8c7cd2', 'I96a19b1859d5898b']
+
+# removed from dataset
+faulty_ids += ['I06c858b97ae2147c', 'I0e95a1d02cf4e3be', 'I273c7849db3492b0', 'I3c1c0cc8be157979',
+               'I643e21bd29dc75c6', 'I65265d8f12c69f3e', 'I8d8e4d640697fa8f', 'I9a1b2e093f34d1ae',
+               'Ia9bf7858d6922cf7', 'Ie9b890a76eb9233f', 'Ieb02df7b9ccf1bd3', 'If14e0ff8f1757dfa',
+               'Ifbc537388349522f']
+
 
 @dataclasses.dataclass
 class Ranking:
-
     query: str
     topic: int
     rank: int
@@ -36,7 +46,6 @@ class Ranking:
 
 @dataclasses.dataclass
 class WebPage:
-
     url_hash: str
     url: str
 
@@ -72,13 +81,13 @@ class WebPage:
         snp_image_xpath = path_main.joinpath(path_from_image).joinpath('snapshot/image-xpath.txt')
         snp_nodes = cfg.data_location.joinpath(Path('touche22-images-nodes/').joinpath(path_from_image)
                                                .joinpath('snapshot/nodes.jsonl'))
-        snp_screenshot = cfg.data_location.joinpath(Path('touche22-images-screenshots/').joinpath(path_from_image))\
+        snp_screenshot = cfg.data_location.joinpath(Path('touche22-images-screenshots/').joinpath(path_from_image)) \
             .joinpath('snapshot/screenshot.png')
         snp_text = path_main.joinpath(path_from_image).joinpath('snapshot/text.txt')
-        snp_archive = cfg.data_location.joinpath(Path('touche22-images-archives/').joinpath(path_from_image))\
+        snp_archive = cfg.data_location.joinpath(Path('touche22-images-archives/').joinpath(path_from_image)) \
             .joinpath('snapshot/web-archive.warc.gz')
 
-        with cfg.data_location.joinpath(Path('touche22-images-rankings/')).joinpath(path_from_image)\
+        with cfg.data_location.joinpath(Path('touche22-images-rankings/')).joinpath(path_from_image) \
                 .joinpath('rankings.jsonl').open() as file:
             rankings = [Ranking.load(line) for line in file]
 
@@ -93,7 +102,6 @@ class WebPage:
 
 @dataclasses.dataclass
 class DataEntry:
-
     url_hash: str
     url: str
     png_path: Path
@@ -113,12 +121,12 @@ class DataEntry:
         if not cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path).exists():
             raise ValueError('{} is not a valid image hash'.format(image_id))
 
-        with cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path)\
+        with cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path) \
                 .joinpath('image-url.txt').open() as file:
             url = file.readline()
 
         pages = []
-        for page in cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path)\
+        for page in cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path) \
                 .joinpath('pages').iterdir():
             pages.append(WebPage.load(page, image_id))
 
@@ -147,10 +155,7 @@ class DataEntry:
         check_length = max_size > 0
         for idir in main_path.iterdir():
             for image_hash in idir.iterdir():
-                if image_hash in ['I06c858b97ae2147c', 'I0e95a1d02cf4e3be', 'I273c7849db3492b0', 'I3c1c0cc8be157979',
-                                  'I643e21bd29dc75c6', 'I65265d8f12c69f3e', 'I8d8e4d640697fa8f', 'I9a1b2e093f34d1ae',
-                                  'Ia9bf7858d6922cf7', 'Ie9b890a76eb9233f', 'Ieb02df7b9ccf1bd3', 'If14e0ff8f1757dfa',
-                                  'Ifbc537388349522f']:
+                if image_hash in faulty_ids:
                     continue
                 id_list.append(image_hash.name)
                 count += 1

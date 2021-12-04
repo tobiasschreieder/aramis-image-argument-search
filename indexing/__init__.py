@@ -1,5 +1,6 @@
 from .data_entry import DataEntry, WebPage
 from .feature.feature_index import FeatureIndex
+from .feature.image_detection import ImageType
 from .preprocessing import Preprocessor, SpacyPreprocessor, get_preprocessor
 from .term.standard_index import StandardTermIndex
 from .term.term_index import TermIndex

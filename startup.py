@@ -4,7 +4,7 @@ import os
 from logging.handlers import TimedRotatingFileHandler
 
 from config import Config
-from indexing import StandardTermIndex, FeatureIndex
+from indexing import StandardTermIndex
 
 
 def init_logging():
@@ -66,9 +66,9 @@ def main():
 
     start_server(system)
     '''
-    findex = FeatureIndex.create_index(10)
-    findex.save()
-    findex2 = FeatureIndex.load(10)
+
+    # findex = FeatureIndex.create_index()
+    # findex.save()
     print()
 
 
