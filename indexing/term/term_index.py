@@ -7,13 +7,13 @@ from typing import AnyStr, Hashable, List
 import numpy as np
 from joblib import Parallel, delayed
 
+from indexing import DataEntry
+from indexing.preprocessing import Preprocessor, SpacyPreprocessor, get_preprocessor
 from utils import MemmappStore
-from . import DataEntry
-from .preprocessing import Preprocessor, SpacyPreprocessor, get_preprocessor
 
 
-class Index(ABC):
-    log = logging.getLogger('index')
+class TermIndex(ABC):
+    log = logging.getLogger('term_index')
 
     document_ids: np.ndarray
     index_terms: np.ndarray
@@ -24,9 +24,9 @@ class Index(ABC):
 
     @classmethod
     @abstractmethod
-    def create_index(cls, prep: Preprocessor = SpacyPreprocessor(), **kwargs) -> 'Index':
+    def create_index(cls, prep: Preprocessor = SpacyPreprocessor(), **kwargs) -> 'TermIndex':
         """
-        Create in index object from the stored data.
+        Create a term index object from the stored data.
 
         :param prep: Preprocessor to use, default SpacyPreprocessor
         :return: An index object
@@ -151,7 +151,7 @@ class Index(ABC):
 
     @classmethod
     @abstractmethod
-    def load(cls, **kwargs) -> 'Index':
+    def load(cls, **kwargs) -> 'TermIndex':
         """
         Loads an index from a file.
 
@@ -160,7 +160,7 @@ class Index(ABC):
         pass
 
     @classmethod
-    def _load(cls, file: Path, prep_name: str = SpacyPreprocessor.get_name(), **prep_kwargs) -> 'Index':
+    def _load(cls, file: Path, prep_name: str = SpacyPreprocessor.get_name(), **prep_kwargs) -> 'TermIndex':
         """
         Loads an index from a file.
 

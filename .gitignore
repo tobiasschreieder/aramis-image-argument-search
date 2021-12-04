@@ -4,6 +4,7 @@ logs/
 venv/
 index/
 config.json
+properties/
 
 # standart gitignore template for python
 

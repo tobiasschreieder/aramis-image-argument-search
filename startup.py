@@ -4,12 +4,7 @@ import os
 from logging.handlers import TimedRotatingFileHandler
 
 from config import Config
-from frontend import start_server
-from indexing import StandardIndex, TopicQueryIndex, get_all_topic_indexes, create_index_tobiLorenz
-from retrieval import RetrievalSystem
-from retrieval.argument import ArgumentModel
-from retrieval.stance import StanceModel
-from retrieval.topic import TopicRankingDirichlet
+from indexing import StandardTermIndex, FeatureIndex
 
 
 def init_logging():
@@ -45,7 +40,7 @@ def init_logging():
 def index_creation(max_images: int) -> None:
     log.info('Start index creation')
     then = datetime.datetime.now()
-    StandardIndex.create_index(max_images).save()
+    StandardTermIndex.create_index(max_images).save()
     dur = datetime.datetime.now() - then
     log.info('Time for index creation %s', dur)
 
@@ -71,9 +66,13 @@ def main():
 
     start_server(system)
     '''
-    index = create_index_tobiLorenz.load_index()
-    print("argument: ", create_index_tobiLorenz.calculate_argument(index, 'I000330ba4ea0ad13'))
-    print("stance: ", create_index_tobiLorenz.calculate_stance(index, 'I000330ba4ea0ad13'))
+    findex = FeatureIndex.create_index(10)
+    findex.save()
+    findex2 = FeatureIndex.load(10)
+    print()
+    # index = create_index_tobiLorenz.load_index()
+    # print("argument: ", create_index_tobiLorenz.calculate_argument(index, 'I000330ba4ea0ad13'))
+    # print("stance: ", create_index_tobiLorenz.calculate_stance(index, 'I000330ba4ea0ad13'))
 
 
 if __name__ == '__main__':

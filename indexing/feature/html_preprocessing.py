@@ -7,6 +7,7 @@ Created on Sun Nov 21 12:44:02 2021
 
 from bs4 import BeautifulSoup
 from lxml import etree
+
 from indexing import DataEntry
 
 # texts bellow images shorter than min_len_texts will be ignored

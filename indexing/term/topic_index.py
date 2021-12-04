@@ -5,16 +5,16 @@ from typing import Dict
 import numpy as np
 from joblib import Parallel, delayed
 
-from .data_entry import DataEntry
-from .index import Index
-from .preprocessing import Preprocessor, SpacyPreprocessor
+from indexing.data_entry import DataEntry
+from indexing.preprocessing import Preprocessor, SpacyPreprocessor
+from .term_index import TermIndex
 
 
-class TopicQueryIndex(Index):
+class TopicQueryTermIndex(TermIndex):
     log = logging.getLogger('TopicQueryIndex')
 
     @classmethod
-    def create_index(cls, prep: Preprocessor = SpacyPreprocessor(), **kwargs) -> 'Index':
+    def create_index(cls, prep: Preprocessor = SpacyPreprocessor(), **kwargs) -> 'TermIndex':
         """
         Create in index object from the stored data.
         If max_images is < 1 use all images found else stop after max_images.
@@ -69,7 +69,7 @@ class TopicQueryIndex(Index):
         self._save(Path('index/topic_query_index_{}.npz'.format(self.prep.get_name())))
 
     @classmethod
-    def load(cls, prep_name: str = SpacyPreprocessor.get_name(), **prep_kwargs) -> 'Index':
+    def load(cls, prep_name: str = SpacyPreprocessor.get_name(), **prep_kwargs) -> 'TermIndex':
         """
         Loads an index from a file.
 
@@ -86,13 +86,13 @@ class TopicQueryIndex(Index):
         return cls._load(file, prep_name, **prep_kwargs)
 
 
-class TopicIndex(Index):
+class TopicTermIndex(TermIndex):
     log = logging.getLogger('TopicIndex')
 
     topic_id: int
 
     @classmethod
-    def create_index(cls, topic_id: int = 1, prep: Preprocessor = SpacyPreprocessor(), **kwargs) -> 'Index':
+    def create_index(cls, topic_id: int = 1, prep: Preprocessor = SpacyPreprocessor(), **kwargs) -> 'TermIndex':
         """
         Create in index object from the stored data.
 
@@ -142,7 +142,7 @@ class TopicIndex(Index):
         self._save(Path('index/topic_index/t_index_{}_{}.npz'.format(self.topic_id, self.prep.get_name())))
 
     @classmethod
-    def load(cls, topic_id: int = 1, prep_name: str = SpacyPreprocessor.get_name(), **prep_kwargs) -> 'Index':
+    def load(cls, topic_id: int = 1, prep_name: str = SpacyPreprocessor.get_name(), **prep_kwargs) -> 'TermIndex':
         """
         Loads an index from a file.
 
@@ -162,12 +162,12 @@ class TopicIndex(Index):
         return loaded
 
 
-def get_all_topic_indexes() -> Dict[int, TopicIndex]:
+def get_all_topic_indexes() -> Dict[int, TopicTermIndex]:
     indexes = {}
     for i in range(1, 51):
         try:
-            indexes[i] = TopicIndex.load(i)
+            indexes[i] = TopicTermIndex.load(i)
         except ValueError:
-            indexes[i] = TopicIndex.create_index(i)
+            indexes[i] = TopicTermIndex.create_index(i)
             indexes[i].save()
     return indexes

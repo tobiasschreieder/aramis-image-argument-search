@@ -7,7 +7,7 @@ Created on Thu Nov 11 15:17:43 2021
 
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-#nltk.download('vader_lexicon')
+# nltk.download('vader_lexicon')
 
 sid = SentimentIntensityAnalyzer()
 
@@ -16,5 +16,3 @@ sid = SentimentIntensityAnalyzer()
 def sentiment_nltk(sentence):
     sentiments = sid.polarity_scores(sentence)
     return sentiments['compound']
-
-

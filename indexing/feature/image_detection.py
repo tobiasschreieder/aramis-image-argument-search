@@ -1,20 +1,21 @@
 import math
+import re
+from enum import Enum
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pytesseract
 from cv2 import cv2
 from deskew import determine_skew
 from skimage.transform import rotate
-import pytesseract
-import re
-import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 
-import indexing.sentiment_detection as sentiment_detection
+import indexing.feature.sentiment_detection as sentiment_detection
 
 pytesseract.pytesseract.tesseract_cmd = 'properties/tesseract/tesseract.exe'
 
 
 def read_image(path):
-    print(path)
     img = cv2.imread(str(path))
     return img
 
@@ -191,7 +192,12 @@ def diagramms_from_image(image, plot=False):
     return roi_area
 
 
-def detect_image_type(image, plot=False):
+class ImageType(Enum):
+    PHOTO = 0
+    CLIPART = 1
+
+
+def detect_image_type(image, plot=False) -> ImageType:
     w, h, _ = image.shape
 
     if plot:
@@ -206,9 +212,9 @@ def detect_image_type(image, plot=False):
     used_area = sum(x[0] for x in sorted(most_used_colors, key=lambda x: x[0], reverse=True)[:10]) / float((w * h))
 
     if used_area < 0.3:
-        image_type = "photo"
+        image_type = ImageType.PHOTO
     else:
-        image_type = "clipart"
+        image_type = ImageType.CLIPART
 
     return image_type
 

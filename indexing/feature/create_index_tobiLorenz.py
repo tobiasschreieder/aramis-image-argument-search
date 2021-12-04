@@ -1,8 +1,10 @@
 import math
 
 import cv2
-from indexing import DataEntry, html_preprocessing, image_detection, sentiment_detection
 import pandas as pd
+
+from indexing import DataEntry
+from indexing.feature import image_detection, html_preprocessing, sentiment_detection
 
 
 # HEY JAN! Das ist die Methode, die irgendwo hin muss und die du vervollständigen musst :)
@@ -137,9 +139,9 @@ def calculate_stance(index, id):
         (image_average_color[0] - 255) ** 2 + (image_average_color[1] - 255) ** 2 + (image_average_color[2] - 255) ** 2)
 
     # between 0 and 1 (above 30 ~1)
-    if image_type == 'clipart':
+    if image_type == image_detection.ImageType.CLIPART:
         color_mood = (percentage_green * (100 / distance_to_green)) - (percentage_red * (100 / distance_to_red))
-    elif image_type == 'photo':
+    elif image_type == image_detection.ImageType.PHOTO:
         hue_factor = 0.2
         color_mood = ((percentage_green * (100 / distance_to_green)) - (percentage_red * (100 / distance_to_red))) + \
                      hue_factor * ((percentage_bright * (100 / distance_to_white)) - (

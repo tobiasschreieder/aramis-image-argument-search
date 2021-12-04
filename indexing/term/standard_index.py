@@ -3,16 +3,16 @@ from pathlib import Path
 
 import numpy as np
 
-from .data_entry import DataEntry
-from .index import Index
-from .preprocessing import Preprocessor, SpacyPreprocessor
+from indexing.data_entry import DataEntry
+from indexing.preprocessing import Preprocessor, SpacyPreprocessor
+from .term_index import TermIndex
 
 
-class StandardIndex(Index):
+class StandardTermIndex(TermIndex):
     log = logging.getLogger('StandardIndex')
 
     @classmethod
-    def create_index(cls, max_images: int = -1, prep: Preprocessor = SpacyPreprocessor()) -> 'Index':
+    def create_index(cls, max_images: int = -1, prep: Preprocessor = SpacyPreprocessor()) -> 'TermIndex':
         """
         Create in index object from the stored data.
         If max_images is < 1 use all images found else stop after max_images.
@@ -48,7 +48,7 @@ class StandardIndex(Index):
         super()._save(Path('index/index_{}_{}.npz'.format(self.prep.get_name(), self.inverted.shape[1])))
 
     @classmethod
-    def load(cls, indexed_images: int, prep_name: str = SpacyPreprocessor.get_name(), **prep_kwargs) -> 'Index':
+    def load(cls, indexed_images: int, prep_name: str = SpacyPreprocessor.get_name(), **prep_kwargs) -> 'TermIndex':
         """
         Loads an index from a file.
 
