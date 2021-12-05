@@ -2,6 +2,7 @@ import logging
 from typing import List, Tuple, Dict
 
 import numpy as np
+import pandas as pd
 
 from indexing import TopicTermIndex, TopicQueryTermIndex, TermIndex
 
@@ -25,24 +26,26 @@ class TopicModel:
         """
         return 1.0
 
-    def query(self, query: List[str], top_k: int = -1) -> List[Tuple[str, float]]:
+    def query(self, query: List[str], top_k: int = -1) -> pd.DataFrame:
         """
         Queries a given query against the index using a model scoring function
 
         :param query: preprocessed query in list representation to calculate the relevance for
         :param top_k: number of top results to return
-        :return: list of (doc_id, score) tuples descending by score for all documents in the vector space
+        :return: DataFrame with a column for topic score.
+            Frame is sorted and reduced to top_k rows
         """
         self.log.debug('start topic process for query %s', query)
-        scores = {}
         if top_k < 0:
             top_k = len(self.index.get_document_ids())
         else:
             top_k = min(len(self.index.get_document_ids()), top_k)
-        for doc_id in self.index.get_document_ids():
-            scores[doc_id] = self._score(query, doc_id)
-        self.log.debug('scoring done, start sorting')
-        return sorted(scores.items(), key=lambda item: item[1], reverse=True)[:top_k]
+
+        score = pd.DataFrame(index=self.index.get_document_ids(), columns=['topic'], dtype=float)
+        for doc_id in score.index:
+            score.loc[doc_id, 'topic'] = self._score(query, doc_id)
+
+        return score.nlargest(top_k, 'topic', keep='all')
 
 
 class DirichletLM(TopicModel):
@@ -118,23 +121,24 @@ class TopicRankingDirichlet(TopicModel):
         self.alpha = alpha
         self.tq_dirichlet = DirichletLM(tq_index, alpha)
 
-    def _score_topic(self, query: List[str]) -> List[Tuple[int, float]]:
+    def _score_topic(self, query: List[str]) -> int:
         """
         Calculates the relevance score for a document (given by index and doc_id) and query (give ans query term list)
         :param query: preprocessed query in list representation to calculate the relevance for
         :return: relevance score
         """
-        return self.tq_dirichlet.query(query)
+        return self.tq_dirichlet.query(query, top_k=1).index[0]
 
-    def query(self, query: List[str], top_k: int = -1) -> List[Tuple[str, float]]:
+    def query(self, query: List[str], top_k: int = -1) -> pd.DataFrame:
         """
         Queries a given query against the index using a model scoring function
 
         :param query: preprocessed query in list representation to calculate the relevance for
         :param top_k: number of top results to return
-        :return: list of (doc_id, score) tuples descending by score for all documents in the vector space
+        :return: DataFrame with a column for topic score.
+            Frame is sorted and reduced to top_k rows
         """
         self.log.debug('start topic process for query %s', query)
-        topic = self._score_topic(query)[0][0]
+        topic = self._score_topic(query)
 
         return DirichletLM(self.t_indexes[topic], self.alpha).query(query, top_k)

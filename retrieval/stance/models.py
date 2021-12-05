@@ -2,6 +2,8 @@ import logging
 import math
 from typing import List, Tuple
 
+import pandas as pd
+
 from indexing import FeatureIndex, ImageType
 
 
@@ -24,35 +26,33 @@ class StanceModel:
         """
         return 1.0
 
-    def query(self, query: List[str], argument_relevant: List[Tuple[str, float]],
-              top_k: int = -1) -> Tuple[List[Tuple[str, float]], List[Tuple[str, float]]]:
+    def query(self, query: List[str], argument_relevant: pd.DataFrame,
+              top_k: int = -1) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Queries a given preprocessed query against the index using a model scoring function
 
-        :param argument_relevant: List of scored document ids
+        :param argument_relevant: DataFrame with data for topic and argument score
         :param query: preprocessed query in list representation to calculate the relevance for
         :param top_k: number of top results to return
-        :return: (list of pro (doc_id, score), list of con (doc_id, score))
-         tuples descending by score for all documents in the vector space
+        :return: Tuple of given DataFrame with a additional column for pro/con stance score.
+            Frames are sorted and reduced to top_k rows
         """
         self.log.debug('start stance process for query %s', query)
-        pro_scores = {}
-        con_scores = {}
+        pro_scores = argument_relevant.copy()
+        con_scores = argument_relevant.copy()
         if top_k < 0:
             top_k = len(self.index)
         else:
             top_k = min(len(self.index), top_k)
-        for doc_id, arg_score in argument_relevant:
+
+        for doc_id in argument_relevant.index:
             score = self.score(query, doc_id)
             if score > 0:
-                pro_scores[doc_id] = score
+                pro_scores.loc[doc_id, 'stance'] = score
             elif score < 0:
-                con_scores[doc_id] = score
+                con_scores.loc[doc_id, 'stance'] = score
 
-        self.log.debug('scoring done, start sorting')
-        return \
-            sorted(pro_scores.items(), key=lambda item: item[1], reverse=True)[:top_k], \
-            sorted(con_scores.items(), key=lambda item: item[1], reverse=False)[:top_k]
+        return pro_scores.nlargest(top_k, 'stance', keep='all'), con_scores.nlargest(top_k, 'stance', keep='all')
 
 
 class StandardStanceModel(StanceModel):
