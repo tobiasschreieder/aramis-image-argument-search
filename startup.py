@@ -3,8 +3,12 @@ import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
 
+import cv2
+
 from config import Config
-from indexing import StandardTermIndex
+from frontend import start_server
+from indexing import StandardTermIndex, FeatureIndex, TopicQueryTermIndex, TopicTermIndex, get_all_topic_indexes, DataEntry
+from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel
 
 
 def init_logging():
@@ -51,25 +55,20 @@ def main():
     :return:
     """
 
-    '''
     log.info('do main stuff')
 
     # tq_index = TopicQueryIndex.create_index()
     # tq_index.save()
-    tq_index = TopicQueryIndex.load()
+    tq_index = TopicQueryTermIndex.load()
     topic_indexes = get_all_topic_indexes()
+    findex = FeatureIndex.load(23158)
 
     system = RetrievalSystem(tq_index.prep,
                              topic_model=TopicRankingDirichlet(t_indexes=topic_indexes, tq_index=tq_index),
-                             argument_model=ArgumentModel(tq_index),
-                             stance_model=StanceModel(tq_index))
+                             argument_model=StandardArgumentModel(findex),
+                             stance_model=StandardStanceModel(findex))
 
     start_server(system)
-    '''
-
-    # findex = FeatureIndex.create_index()
-    # findex.save()
-    print()
 
 
 if __name__ == '__main__':

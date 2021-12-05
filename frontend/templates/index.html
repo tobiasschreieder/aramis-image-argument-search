@@ -58,9 +58,10 @@
                                                         <li><hr class="dropdown-divider"></li>
                                                     {% endif %}
                                                     <li><h6 class="dropdown-header">Page {{ loop.index }}</h6></li>
-                                                    <li><a class="dropdown-item" href="{{ page.url }}">Page</a></li>
-                                                    <li><a class="dropdown-item" href="data/dom/{{ pro_image.url_hash }}/{{ page.url_hash }}}">Page Snapshot</a></li>
-                                                    <li><a class="dropdown-item" href="data/screenshot/{{ pro_image.url_hash }}/{{ page.url_hash }}">Page Screenshot</a></li>
+                                                    <li><a class="dropdown-item" target="_blank" rel="noopener noreferrer" href="data/image/{{ pro_image.url_hash }}">Image</a></li>
+                                                    <li><a class="dropdown-item" target="_blank" rel="noopener noreferrer" href="{{ page.url }}">Page</a></li>
+                                                    <li><a class="dropdown-item" target="_blank" rel="noopener noreferrer" href="data/dom/{{ pro_image.url_hash }}/{{ page.url_hash }}">Page Snapshot</a></li>
+                                                    <li><a class="dropdown-item" target="_blank" rel="noopener noreferrer" href="data/screenshot/{{ pro_image.url_hash }}/{{ page.url_hash }}">Page Screenshot</a></li>
                                                 {% endfor %}
                                             </ul>
                                         </div>
@@ -88,9 +89,10 @@
                                                         <li><hr class="dropdown-divider"></li>
                                                     {% endif %}
                                                     <li><h6 class="dropdown-header">Page {{ loop.index }}</h6></li>
-                                                    <li><a class="dropdown-item" href="{{ page.url }}">Page</a></li>
-                                                    <li><a class="dropdown-item" href="data/dom/{{ con_image.url_hash }}/{{ page.url_hash }}">Page Snapshot</a></li>
-                                                    <li><a class="dropdown-item" href="data/screenshot/{{ con_image.url_hash }}/{{ page.url_hash }}">Page Screenshot</a></li>
+                                                    <li><a class="dropdown-item" target="_blank" rel="noopener noreferrer" href="data/image/{{ con_image.url_hash }}">Image</a></li>
+                                                    <li><a class="dropdown-item" target="_blank" rel="noopener noreferrer" href="{{ page.url }}">Page</a></li>
+                                                    <li><a class="dropdown-item" target="_blank" rel="noopener noreferrer" href="data/dom/{{ con_image.url_hash }}/{{ page.url_hash }}">Page Snapshot</a></li>
+                                                    <li><a class="dropdown-item" target="_blank" rel="noopener noreferrer" href="data/screenshot/{{ con_image.url_hash }}/{{ page.url_hash }}">Page Screenshot</a></li>
                                                 {% endfor %}
                                             </ul>
                                         </div>

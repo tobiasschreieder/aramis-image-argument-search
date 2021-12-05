@@ -155,7 +155,7 @@ class DataEntry:
         check_length = max_size > 0
         for idir in main_path.iterdir():
             for image_hash in idir.iterdir():
-                if image_hash in faulty_ids:
+                if image_hash.name in faulty_ids:
                     continue
                 id_list.append(image_hash.name)
                 count += 1

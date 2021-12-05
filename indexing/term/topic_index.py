@@ -104,6 +104,7 @@ class TopicTermIndex(TermIndex):
         index = cls()
         index.prep = prep
         index.topic_id = topic_id
+        index.log = logging.getLogger('TopicIndex {}'.format(topic_id))
 
         ids = DataEntry.get_image_ids()
         topic_queries = {}
@@ -159,6 +160,7 @@ class TopicTermIndex(TermIndex):
 
         loaded = cls._load(file, prep_name, **prep_kwargs)
         loaded.topic_id = topic_id
+        loaded.log = logging.getLogger('TopicIndex {}'.format(topic_id))
         return loaded
 
 
@@ -168,6 +170,7 @@ def get_all_topic_indexes() -> Dict[int, TopicTermIndex]:
         try:
             indexes[i] = TopicTermIndex.load(i)
         except ValueError:
+            # 7h
             indexes[i] = TopicTermIndex.create_index(i)
             indexes[i].save()
     return indexes

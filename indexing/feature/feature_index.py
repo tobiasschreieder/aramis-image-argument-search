@@ -27,7 +27,7 @@ class FeatureIndex:
             see joblib.parallel.Parallel
         :return: An index object
         """
-
+        # 132.1 min
         image_ids = DataEntry.get_image_ids(max_images)
 
         '''

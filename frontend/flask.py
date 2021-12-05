@@ -1,15 +1,16 @@
 import datetime
+import json
 import logging
 import os
 from pathlib import Path
 
-from flask import Flask, render_template, request, send_file, abort
+from flask import Flask, render_template, request, send_file, abort, jsonify
 
 from indexing import DataEntry
 from retrieval import RetrievalSystem
 
 log = logging.getLogger('frontend.flask')
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='', static_folder='static')
 
 retrieval_system: RetrievalSystem = None
 image_ids = DataEntry.get_image_ids()
@@ -34,8 +35,6 @@ def index():
                     top_k = int(request.form['topK'])
                 except ValueError:
                     top_k = 20
-                # pro_result = retrieval_system.query(request.form['query'] + ' good', top_k=top_k)[0]
-                # con_result = retrieval_system.query(request.form['query'] + ' anti', top_k=top_k)[1]
                 pro_result, con_result = retrieval_system.query(request.form['query'], top_k=top_k)
                 now = datetime.datetime.now()
                 pro_images = [DataEntry.load(iid[0]) for iid in pro_result]
