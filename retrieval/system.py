@@ -13,7 +13,7 @@ class RetrievalSystem:
 
     def __init__(self, prep: Preprocessor, topic_model: TopicModel,
                  argument_model: ArgumentModel, stance_model: StanceModel,
-                 topic_weight: float = 0.15, argument_weight: float = 0.35):
+                 topic_weight: float = 0.15, argument_weight: float = 0.35, prefetch_top_k: float = 2):
         """
         Constructor
         :param topic_model: topic model to calculate topic scores with
@@ -25,6 +25,7 @@ class RetrievalSystem:
         self.topic_weight = topic_weight
         self.arg_weight = argument_weight
         self.stance_weight = 1 - topic_weight - argument_weight
+        self.prefetch_top_k = prefetch_top_k
 
     def query(self, text: str, top_k: int = -1) -> Tuple[List[Tuple[str, float]], List[Tuple[str, float]]]:
         """
@@ -41,6 +42,12 @@ class RetrievalSystem:
         argument_scores = self.argument_model.query(query, topic_scores)
         pro_scores, con_scores = self.stance_model.query(query, argument_scores)
 
+        if top_k < 0:
+            top_k = len(topic_scores)
+
+        pro_scores = pro_scores.nlargest(int(self.prefetch_top_k*top_k), 'topic', keep='all')
+        con_scores = con_scores.nlargest(int(self.prefetch_top_k*top_k), 'topic', keep='all')
+
         pro = (pro_scores - pro_scores.min()) / (pro_scores.max() - pro_scores.min())
         con = (con_scores - con_scores.min()) / (con_scores.max() - con_scores.min())
         con['stance'] = 1 - con['stance']
@@ -48,7 +55,5 @@ class RetrievalSystem:
         ps = self.topic_weight * pro['topic'] + self.arg_weight * pro['argument'] + self.stance_weight * pro['stance']
         cs = self.topic_weight * con['topic'] + self.arg_weight * con['argument'] + self.stance_weight * con['stance']
 
-        if top_k < 0:
-            top_k = max(len(ps), len(cs))
-
+        # noinspection PyCompatibility
         return [e for e in ps.nlargest(top_k).iteritems()], [e for e in cs.nlargest(top_k).iteritems()]
