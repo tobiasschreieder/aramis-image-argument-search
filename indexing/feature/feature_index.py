@@ -127,7 +127,7 @@ class FeatureIndex:
 
         :return: None
         """
-        return self._save(Path('index/feature_index_{}.h5'.format(len(self.dataframe))))
+        return self._save(Path('index/feature_index_{}.pkl'.format(len(self.dataframe))))
 
     def _save(self, file: Path) -> None:
         """
@@ -137,7 +137,7 @@ class FeatureIndex:
         """
         self.log.debug('save index to file')
         file.parent.mkdir(exist_ok=True, parents=True)
-        self.dataframe.to_hdf(file, key='dataframe', mode='w')
+        self.dataframe.to_pickle(file)
         self.log.debug('Done')
 
     @classmethod
@@ -148,7 +148,7 @@ class FeatureIndex:
         :indexed_images: number of indexed images in saved index
         :return: Index object loaded from file
         """
-        return cls._load(Path('index/feature_index_{}.h5'.format(indexed_images)))
+        return cls._load(Path('index/feature_index_{}.pkl'.format(indexed_images)))
 
     @classmethod
     def _load(cls, file: Path) -> 'FeatureIndex':
@@ -164,7 +164,7 @@ class FeatureIndex:
 
         index = cls()
         index.log.debug('Load index from file %s', file)
-        index.dataframe = pd.read_hdf(file, 'dataframe')
+        index.dataframe = pd.read_pickle(file)
         index.log.debug('Done')
         return index
 
