@@ -3,12 +3,12 @@ import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
 
-import cv2
-
 from config import Config
 from frontend import start_server
-from indexing import StandardTermIndex, FeatureIndex, TopicQueryTermIndex, TopicTermIndex, get_all_topic_indexes, DataEntry
+from indexing import StandardTermIndex, FeatureIndex, TopicQueryTermIndex, TopicTermIndex, get_all_topic_indexes, \
+    DataEntry, Topic
 from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel
+from evaluation import save_eval, Argumentative, Stance, get_eval, has_eval
 
 
 def init_logging():
@@ -49,16 +49,7 @@ def index_creation(max_images: int) -> None:
     log.info('Time for index creation %s', dur)
 
 
-def main():
-    """
-    normal program run
-    :return:
-    """
-
-    log.info('do main stuff')
-
-    # tq_index = TopicQueryIndex.create_index()
-    # tq_index.save()
+def start_flask() -> None:
     tq_index = TopicQueryTermIndex.load()
     topic_indexes = get_all_topic_indexes()
     findex = FeatureIndex.load(23158)
@@ -69,6 +60,18 @@ def main():
                              stance_model=StandardStanceModel(findex))
 
     start_server(system)
+
+
+def main():
+    """
+    normal program run
+    :return:
+    """
+
+    log.info('do main stuff')
+
+    start_flask()
+    # start_server(None)
 
 
 if __name__ == '__main__':

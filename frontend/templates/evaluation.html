@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+        <!-- Bootstrap Core -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+
+    <title>ImArg Evaluation</title>
+</head>
+<body>
+    <header class="py-3 mb-4 border-bottom">
+        <div class="container d-flex flex-wrap justify-content-center">
+            <a href="/evaluation" class="d-flex align-items-center col-4 mb-3 mb-lg-0 text-dark text-decoration-none">
+                <span class="fs-4">Aramis ImArg Evaluation</span>
+            </a>
+            <form class="col-7 me-auto mb-3 mb-lg-0 container" data-children-count="1" name="batch_form" method="post">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-8">
+                            <select class="form-select" aria-label="Topic selection" name="selected_topic" onchange="this.form.submit()">
+                                {% for topic in topics %}
+                                    <option value="{{ topic.number }}"
+                                            {% if topic.number == selected_topic.number %}
+                                            selected
+                                            {% endif %}>
+                                        {{ topic.title }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-2"></div>
+                        <div class="col-2">
+                            <input type="text" class="form-control" placeholder="Name..." aria-label="Name" name="user_name" value="{{ user_name }}">
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </header>
+
+    <main>
+        {% if image %}
+            <div class="container">
+                <div class="row">
+                    <div class="col align-items-center">
+                        <div class="row">
+                            <div class="col">
+                                <img src="data/image/{{ image.url_hash }}" class="img-thumbnail img-fluid">
+                            </div>
+                        </div>
+                        <div class="row">
+                            {% for page in image.pages %}
+                                <div class="col text-center mt-3">
+                                    <span class="fs-6">Page {{ loop.index }}</span><br>
+                                    <div class="btn-group" role="group" aria-label="Image button group">
+                                        <a class="btn btn-outline-secondary" target="_blank" rel="noopener noreferrer" href="{{ page.url }}">Page</a>
+                                        <a class="btn btn-outline-secondary" target="_blank" rel="noopener noreferrer" href="data/dom/{{ image.url_hash }}/{{ page.url_hash }}">Snapshot</a>
+                                        <a class="btn btn-outline-secondary" target="_blank" rel="noopener noreferrer" href="data/screenshot/{{ image.url_hash }}/{{ page.url_hash }}">Screenshot</a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="col">
+                        <form name="eval_form" method="post">
+                            <input type="hidden" name="user_name" value="{{ user_name }}">
+                            <input type="hidden" name="selected_topic" value="{{ selected_topic.number }}">
+                            <input type="hidden" name="image_id" value="{{ image.url_hash }}">
+
+                            <div class="container">
+                                <div class="row">
+                                    <div class="col-11 d-flex align-items-center">
+                                        <span class="fs-5">
+                                            Topic {{ selected_topic.number }} - {{ selected_topic.title }}
+                                        </span>
+                                    </div>
+                                    <div class="col-1 d-flex flex-row align-items-center">
+                                        <i class="btn btn-lg bi bi-question-lg p-0" data-bs-toggle="collapse"
+                                           title="Show Topic details" data-bs-target="#collapseTopic"
+                                           aria-expanded="false" aria-controls="collapseTopic"></i>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col">
+                                        <div class="collapse" id="collapseTopic">
+                                            <div class="card card-body container">
+                                                <div class="row">
+                                                <span class="fs-6 text-decoration-underline">
+                                                    Description:
+                                                </span>
+                                                    <span>
+                                                    {{ selected_topic.description }}
+                                                </span>
+                                                </div>
+
+                                                <div class="row mt-3">
+                                                <span class="fs-6 text-decoration-underline">
+                                                    Narrative:
+                                                </span>
+                                                    <span>
+                                                    {{ selected_topic.narrative }}
+                                                </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-5 row">
+                                    <div class="col-3 d-flex align-items-center">
+                                        <span class="fs-6">
+                                            Argumentative:
+                                        </span>
+                                    </div>
+                                    <div class="col-8 d-flex align-items-center">
+                                        <div class="btn-group" role="group" aria-label="Stance button group">
+                                            <input type="radio" class="btn-check" name="arg" value="none" id="arg-none"
+                                                   autocomplete="off">
+                                            <label class="btn btn-outline-primary" for="arg-none">
+                                                none
+                                            </label>
+
+                                            <input type="radio" class="btn-check" name="arg" value="weak" id="arg-weak"
+                                                   autocomplete="off">
+                                            <label class="btn btn-outline-primary" for="arg-weak">
+                                                weak
+                                            </label>
+
+                                            <input type="radio" class="btn-check" name="arg" value="strong"
+                                                   id="arg-strong" autocomplete="off">
+                                            <label class="btn btn-outline-primary" for="arg-strong">
+                                                strong
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-1 d-flex flex-row align-items-center">
+                                        <i class="btn bi bi-question-lg" data-bs-toggle="collapse"
+                                           title="Definition Argumentative" data-bs-target="#collapseArg"
+                                           aria-expanded="false" aria-controls="collapseArg" style="padding: 2px"></i>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <div class="collapse" id="collapseArg">
+                                            <div class="card card-body container">
+                                                <div class="row">
+                                                    <span class="fs-6 text-decoration-underline">
+                                                        Argumentative:
+                                                    </span>
+                                                    <span>
+                                                        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+                                                    </span>
+                                                </div>
+                                                <div class="row mt-3">
+                                                    <span class="fs-6 text-decoration-underline">
+                                                        None:
+                                                    </span>
+                                                    <span>
+                                                        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+                                                    </span>
+                                                </div>
+                                                <div class="row mt-3">
+                                                    <span class="fs-6 text-decoration-underline">
+                                                        Weak:
+                                                    </span>
+                                                    <span>
+                                                        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+                                                    </span>
+                                                </div>
+                                                <div class="row mt-3">
+                                                    <span class="fs-6 text-decoration-underline">
+                                                        Strong:
+                                                    </span>
+                                                    <span>
+                                                        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+                                                    </span>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-5 row">
+                                    <div class="col-3 d-flex align-items-center">
+                                        <span class="fs-6">
+                                            Stance:
+                                        </span>
+                                    </div>
+                                    <div class="col-8 d-flex align-items-center">
+                                        <div class="btn-group" role="group" aria-label="Stance button group">
+                                            <input type="radio" class="btn-check" name="stance" value="pro"
+                                                   id="stance-pro" autocomplete="off">
+                                            <label class="btn btn-outline-primary" for="stance-pro">
+                                                Pro
+                                            </label>
+
+                                            <input type="radio" class="btn-check" name="stance" value="neutral"
+                                                   id="stance-neutral" autocomplete="off">
+                                            <label class="btn btn-outline-primary" for="stance-neutral">
+                                                Neutral
+                                            </label>
+
+                                            <input type="radio" class="btn-check" name="stance" value="con"
+                                                   id="stance-con" autocomplete="off">
+                                            <label class="btn btn-outline-primary" for="stance-con">
+                                                Con
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-1 d-flex flex-row align-items-center">
+                                        <i class="btn bi bi-question-lg" data-bs-toggle="collapse"
+                                           title="Definition Stance" data-bs-target="#collapseStance"
+                                           aria-expanded="false" aria-controls="collapseStance" style="padding: 2px"></i>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <div class="collapse" id="collapseStance">
+                                            <div class="card card-body container">
+                                                <div class="row">
+                                                    <span class="fs-6 text-decoration-underline">
+                                                        Stance:
+                                                    </span>
+                                                    <span>
+                                                        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+                                                    </span>
+                                                </div>
+                                                <div class="row mt-3">
+                                                    <span class="fs-6 text-decoration-underline">
+                                                        Pro:
+                                                    </span>
+                                                    <span>
+                                                        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+                                                    </span>
+                                                </div>
+                                                <div class="row mt-3">
+                                                    <span class="fs-6 text-decoration-underline">
+                                                        Neutral:
+                                                    </span>
+                                                    <span>
+                                                        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+                                                    </span>
+                                                </div>
+                                                <div class="row mt-3">
+                                                    <span class="fs-6 text-decoration-underline">
+                                                        Con:
+                                                    </span>
+                                                    <span>
+                                                        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-5 d-flex flex-column align-items-end">
+                                    <button type="submit" class="btn btn-success">
+                                        Save & Next
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        {% if topic_done %}
+            <div class="text-center">
+                <img src="https://c.tenor.com/IAUvvrUY7zQAAAAM/done-spongebob.gif">
+            </div>
+        {% endif %}
+    </main>
+</body>
+</html>

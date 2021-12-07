@@ -1,13 +1,13 @@
 import datetime
-import json
 import logging
 import os
 from pathlib import Path
 
-from flask import Flask, render_template, request, send_file, abort, jsonify
+from flask import Flask, render_template, request, send_file, abort, jsonify, make_response
 
-from indexing import DataEntry
+from indexing import DataEntry, Topic
 from retrieval import RetrievalSystem
+from evaluation import has_eval, save_eval, get_eval, Stance, Argumentative
 
 log = logging.getLogger('frontend.flask')
 app = Flask(__name__, static_url_path='', static_folder='static')
@@ -47,6 +47,66 @@ def index():
     return render_template('index.html', pros=[], cons=[], topK=20)
 
 
+def get_image_to_eval(topic: Topic) -> DataEntry or None:
+    for image in DataEntry.get_image_ids():
+        entry = DataEntry.load(image)
+        for page in entry.pages:
+            for rank in page.rankings:
+                if rank.topic == topic.number and not has_eval(image):
+                    return entry
+    return None
+    # return DataEntry.load(DataEntry.get_image_ids(1)[0])
+
+
+@app.route('/evaluation', methods=['GET', 'POST'])
+def evaluation():
+    user = request.cookies.get('user_name', '')
+    topics = Topic.load_all()
+    selected_topic = Topic.get(1)
+    image = None
+
+    topic_done = False
+
+    if request.method == 'POST':
+        if 'selected_topic' in request.form.keys() and 'user_name' in request.form.keys():
+            user = request.form['user_name']
+            try:
+                selected_topic = Topic.get(int(request.form['selected_topic']))
+            except ValueError:
+                pass
+
+        if len(user) > 0:
+            if 'arg' in request.form.keys() and 'stance' in request.form.keys() and 'image_id' in request.form.keys():
+                if request.form['arg'] == 'weak':
+                    arg = Argumentative.WEAK
+                elif request.form['arg'] == 'strong':
+                    arg = Argumentative.STRONG
+                else:
+                    arg = Argumentative.NONE
+
+                if request.form['stance'] == 'pro':
+                    stance = Stance.PRO
+                elif request.form['stance'] == 'con':
+                    stance = Stance.CON
+                else:
+                    stance = Stance.NEUTRAL
+
+                save_eval(image_id=request.form['image_id'], user=user,
+                          topic=selected_topic.number, arg=arg, stance=stance)
+
+    if len(user) > 0:
+        image = get_image_to_eval(selected_topic)
+        if image is None:
+            topic_done = True
+
+    resp = make_response(render_template('evaluation.html', topics=topics, selected_topic=selected_topic,
+                                         user_name=user, topic_done=topic_done, image=image))
+    expire = datetime.datetime.now() + datetime.timedelta(days=90)
+    if len(user) > 0:
+        resp.set_cookie('user_name', user, expires=expire)
+    return resp
+
+
 def get_abs_data_path(path):
     if not path.is_absolute():
         path = Path(os.path.abspath(__file__)).parent.parent.joinpath(path)
@@ -81,4 +141,3 @@ def data_snp_dom(image_id, page_id):
         if page.url_hash == page_id:
             return send_file(get_abs_data_path(page.snp_dom))
     return abort(404)
-

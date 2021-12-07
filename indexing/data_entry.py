@@ -3,6 +3,8 @@ import json
 from pathlib import Path
 from typing import List
 
+from bs4 import BeautifulSoup
+
 from config import Config
 
 cfg = Config.get()
@@ -162,3 +164,34 @@ class DataEntry:
                 if check_length and count >= max_size:
                     return sorted(id_list)
         return sorted(id_list)
+
+
+@dataclasses.dataclass
+class Topic:
+    title: str
+    number: int
+    description: str
+    narrative: str
+
+    @classmethod
+    def load_all(cls) -> List['Topic']:
+        with cfg.data_location.joinpath(Path('topics.xml')).open() as file:
+            soup = BeautifulSoup(file, features="lxml")
+
+        topics = []
+
+        for t in soup.find('topics').findChildren('topic'):
+            number = int(t.find('number').contents[0])
+            title = t.find('title').contents[0].replace('\n', '')
+            description = t.find('description').contents[0].replace('\n', '')
+            narrative = t.find('narrative').contents[0].replace('\n', '')
+            topics.append(cls(title, number, description, narrative))
+
+        return topics
+
+    @classmethod
+    def get(cls, topic_number: int) -> 'Topic':
+        for t in Topic.load_all():
+            if t.number == topic_number:
+                return t
+        raise ValueError('Topic with number {} not found.'.format(topic_number))
