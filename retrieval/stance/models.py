@@ -72,6 +72,7 @@ class StandardStanceModel(StanceModel):
         percentage_bright = self.index.get_image_percentage_bright(doc_id)
         percentage_dark = self.index.get_image_percentage_dark(doc_id)
         image_average_color = self.index.get_image_average_color(doc_id)
+        html_sentiment_score = self.index.get_html_sentiment_score(doc_id)
 
         distance_to_green = math.sqrt(
             (image_average_color[0] - 0) ** 2 + (image_average_color[1] - 255) ** 2 + (image_average_color[2] - 0) ** 2)
@@ -100,5 +101,5 @@ class StandardStanceModel(StanceModel):
 
         image_text_sentiment_score = self.index.get_image_text_sentiment_score(doc_id)
 
-        score = (color_mood * len_words) + (image_text_sentiment_score * (1 - len_words))
+        score = (color_mood * len_words) + (image_text_sentiment_score * (1 - len_words)) + abs(html_sentiment_score)
         return score

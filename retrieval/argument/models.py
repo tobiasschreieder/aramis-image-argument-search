@@ -72,7 +72,9 @@ class StandardArgumentModel(ArgumentModel):
         # (number words - value) [0 - 0][40 - 1][110 - 2][asymptotisch 3]
         text_factor = (1 - (1 / (math.exp(0.01 * image_text_len)))) * 3
 
-        score = diagramm_factor + text_sentiment_factor + text_factor
+        html_sentiment_score = self.index.get_html_sentiment_score(doc_id)
+
+        score = diagramm_factor + text_sentiment_factor + text_factor + html_sentiment_score
         return score
 
     @staticmethod
