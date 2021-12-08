@@ -1,21 +1,31 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Nov 21 12:44:02 2021
-
-@author: tobias
-"""
+from pathlib import Path
 
 from bs4 import BeautifulSoup
 from lxml import etree
+from typing import List
 
 from indexing import DataEntry
 
-# texts bellow images shorter than min_len_texts will be ignored
+
+"""
+Fix-Variables
+"""
+# Texts bellow images shorter than min_len_texts will be ignored
 min_len_texts = 50
 
+# Threshold for calculating the reduction in the number of tags for an xpath
+xpath_threshold = 0.5
 
-# open HTML-File
-def read_html(path):
+# Threshold for correctness of two strings
+correctness_threshold = 0.4
+
+
+def read_html(path: Path) -> BeautifulSoup:
+    """
+    Open HTML-File
+    :param path: Path of the document
+    :return: BeautifulSoup-Object for the HTML-File
+    """
     with open(path, encoding="utf8") as f:
         doc = BeautifulSoup(f, "html.parser")
     f.close()
@@ -23,25 +33,48 @@ def read_html(path):
     return doc
 
 
-# open xpath
-def read_xpath(path):
+def read_xpath(path: Path) -> List[str]:
+    """
+    Open xpath
+    :param path: Path of the xpath.txt
+    :return: List with all extracted xpathes as String for the picture in the HTML-File
+    """
     with open(path, encoding="utf8") as f:
         pathes = list()
         for line in f:
             pathes.append(str(line))
     f.close()
 
-    # use first useful xpath
     xpathes = list()
     for path in pathes:
+        # ignore wrong xpathes
         if '"' not in path and ':' not in path:
             xpathes.append(path)
 
     return xpathes
 
 
-# return xpath without last tag
-def cut_last_tag(xpath):
+def read_html_text(path: Path) -> List[str]:
+    """
+    Open TXT-File of HTML-Document
+    :param path: Path of text.txt
+    :return: List with all extracted lines of text as String
+    """
+    texts = list()
+    with open(path, encoding="utf8") as f:
+        for line in f:
+            texts.append(line.lower())
+    f.close()
+
+    return texts
+
+
+def cut_last_tag(xpath: str) -> str:
+    """
+    Get xpath without last tag
+    :param xpath: String
+    :return: Shorter xpath as String
+    """
     counter = xpath.count("/")
     pos = 0
 
@@ -55,106 +88,110 @@ def cut_last_tag(xpath):
     return new_xpath
 
 
-# extract all texts from the following tags: <figure>, <picture>, <img> in a preprocessed form
-def get_image_html_text(doc, xpathes):
+def cut_till_figure(xpath: str) -> str:
+    """
+    Cut xpath till last figure-tag
+    :param xpath: String
+    :return: Shorter xpath as String
+    """
+    figure_counter = xpath.count("figure")
+
+    if figure_counter > 0:
+        counter = xpath.count("/")
+        pos = 0
+
+        for p in range(0, counter):
+            pos = xpath.find("/", pos)
+            pos += 1
+
+        last_tag = xpath[pos:]
+
+        if "figure" not in last_tag:
+            new_xpath = xpath[:len(xpath) - len(last_tag) - 1]
+            return cut_till_figure(new_xpath)
+
+        else:
+            return xpath
+
+
+def measure_correctness(string_1: str, string_2: str) -> float:
+    """
+    Measure the Correctness of a string to another string
+    :param string_1: String
+    :param string_2: String
+    :return: Score as float
+    """
+    # add fill-characters to shorter string
+    while len(string_1) < len(string_2):
+        string_1 += "_"
+
+    while len(string_2) < len(string_1):
+        string_2 += "_"
+
+    max_length = len(string_1)
+    counter_difference = 0
+
+    # counter differences in strings
+    for i in range(0, max_length):
+        if string_1[i] != string_2[i]:
+            counter_difference += 1
+
+    # calculate score
+    score = 1 - (counter_difference / max_length)
+
+    return score
+
+
+def get_image_html_text(doc: BeautifulSoup, xpathes: List[str], html_text: List[str]) -> str:
+    """
+    Extract all texts connected to the picture from the HTML-File in a preprocessed form
+    :param doc: BeautifulSoup-Object for the HTML-File
+    :param xpathes: List with all extracted xpathes as String for the picture in the HTML-File
+    :param html_text: List with all Texts of HTML-File as Strings
+    :return: String which includes all extracted texts (separated with /n)
+    """
     texts = list()
     final_text = str()
 
     for xpath in xpathes:
-        # figure, picture, img in xpath
-        f = False
-        p = False
-        i = False
-        m = False
 
-        # position of figure, picture, img in html
-        f_pos = int()
-        p_pos = int()
-        i_pos = int()
-        m_pos = int()
-
-        doc_original = doc
         doc = etree.HTML(str(doc))
         xpath = xpath.lower()
         xpath_original = xpath
 
-        # bring xpath to basic form (without figure, picture, img)
-        if "figure" in xpath:
-            f = True
-            for j in range(1, 5):
-                if "figure[" + str(j) in xpath:
-                    xpath = xpath.replace("/figure[" + str(j) + "]", "")
-                    f_pos = j
-        if "picture" in xpath:
-            p = True
-            for j in range(1, 5):
-                if "picture[" + str(j) in xpath:
-                    xpath = xpath.replace("/picture[" + str(j) + "]", "")
-                    p_pos = j
-        if "img" in xpath:
-            i = True
-            for j in range(1, 5):
-                if "img[" + str(j) in xpath:
-                    xpath = xpath.replace("/img[" + str(j) + "]", "")
-                    i_pos = j
-        if "meta" in xpath:
-            m = True
-            for j in range(1, 50):
-                if "meta[" + str(j) in xpath:
-                    xpath = xpath.replace("/meta[" + str(j) + "]", "")
-                    m_pos = j
+        counter_figure = xpath.count("figure")
 
-        # create specific xpaths
-        xpath_figure = str()
-        xpath_picture = str()
-        xpath_img = str()
-        xpath_meta = str()
-
-        # receive texts from html for figure, picture, img
-        if f:
-            xpath_figure = "normalize-space(" + xpath + "/figure[" + str(f_pos) + "])"
+        # receive texts from html in figure tags
+        for i in range(0, counter_figure):
+            xpath_till_figure = cut_till_figure(xpath)
+            xpath_figure = "normalize-space(" + xpath_till_figure + ")"
             text = str(doc.xpath(xpath_figure))
             if len(text) >= min_len_texts:
                 texts.append(text)
-        '''
-        if p:
-            xpath_picture = "normalize-space(" + xpath + "/picture[" + str(p_pos) + "])"
-            text = str(doc.xpath(xpath_picture))
-            if len(text) >= min_len_texts:
-                texts.append(text)       
-        if i:
-            xpath_img = "normalize-space(" + xpath + "/img[" + str(i_pos) + "])"
-            text = str(doc.xpath(xpath_img))
-            if len(text) >= min_len_texts:
-                texts.append(text)
-        if m:
-            xpath_meta = "normalize-space(" + xpath + "/meta[" + str(m_pos) + "])"
-            text = str(doc.xpath(xpath_meta))
-            if len(text) >= min_len_texts:
-                texts.append(text)
-        '''
 
         shorter_xpath = xpath_original
         shorter_xpath_texts = list()
 
-        get_texts_range = round(shorter_xpath.count("/") * 0.5)
+        get_texts_range = round(shorter_xpath.count("/") * xpath_threshold)
         if get_texts_range < 1:
             get_texts_range = 1
 
+        # receive texts from html for all shorter xpathes
         for i in range(0, get_texts_range):
             shorter_xpath = cut_last_tag(shorter_xpath)
             text = str(doc.xpath("normalize-space(" + shorter_xpath + ")"))
-            if len(text) > min_len_texts:
+            if len(text) > min_len_texts and text not in shorter_xpath_texts:
                 shorter_xpath_texts.append(text)
 
         if len(shorter_xpath_texts) > 0:
-            doc_texts = doc_original.getText()
-            doc_texts_list = doc_texts.splitlines()
+            for text in shorter_xpath_texts:
+                text_lower = text.lower()
 
-            for text in doc_texts_list:
-                if len(text) > min_len_texts and text in shorter_xpath_texts:
-                    texts.append(text)
+                for text_h in html_text:
+                    if text_lower in text_h or measure_correctness(text_h, text_lower) >= correctness_threshold:
+                        texts.append(text)
 
+    # combine texts to one string
     for text in texts:
         if text not in final_text:
             final_text += text + "\n"
@@ -162,49 +199,53 @@ def get_image_html_text(doc, xpathes):
     return final_text
 
 
-# input image_id -> return extracted texts as string
-def run_html_preprocessing(image_id):
+def run_html_preprocessing(image_id: str) -> str:
+    """
+    Execute extraction of text for a specific document
+    :param image_id: String of image_id
+    :return: String which includes all extracted texts (separated with /n)
+    """
     doc_path = DataEntry.load(image_id).pages[0].snp_dom
     xpath_path = DataEntry.load(image_id).pages[0].snp_image_xpath
+    nodes_path = DataEntry.load(image_id).pages[0].snp_nodes
 
     doc = read_html(doc_path)
     xpath = read_xpath(xpath_path)
+    nodes = read_html_text(nodes_path)
 
-    text = get_image_html_text(doc, xpath)
-    #print(text)
+    text = get_image_html_text(doc, xpath, nodes)
 
     return text
 
 
-# get test sample of data (just for testing)
-def get_pathes():
-    data = DataEntry.get_image_ids(1000)
-
+def html_test() -> dict:
+    """
+    Testing html_preprocessing
+    :return: Dictionary dataset with extracted texts
+    """
+    data = DataEntry.get_image_ids(10)
     dataset = dict()
 
     for d in data:
         pathes = dict()
         pathes.setdefault("snp_dom", DataEntry.load(d).pages[0].snp_dom)
         pathes.setdefault("snp_xpath", DataEntry.load(d).pages[0].snp_image_xpath)
+        pathes.setdefault("snp_text", DataEntry.load(d).pages[0].snp_text)
 
         dataset.setdefault(d, pathes)
 
-    return dataset
-
-
-# method for testing
-def html_test():
-    data = get_pathes()
     counter = int()
-    for d in data:
-        doc = read_html(data[d]["snp_dom"])
-        xpath = read_xpath(data[d]["snp_xpath"])
-        text = get_image_html_text(doc, xpath)
+    for d in dataset:
+        doc = read_html(dataset[d]["snp_dom"])
+        xpath = read_xpath(dataset[d]["snp_xpath"])
+        html_text = read_html_text(dataset[d]["snp_text"])
+        text = get_image_html_text(doc, xpath, html_text)
+        dataset[d].setdefault("text", text)
         print(text)
-        data[d].setdefault("text", text)
 
         if len(text) > 0:
             counter += 1
+
     print(str(counter) + " : " + str(len(data)))
 
-    return data
+    return dataset
