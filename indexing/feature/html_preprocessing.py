@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from lxml import etree
 from typing import List
 
@@ -142,6 +142,30 @@ def measure_correctness(string_1: str, string_2: str) -> float:
     return score
 
 
+def get_image_soup(xpath: str, html_soup: BeautifulSoup):
+
+    def get_soup(inner_soup: BeautifulSoup, tag: str, number: int) -> BeautifulSoup:
+        count = 0
+        tag = tag.lower()
+        for i in range(0, len(inner_soup.contents)):
+            if type(inner_soup.contents[i]) is not Tag:
+                continue
+            if inner_soup.contents[i].name.lower() == tag:
+                count += 1
+                if count == number:
+                    return inner_soup.contents[i]
+
+    a_soup = html_soup
+    for s in xpath.split('/'):
+        if len(s) != 0:
+            inner = s.split('[')
+            number = int(inner[1][:-1])
+            tag = inner[0]
+            a_soup = get_soup(a_soup, tag, number)
+
+    return a_soup
+
+
 def get_image_html_text(doc: BeautifulSoup, xpathes: List[str], html_text: List[str]) -> str:
     """
     Extract all texts connected to the picture from the HTML-File in a preprocessed form
@@ -158,6 +182,9 @@ def get_image_html_text(doc: BeautifulSoup, xpathes: List[str], html_text: List[
         doc = etree.HTML(str(doc))
         xpath = xpath.lower()
         xpath_original = xpath
+
+        a_soup = get_image_soup(xpath, soup)
+        a_soup.parent.parent.parent.parent.get_text(separator=' ', strip=True)
 
         counter_figure = xpath.count("figure")
 
@@ -205,9 +232,10 @@ def run_html_preprocessing(image_id: str) -> str:
     :param image_id: String of image_id
     :return: String which includes all extracted texts (separated with /n)
     """
-    doc_path = DataEntry.load(image_id).pages[0].snp_dom
-    xpath_path = DataEntry.load(image_id).pages[0].snp_image_xpath
-    nodes_path = DataEntry.load(image_id).pages[0].snp_nodes
+    entry = DataEntry.load(image_id)
+    doc_path = entry.pages[0].snp_dom
+    xpath_path = entry.pages[0].snp_image_xpath
+    nodes_path = entry.pages[0].snp_nodes
 
     doc = read_html(doc_path)
     xpath = read_xpath(xpath_path)
