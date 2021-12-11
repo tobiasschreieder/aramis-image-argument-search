@@ -9,6 +9,8 @@ from indexing import StandardTermIndex, FeatureIndex, TopicQueryTermIndex, Topic
     DataEntry, Topic
 from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel
 from evaluation import save_eval, Argumentative, Stance, get_eval, has_eval
+from indexing.feature import html_preprocessing
+import numpy as np
 
 
 def init_logging():
@@ -67,11 +69,15 @@ def main():
     normal program run
     :return:
     """
-
+    """
     log.info('do main stuff')
 
     start_flask()
     # start_server(None)
+    """
+    data, type_error = html_preprocessing.html_test()
+    print("Type Error: ", type_error)
+    #np.save('data12', data)
 
 
 if __name__ == '__main__':

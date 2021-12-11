@@ -3,9 +3,9 @@ from pathlib import Path
 from bs4 import BeautifulSoup, Tag
 from lxml import etree
 from typing import List
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 from indexing import DataEntry
-
 
 """
 Fix-Variables
@@ -14,10 +14,7 @@ Fix-Variables
 min_len_texts = 50
 
 # Threshold for calculating the reduction in the number of tags for an xpath
-xpath_threshold = 0.5
-
-# Threshold for correctness of two strings
-correctness_threshold = 0.4
+xpath_threshold = 0.4
 
 
 def read_html(path: Path) -> BeautifulSoup:
@@ -54,119 +51,40 @@ def read_xpath(path: Path) -> List[str]:
     return xpathes
 
 
-def read_html_text(path: Path) -> List[str]:
-    """
-    Open TXT-File of HTML-Document
-    :param path: Path of text.txt
-    :return: List with all extracted lines of text as String
-    """
-    texts = list()
-    with open(path, encoding="utf8") as f:
-        for line in f:
-            texts.append(line.lower())
-    f.close()
-
-    return texts
-
-
-def cut_last_tag(xpath: str) -> str:
-    """
-    Get xpath without last tag
-    :param xpath: String
-    :return: Shorter xpath as String
-    """
-    counter = xpath.count("/")
-    pos = 0
-
-    for p in range(0, counter):
-        pos = xpath.find("/", pos)
-        pos += 1
-
-    last_tag = xpath[pos:]
-    new_xpath = xpath[:len(xpath) - len(last_tag) - 1]
-
-    return new_xpath
-
-
-def cut_till_figure(xpath: str) -> str:
-    """
-    Cut xpath till last figure-tag
-    :param xpath: String
-    :return: Shorter xpath as String
-    """
-    figure_counter = xpath.count("figure")
-
-    if figure_counter > 0:
-        counter = xpath.count("/")
-        pos = 0
-
-        for p in range(0, counter):
-            pos = xpath.find("/", pos)
-            pos += 1
-
-        last_tag = xpath[pos:]
-
-        if "figure" not in last_tag:
-            new_xpath = xpath[:len(xpath) - len(last_tag) - 1]
-            return cut_till_figure(new_xpath)
-
-        else:
-            return xpath
-
-
-def measure_correctness(string_1: str, string_2: str) -> float:
-    """
-    Measure the Correctness of a string to another string
-    :param string_1: String
-    :param string_2: String
-    :return: Score as float
-    """
-    # add fill-characters to shorter string
-    while len(string_1) < len(string_2):
-        string_1 += "_"
-
-    while len(string_2) < len(string_1):
-        string_2 += "_"
-
-    max_length = len(string_1)
-    counter_difference = 0
-
-    # counter differences in strings
-    for i in range(0, max_length):
-        if string_1[i] != string_2[i]:
-            counter_difference += 1
-
-    # calculate score
-    score = 1 - (counter_difference / max_length)
-
-    return score
-
-
 def get_image_soup(xpath: str, html_soup: BeautifulSoup):
-
     def get_soup(inner_soup: BeautifulSoup, tag: str, number: int) -> BeautifulSoup:
         count = 0
         tag = tag.lower()
-        for i in range(0, len(inner_soup.contents)):
-            if type(inner_soup.contents[i]) is not Tag:
-                continue
-            if inner_soup.contents[i].name.lower() == tag:
-                count += 1
-                if count == number:
-                    return inner_soup.contents[i]
+
+        #print(str(type(inner_soup)))
+        try:
+            for i in range(0, len(inner_soup.contents)):
+
+                if type(inner_soup.contents[i]) is not Tag:
+                    continue
+                if inner_soup.contents[i].name.lower() == tag:
+                    count += 1
+                    if count == number:
+                        return inner_soup.contents[i]
+
+        except AttributeError:
+            return True
 
     a_soup = html_soup
     for s in xpath.split('/'):
-        if len(s) != 0:
+        error = bool
+        if len(s) != 0 and a_soup is not True:
             inner = s.split('[')
-            number = int(inner[1][:-1])
+            number = int(inner[1][:-1].replace(']', ''))
             tag = inner[0]
+            #print(tag, number)
             a_soup = get_soup(a_soup, tag, number)
 
+    #print(type(a_soup))
     return a_soup
 
 
-def get_image_html_text(doc: BeautifulSoup, xpathes: List[str], html_text: List[str]) -> str:
+def get_image_html_text(doc: BeautifulSoup, xpathes: List[str]) -> str:
     """
     Extract all texts connected to the picture from the HTML-File in a preprocessed form
     :param doc: BeautifulSoup-Object for the HTML-File
@@ -176,16 +94,28 @@ def get_image_html_text(doc: BeautifulSoup, xpathes: List[str], html_text: List[
     """
     texts = list()
     final_text = str()
+    errors = 0
 
     for xpath in xpathes:
+        a_soup = get_image_soup(xpath, doc)
 
-        doc = etree.HTML(str(doc))
-        xpath = xpath.lower()
-        xpath_original = xpath
+        if a_soup is not True and a_soup is not None:
+            count_tags = xpath.count("/")
+            text_range = round(count_tags * xpath_threshold)
+            #print(text_range, count_tags)
 
-        a_soup = get_image_soup(xpath, soup)
-        a_soup.parent.parent.parent.parent.get_text(separator=' ', strip=True)
+            if text_range < 1 and count_tags > 1 and len(xpathes) < 2:
+                text_range = 1
 
+            for i in range(0, text_range):
+                a_soup = a_soup.parent
+
+            texts.append(a_soup.get_text(separator=' ', strip=True))
+
+        else:
+            errors += 1
+
+        """
         counter_figure = xpath.count("figure")
 
         # receive texts from html in figure tags
@@ -198,7 +128,7 @@ def get_image_html_text(doc: BeautifulSoup, xpathes: List[str], html_text: List[
 
         shorter_xpath = xpath_original
         shorter_xpath_texts = list()
-
+        
         get_texts_range = round(shorter_xpath.count("/") * xpath_threshold)
         if get_texts_range < 1:
             get_texts_range = 1
@@ -215,15 +145,16 @@ def get_image_html_text(doc: BeautifulSoup, xpathes: List[str], html_text: List[
                 text_lower = text.lower()
 
                 for text_h in html_text:
-                    if text_lower in text_h or measure_correctness(text_h, text_lower) >= correctness_threshold:
+                    if text_lower in text_h or measure_similarity(text_h, text_lower) >= correctness_threshold:
                         texts.append(text)
+    """
 
     # combine texts to one string
     for text in texts:
-        if text not in final_text:
+        if text not in final_text and text >= min_len_texts:
             final_text += text + "\n"
 
-    return final_text
+    return final_text, errors
 
 
 def run_html_preprocessing(image_id: str) -> str:
@@ -235,13 +166,11 @@ def run_html_preprocessing(image_id: str) -> str:
     entry = DataEntry.load(image_id)
     doc_path = entry.pages[0].snp_dom
     xpath_path = entry.pages[0].snp_image_xpath
-    nodes_path = entry.pages[0].snp_nodes
 
     doc = read_html(doc_path)
     xpath = read_xpath(xpath_path)
-    nodes = read_html_text(nodes_path)
 
-    text = get_image_html_text(doc, xpath, nodes)
+    text = get_image_html_text(doc, xpath)
 
     return text
 
@@ -251,14 +180,14 @@ def html_test() -> dict:
     Testing html_preprocessing
     :return: Dictionary dataset with extracted texts
     """
-    data = DataEntry.get_image_ids(10)
+    data = DataEntry.get_image_ids()
     dataset = dict()
+    type_error = 0
 
     for d in data:
         pathes = dict()
         pathes.setdefault("snp_dom", DataEntry.load(d).pages[0].snp_dom)
         pathes.setdefault("snp_xpath", DataEntry.load(d).pages[0].snp_image_xpath)
-        pathes.setdefault("snp_text", DataEntry.load(d).pages[0].snp_text)
 
         dataset.setdefault(d, pathes)
 
@@ -266,14 +195,16 @@ def html_test() -> dict:
     for d in dataset:
         doc = read_html(dataset[d]["snp_dom"])
         xpath = read_xpath(dataset[d]["snp_xpath"])
-        html_text = read_html_text(dataset[d]["snp_text"])
-        text = get_image_html_text(doc, xpath, html_text)
+        print(d)
+        text, error = get_image_html_text(doc, xpath)
         dataset[d].setdefault("text", text)
         print(text)
+
+        type_error += error
 
         if len(text) > 0:
             counter += 1
 
     print(str(counter) + " : " + str(len(data)))
 
-    return dataset
+    return dataset, type_error
