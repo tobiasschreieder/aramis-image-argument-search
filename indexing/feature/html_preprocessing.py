@@ -1,15 +1,17 @@
+import logging
 from pathlib import Path
+from typing import List, Union
 
-from bs4 import BeautifulSoup, Tag
-from lxml import etree
-from typing import List
-from sklearn.feature_extraction.text import TfidfVectorizer
+from bs4 import BeautifulSoup
+from bs4.element import Tag, Comment, NavigableString
 
 from indexing import DataEntry
 
 """
 Fix-Variables
 """
+log = logging.getLogger('html_preprocessing')
+
 # Texts bellow images shorter than min_len_texts will be ignored
 min_len_texts = 50
 
@@ -56,64 +58,108 @@ def get_image_soup(xpath: str, html_soup: BeautifulSoup):
         count = 0
         tag = tag.lower()
 
-        #print(str(type(inner_soup)))
-        try:
-            for i in range(0, len(inner_soup.contents)):
+        for i in range(0, len(inner_soup.contents)):
 
-                if type(inner_soup.contents[i]) is not Tag:
-                    continue
-                if inner_soup.contents[i].name.lower() == tag:
-                    count += 1
-                    if count == number:
-                        return inner_soup.contents[i]
+            if type(inner_soup.contents[i]) is not Tag:
+                continue
+            if inner_soup.contents[i].name.lower() == tag:
+                count += 1
+                if count == number:
+                    return inner_soup.contents[i]
 
-        except AttributeError:
-            return True
+        raise ValueError('Wrong xPath')
 
     a_soup = html_soup
     for s in xpath.split('/'):
-        error = bool
         if len(s) != 0 and a_soup is not True:
             inner = s.split('[')
             number = int(inner[1][:-1].replace(']', ''))
             tag = inner[0]
-            #print(tag, number)
             a_soup = get_soup(a_soup, tag, number)
-
-    #print(type(a_soup))
     return a_soup
 
 
-def get_image_html_text(doc: BeautifulSoup, xpathes: List[str]) -> str:
+def find_img(soup: BeautifulSoup, image_url: str) -> List[Tag]:
+    return soup.find_all(name='img', src=image_url)
+
+
+def node_to_xpath(node):
+    node_type = {
+        Tag: getattr(node, "name"),
+        Comment: "comment()",
+        NavigableString: "text()"
+    }
+    same_type_siblings = list(node.parent.find_all(lambda x: getattr(node, "name", True) == getattr(x, "name", False),
+                                                   recursive=False))
+    # if len(same_type_siblings) <= 1:
+    #     return node_type[type(node)]
+    pos = same_type_siblings.index(node) + 1
+    return f"{node_type[type(node)]}[{pos}]"
+
+
+def get_node_xpath(node: Union[Tag, Comment]):
+    xpath = "/"
+    elements = [f"{node_to_xpath(node)}"]
+    for p in node.parents:
+        if p.name == "[document]":
+            break
+        elements.insert(0, node_to_xpath(p))
+
+    xpath = "/" + xpath.join(elements)
+    return xpath
+
+
+def get_image_html_text(doc: BeautifulSoup, xpathes: List[str], image_id: str) -> str:
     """
     Extract all texts connected to the picture from the HTML-File in a preprocessed form
     :param doc: BeautifulSoup-Object for the HTML-File
     :param xpathes: List with all extracted xpathes as String for the picture in the HTML-File
-    :param html_text: List with all Texts of HTML-File as Strings
     :return: String which includes all extracted texts (separated with /n)
     """
     texts = list()
     final_text = str()
-    errors = 0
 
     for xpath in xpathes:
-        a_soup = get_image_soup(xpath, doc)
+        try:
+            a_soup = get_image_soup(xpath, doc)
+        except ValueError as a:
+            entry = DataEntry.load(image_id)
+            imgs = find_img(doc, entry.url)
+            found_better = False
+            print(xpath.replace('\n', ''))
+            for i in imgs:
+                new_xpath = get_node_xpath(i)
 
-        if a_soup is not True and a_soup is not None:
-            count_tags = xpath.count("/")
-            text_range = round(count_tags * xpath_threshold)
-            #print(text_range, count_tags)
+                found = False
+                for old in xpathes:
+                    if new_xpath.lower() == old.lower().replace('\n', ''):
+                        found = True
+                        break
+                if found:
+                    continue
 
-            if text_range < 1 and count_tags > 1 and len(xpathes) < 2:
-                text_range = 1
+                try:
+                    a_soup = get_image_soup(new_xpath, doc)
+                    print(new_xpath)
+                    print('Given xpath faulty, found better')
+                    found_better = True
+                except ValueError:
+                    pass
+            if not found_better:
+                log.debug('For image %s the xpath: %s is faulty -> ignored', image_id, xpath.replace('\n', ''))
+                continue
 
-            for i in range(0, text_range):
-                a_soup = a_soup.parent
+        count_tags = xpath.count("/")
+        text_range = round(count_tags * xpath_threshold)
+        # print(text_range, count_tags)
 
-            texts.append(a_soup.get_text(separator=' ', strip=True))
+        if text_range < 1 and count_tags > 1 and len(xpathes) < 2:
+            text_range = 1
 
-        else:
-            errors += 1
+        for i in range(0, text_range):
+            a_soup = a_soup.parent
+
+        texts.append(a_soup.get_text(separator=' ', strip=True))
 
         """
         counter_figure = xpath.count("figure")
@@ -151,10 +197,10 @@ def get_image_html_text(doc: BeautifulSoup, xpathes: List[str]) -> str:
 
     # combine texts to one string
     for text in texts:
-        if text not in final_text and text >= min_len_texts:
+        if text not in final_text and len(text) >= min_len_texts:
             final_text += text + "\n"
 
-    return final_text, errors
+    return final_text
 
 
 def run_html_preprocessing(image_id: str) -> str:
@@ -170,7 +216,7 @@ def run_html_preprocessing(image_id: str) -> str:
     doc = read_html(doc_path)
     xpath = read_xpath(xpath_path)
 
-    text = get_image_html_text(doc, xpath)
+    text = get_image_html_text(doc, xpath, image_id)
 
     return text
 
@@ -180,9 +226,8 @@ def html_test() -> dict:
     Testing html_preprocessing
     :return: Dictionary dataset with extracted texts
     """
-    data = DataEntry.get_image_ids()
+    data = DataEntry.get_image_ids(100)
     dataset = dict()
-    type_error = 0
 
     for d in data:
         pathes = dict()
@@ -195,16 +240,14 @@ def html_test() -> dict:
     for d in dataset:
         doc = read_html(dataset[d]["snp_dom"])
         xpath = read_xpath(dataset[d]["snp_xpath"])
-        print(d)
-        text, error = get_image_html_text(doc, xpath)
+        # print(d)
+        text = get_image_html_text(doc, xpath, d)
         dataset[d].setdefault("text", text)
-        print(text)
-
-        type_error += error
+        # print(text)
 
         if len(text) > 0:
             counter += 1
 
     print(str(counter) + " : " + str(len(data)))
 
-    return dataset, type_error
+    return dataset
