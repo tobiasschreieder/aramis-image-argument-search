@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from typing import List
 
+import pandas as pd
 from bs4 import BeautifulSoup
 
 from config import Config
@@ -173,6 +174,8 @@ class Topic:
     description: str
     narrative: str
 
+    topic_image_file = cfg.data_location.joinpath('image_topic.csv')
+
     @classmethod
     def load_all(cls) -> List['Topic']:
         with cfg.data_location.joinpath(Path('topics.xml')).open() as file:
@@ -195,3 +198,28 @@ class Topic:
             if t.number == topic_number:
                 return t
         raise ValueError('Topic with number {} not found.'.format(topic_number))
+
+    @staticmethod
+    def __create_topic_image_df() -> pd.DataFrame:
+        data = set()
+        for image in DataEntry.get_image_ids():
+            entry = DataEntry.load(image)
+            for page in entry.pages:
+                for rank in page.rankings:
+                    data.add((rank.topic, image))
+
+        df = pd.DataFrame(data, columns=['topic', 'image_id'])
+        df.to_csv(Topic.topic_image_file, index=False)
+        return df
+
+    @staticmethod
+    def __get_topic_image_df() -> pd.DataFrame:
+        if not Topic.topic_image_file.exists():
+            return Topic.__create_topic_image_df()
+        else:
+            return pd.read_csv(Topic.topic_image_file)
+
+    def get_image_ids(self):
+        df = self.__get_topic_image_df()
+        ids = df[df['topic'] == self.number]
+        return ids['image_id'].tolist()

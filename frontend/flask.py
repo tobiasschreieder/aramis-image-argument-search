@@ -7,7 +7,7 @@ from flask import Flask, render_template, request, send_file, abort, jsonify, ma
 
 from indexing import DataEntry, Topic
 from retrieval import RetrievalSystem
-from evaluation import has_eval, save_eval, get_eval, Stance, Argumentative
+from evaluation import save_eval, Stance, Argumentative, get_image_to_eval
 
 log = logging.getLogger('frontend.flask')
 app = Flask(__name__, static_url_path='', static_folder='static')
@@ -45,17 +45,6 @@ def index():
                                        time_request=str(now-then))
 
     return render_template('index.html', pros=[], cons=[], topK=20)
-
-
-def get_image_to_eval(topic: Topic) -> DataEntry or None:
-    for image in DataEntry.get_image_ids():
-        entry = DataEntry.load(image)
-        for page in entry.pages:
-            for rank in page.rankings:
-                if rank.topic == topic.number and not has_eval(image):
-                    return entry
-    return None
-    # return DataEntry.load(DataEntry.get_image_ids(1)[0])
 
 
 @app.route('/evaluation', methods=['GET', 'POST'])

@@ -2,6 +2,10 @@ import datetime
 import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
+from pathlib import Path
+
+from bs4 import BeautifulSoup
+from bs4.element import Tag
 
 from config import Config
 from frontend import start_server
@@ -69,15 +73,17 @@ def main():
     normal program run
     :return:
     """
-    """
+
     log.info('do main stuff')
 
-    start_flask()
-    # start_server(None)
-    """
-    data, type_error = html_preprocessing.html_test()
-    print("Type Error: ", type_error)
-    #np.save('data12', data)
+    # start_flask()
+    # findex = FeatureIndex.create_index(10, n_jobs=6)
+    # findex.calculate_sentiment_score_v2(n_jobs=6)
+    # findex.save()
+    start_server(None)
+
+    # data = html_preprocessing.html_test()
+    # np.save('data12', data)
 
 
 if __name__ == '__main__':

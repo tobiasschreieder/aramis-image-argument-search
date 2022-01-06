@@ -13,7 +13,7 @@ class RetrievalSystem:
 
     def __init__(self, prep: Preprocessor, topic_model: TopicModel,
                  argument_model: ArgumentModel, stance_model: StanceModel,
-                 topic_weight: float = 0.15, argument_weight: float = 0.35, prefetch_top_k: float = 2):
+                 topic_weight: float = 0.30, argument_weight: float = 0.40, prefetch_top_k: float = 2):
         """
         Constructor
         :param topic_model: topic model to calculate topic scores with
