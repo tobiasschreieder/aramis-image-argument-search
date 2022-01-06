@@ -29,12 +29,13 @@ eval_file = cfg.data_location.joinpath(Path('image_eval.txt'))
 if eval_file.exists():
     df = pd.read_csv(eval_file, sep=' ')
 else:
-    df = pd.DataFrame(columns=['image_id', 'user', 'Topic', 'Argumentative', 'Stance'])
+    df = pd.DataFrame(columns=['image_id', 'user', 'Topic', 'Topic_correct', 'Argumentative', 'Stance'])
 
 df.astype(dtype={
             'image_id': pd.StringDtype(),
             'user': pd.StringDtype(),
             'Topic': np.int,
+            'Topic_correct': np.bool,
             'Argumentative': pd.StringDtype(),
             'Stance': pd.StringDtype(),
         })
@@ -83,7 +84,7 @@ def get_evaluations(image_id: str, topic: int) -> Dict[str, Tuple[int, Argumenta
     return None
 
 
-def save_eval(image_id: str, user: str, topic: int, arg: Argumentative, stance: Stance) -> None:
-    df.loc[(image_id, user, topic), :] = [arg.name, stance.name]
+def save_eval(image_id: str, user: str, topic: int, topic_correct: bool, arg: Argumentative, stance: Stance) -> None:
+    df.loc[(image_id, user, topic), :] = [topic_correct, arg.name, stance.name]
     save_df()
-    log.debug('Saved evaluation for %s %s: %s %s %s', image_id, user, topic, arg, stance)
+    log.debug('Saved evaluation for %s %s %s: %s %s %s', image_id, user, topic, topic_correct, arg, stance)

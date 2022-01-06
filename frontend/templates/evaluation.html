@@ -113,6 +113,57 @@
                                 <div class="mt-5 row">
                                     <div class="col-3 d-flex align-items-center">
                                         <span class="fs-6">
+                                            Topic:
+                                        </span>
+                                    </div>
+                                    <div class="col-8 d-flex align-items-center">
+                                        <div class="btn-group" role="group" aria-label="Topic button group">
+                                            <input type="radio" class="btn-check" name="topic_correct" value="topic-true" id="topic-true"
+                                                   autocomplete="off">
+                                            <label class="btn btn-outline-primary" for="topic-true">
+                                                True
+                                            </label>
+
+                                            <input type="radio" class="btn-check" name="topic_correct" value="topic-false" id="topic-false"
+                                                   autocomplete="off">
+                                            <label class="btn btn-outline-primary" for="topic-false">
+                                                False
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-1 d-flex flex-row align-items-center">
+                                        <i class="btn bi bi-question-lg" data-bs-toggle="collapse"
+                                           title="Definition Argumentative" data-bs-target="#collapseTop"
+                                           aria-expanded="false" aria-controls="collapseTop" style="padding: 2px"></i>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <div class="collapse" id="collapseTop">
+                                            <div class="card card-body container">
+                                                <div class="row">
+                                                    <span class="fs-6 text-decoration-underline">
+                                                        True:
+                                                    </span>
+                                                    <span>
+                                                        Gehört das Bild zu diesem Topic.
+                                                    </span>
+                                                </div>
+                                                <div class="row mt-3">
+                                                    <span class="fs-6 text-decoration-underline">
+                                                        False:
+                                                    </span>
+                                                    <span>
+                                                        Gehört das Bild nicht zu diesem Topic
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-5 row">
+                                    <div class="col-3 d-flex align-items-center">
+                                        <span class="fs-6">
                                             Argumentative:
                                         </span>
                                     </div>
@@ -149,18 +200,10 @@
                                             <div class="card card-body container">
                                                 <div class="row">
                                                     <span class="fs-6 text-decoration-underline">
-                                                        Argumentative:
-                                                    </span>
-                                                    <span>
-                                                        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
-                                                    </span>
-                                                </div>
-                                                <div class="row mt-3">
-                                                    <span class="fs-6 text-decoration-underline">
                                                         None:
                                                     </span>
                                                     <span>
-                                                        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+                                                        Es ist kein Argument im Bild erkennbar, das für eine beliebige Haltung in einem Thema argumentiert.
                                                     </span>
                                                 </div>
                                                 <div class="row mt-3">
@@ -168,7 +211,7 @@
                                                         Weak:
                                                     </span>
                                                     <span>
-                                                        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+                                                        Es sind wenige Argumente im Bild erkennbar oder/und die Argumente sind nicht eindeutig.
                                                     </span>
                                                 </div>
                                                 <div class="row mt-3">
@@ -176,7 +219,7 @@
                                                         Strong:
                                                     </span>
                                                     <span>
-                                                        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+                                                        Es sind mehrere Argumente im Bild erkennbar oder/und eine klare Haltung ist in jedem einzelnen Argument erkennbar.
                                                     </span>
                                                 </div>
 
@@ -223,18 +266,10 @@
                                             <div class="card card-body container">
                                                 <div class="row">
                                                     <span class="fs-6 text-decoration-underline">
-                                                        Stance:
-                                                    </span>
-                                                    <span>
-                                                        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
-                                                    </span>
-                                                </div>
-                                                <div class="row mt-3">
-                                                    <span class="fs-6 text-decoration-underline">
                                                         Pro:
                                                     </span>
                                                     <span>
-                                                        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+                                                        Es ist eine klare Haltung im gesamten Bild erkennbar, welche die These des Themas stützt.
                                                     </span>
                                                 </div>
                                                 <div class="row mt-3">
@@ -242,7 +277,7 @@
                                                         Neutral:
                                                     </span>
                                                     <span>
-                                                        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+                                                        Das Bild ist nicht argumentativ oder es wird in gleichen Maßen für und gegen ein Thema argumentiert.
                                                     </span>
                                                 </div>
                                                 <div class="row mt-3">
@@ -250,7 +285,7 @@
                                                         Con:
                                                     </span>
                                                     <span>
-                                                        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+                                                        Es ist eine klare Haltung im gesamten Bild erkennbar, welche die These des Themas angreift.
                                                     </span>
                                                 </div>
                                             </div>

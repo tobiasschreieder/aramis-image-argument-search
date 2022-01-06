@@ -65,7 +65,8 @@ def evaluation():
                 pass
 
         if len(user) > 0:
-            if 'arg' in request.form.keys() and 'stance' in request.form.keys() and 'image_id' in request.form.keys():
+            if 'arg' in request.form.keys() and 'stance' in request.form.keys() \
+                    and 'image_id' in request.form.keys() and 'topic_correct' in request.form.keys():
                 if request.form['arg'] == 'weak':
                     arg = Argumentative.WEAK
                 elif request.form['arg'] == 'strong':
@@ -80,7 +81,12 @@ def evaluation():
                 else:
                     stance = Stance.NEUTRAL
 
-                save_eval(image_id=request.form['image_id'], user=user,
+                if request.form['topic_correct'] == 'topic-true':
+                    topic_correct = True
+                else:
+                    topic_correct = False
+
+                save_eval(image_id=request.form['image_id'], user=user, topic_correct=topic_correct,
                           topic=selected_topic.number, arg=arg, stance=stance)
 
     if len(user) > 0:
