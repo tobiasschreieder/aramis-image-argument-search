@@ -73,7 +73,7 @@ def get_eval(image_id: str, topic: int) -> Tuple[int, Argumentative, Stance] or 
 
 
 def get_evaluations(image_id: str, topic: int) -> Dict[str, Tuple[int, Argumentative, Stance]] or None:
-    if has_eval(image_id):
+    if has_eval(image_id, topic):
         temp = df.loc[(image_id, slice(None), topic), :]
         evals = []
         for user in temp.index:

@@ -7,7 +7,7 @@ from flask import Flask, render_template, request, send_file, abort, jsonify, ma
 
 from indexing import DataEntry, Topic
 from retrieval import RetrievalSystem
-from evaluation import save_eval, Stance, Argumentative, get_image_to_eval
+from evaluation import save_eval, Stance, Argumentative, get_image_to_eval, has_eval
 
 log = logging.getLogger('frontend.flask')
 app = Flask(__name__, static_url_path='', static_folder='static')
@@ -55,6 +55,9 @@ def evaluation():
     image = None
 
     topic_done = False
+    topic_len = None
+    images_done = None
+    done_percent = None
 
     if request.method == 'POST':
         if 'selected_topic' in request.form.keys() and 'user_name' in request.form.keys():
@@ -93,9 +96,17 @@ def evaluation():
         image = get_image_to_eval(selected_topic)
         if image is None:
             topic_done = True
+        topic_len = len(selected_topic.get_image_ids())
+        images_done = 0
+        for image_id in selected_topic.get_image_ids():
+            if has_eval(image_id, selected_topic.number):
+                images_done += 1
+
+        done_percent = round((images_done/topic_len)*100, 2)
 
     resp = make_response(render_template('evaluation.html', topics=topics, selected_topic=selected_topic,
-                                         user_name=user, topic_done=topic_done, image=image))
+                                         user_name=user, topic_done=topic_done, image=image,
+                                         images_done=images_done, topic_len=topic_len, done_percent=done_percent))
     expire = datetime.datetime.now() + datetime.timedelta(days=90)
     if len(user) > 0:
         resp.set_cookie('user_name', user, expires=expire)
