@@ -108,13 +108,15 @@ class TopicRankingDirichlet(TopicModel):
     tq_dirichlet: DirichletLM
     alpha: int
 
-    def __init__(self, t_indexes: Dict[int, TopicTermIndex], tq_index: TopicQueryTermIndex, alpha: int = 1000):
+    def __init__(self, t_indexes: Dict[int, TopicTermIndex], tq_index: TopicQueryTermIndex,
+                 alpha: int = 1000, tq_alpha: int = 1000):
         """
         Constructor for a TopicRankingDirichlet model.
 
         :param t_indexes: dict with topic indexes to get relevance data from
         :param tq_index: topic query term index to get topic data from
         :param alpha: alpha parameter for Dirichlet smoothing
+        :param tq_alpha: alpha parameter for topic query Dirichlet smoothing
         """
         super().__init__(None)
         self.t_indexes = t_indexes

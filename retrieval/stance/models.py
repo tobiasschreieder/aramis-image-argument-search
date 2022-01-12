@@ -2,6 +2,7 @@ import logging
 import math
 from typing import List, Tuple
 
+import numpy as np
 import pandas as pd
 
 from indexing import FeatureIndex, ImageType
@@ -101,5 +102,49 @@ class StandardStanceModel(StanceModel):
 
         image_text_sentiment_score = self.index.get_image_text_sentiment_score(doc_id)
 
-        score = (color_mood * len_words) + (image_text_sentiment_score * (1 - len_words)) + abs(html_sentiment_score)
-        return score
+        return (color_mood * len_words), (image_text_sentiment_score * (1 - len_words)), abs(html_sentiment_score)
+
+    def query(self, query: List[str], argument_relevant: pd.DataFrame,
+              top_k: int = -1, weights: List[float] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Queries a given preprocessed query against the index using a model scoring function
+
+        :param weights: TODO
+        :param argument_relevant: DataFrame with data for topic and argument score
+        :param query: preprocessed query in list representation to calculate the relevance for
+        :param top_k: number of top results to return
+        :return: Tuple of given DataFrame with a additional column for pro/con stance score.
+            Frames are sorted and reduced to top_k rows
+        """
+        self.log.debug('start stance process for query %s', query)
+        pro_scores = argument_relevant.copy()
+        con_scores = argument_relevant.copy()
+        if top_k < 0:
+            top_k = len(self.index)
+        else:
+            top_k = min(len(self.index), top_k)
+
+        df = pd.DataFrame(index=argument_relevant.index, columns=['color_mood', 'image_text_sentiment_score',
+                                                                  'html_sentiment_score'])
+
+        for doc_id in argument_relevant.index:
+            df.loc[doc_id, :] = self.score(query, doc_id)
+
+        df_norm = df / df.abs().max()
+
+        if weights is None:
+            np_weights = np.array([1, 1, 1])
+        else:
+            np_weights = np.array(weights)
+
+        np_weights = np_weights/np_weights.sum()
+
+        for doc_id in argument_relevant.index:
+            score = (df_norm.loc[doc_id, :].to_numpy() * np_weights).sum()
+            argument_relevant.loc[doc_id, 'stance'] = score
+            if score > 0:
+                pro_scores.loc[doc_id, 'stance'] = score
+            else:  # if score < 0:
+                con_scores.loc[doc_id, 'stance'] = score
+
+        return pro_scores.nlargest(top_k, 'stance', keep='all'), con_scores.nlargest(top_k, 'stance', keep='all')

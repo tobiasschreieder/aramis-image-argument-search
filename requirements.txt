@@ -13,3 +13,5 @@ pytesseract
 opencv-python
 deskew
 scikit-image
+plotly
+Kaleido

@@ -15,6 +15,7 @@ from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceMode
 from evaluation import save_eval, Argumentative, Stance, get_eval, has_eval
 from indexing.feature import html_preprocessing
 import numpy as np
+from evaluation.analysis import main as analysis_main
 
 
 def init_logging():
@@ -80,10 +81,12 @@ def main():
     # findex = FeatureIndex.create_index(10, n_jobs=6)
     # findex.calculate_sentiment_score_v2(n_jobs=6)
     # findex.save()
-    start_server(None)
+    # start_server(None)
 
     # data = html_preprocessing.html_test()
     # np.save('data12', data)
+
+    analysis_main()
 
 
 if __name__ == '__main__':

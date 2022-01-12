@@ -42,6 +42,10 @@ df.astype(dtype={
 df.set_index(['image_id', 'user', 'Topic'], inplace=True)
 
 
+def get_df() -> pd.DataFrame:
+    return df.copy()
+
+
 def save_df():
     df.to_csv(eval_file, sep=' ')
 

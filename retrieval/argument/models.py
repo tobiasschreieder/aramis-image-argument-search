@@ -2,6 +2,7 @@ import logging
 import math
 from typing import List, Tuple
 
+import numpy as np
 import pandas as pd
 
 from indexing import FeatureIndex
@@ -17,7 +18,7 @@ class ArgumentModel:
         """
         self.index = index
 
-    def score(self, query: List[str], doc_id: str) -> float:
+    def score(self, query: List[str], doc_id: str) -> List[float]:
         """
         Calculates the argument score for a document (given by index and doc_id) and query (give ans query term list)
         :param query: preprocessed query in list representation to calculate the relevance for
@@ -74,8 +75,7 @@ class StandardArgumentModel(ArgumentModel):
 
         html_sentiment_score = self.index.get_html_sentiment_score(doc_id)
 
-        score = diagramm_factor + text_sentiment_factor + text_factor + html_sentiment_score
-        return score
+        return diagramm_factor, text_sentiment_factor, text_factor, html_sentiment_score
 
     @staticmethod
     def log_normal_density_function(x: float) -> float:
@@ -86,3 +86,42 @@ class StandardArgumentModel(ArgumentModel):
         else:
             return ((1 / (math.sqrt(2 * math.pi) * 0.16 * (-x + 1))) * math.exp(
                 ((math.log((-x + 1), 10) + 0.49) ** 2) / -0.0512) * 0.12)
+
+    def query(self, query: List[str], topic_relevant: pd.DataFrame,
+              top_k: int = -1, weights: List[float] = None) -> pd.DataFrame:
+        """
+        Queries a given preprocessed query against the index using a model scoring function
+
+        :param weights: TODO
+        :param topic_relevant: DataFrame with data for topic score
+        :param query: preprocessed query in list representation to calculate the relevance for
+        :param top_k: number of top results to return
+        :return: given DataFrame with a additional column for argument score.
+            Frame is sorted and reduced to top_k rows
+        """
+        self.log.debug('start argument process for query %s', query)
+
+        if top_k < 0:
+            top_k = len(self.index)
+        else:
+            top_k = min(len(self.index), top_k)
+
+        df = pd.DataFrame(index=topic_relevant.index, columns=['diagram_factor', 'text_sentiment_factor',
+                                                               'text_factor', 'html_sentiment_score'])
+
+        for doc_id in topic_relevant.index:
+            df.loc[doc_id, :] = self.score(query, doc_id)
+
+        df_norm = df / df.abs().max()
+
+        if weights is None:
+            np_weights = np.array([1, 1, 1, 1])
+        else:
+            np_weights = np.array(weights)
+
+        np_weights = np_weights / np_weights.sum()
+
+        for doc_id in topic_relevant.index:
+            topic_relevant.loc[doc_id, 'argument'] = (df_norm.loc[doc_id, :].to_numpy() * np_weights).sum()
+
+        return topic_relevant.nlargest(top_k, 'argument', keep='all')
