@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from indexing import FeatureIndex, ImageType
+from indexing.feature import sentiment_detection
 
 
 class StanceModel:
@@ -66,6 +67,7 @@ class StandardStanceModel(StanceModel):
         :param doc_id: document to calculate the relevance for
         :return: stance score
         """
+
         image_type = self.index.get_image_type(doc_id)
 
         percentage_green = self.index.get_image_percentage_green(doc_id)
@@ -85,24 +87,40 @@ class StandardStanceModel(StanceModel):
             (image_average_color[0] - 255) ** 2 + (image_average_color[1] - 255) ** 2 + (
                     image_average_color[2] - 255) ** 2)
 
-        # between 0 and 1 (above 30 ~1)
+        # between 0 and 3
         color_mood = 0
         if image_type == ImageType.CLIPART:
-            color_mood = (percentage_green * (100 / distance_to_green)) - (percentage_red * (100 / distance_to_red))
+            color_mood = (percentage_green - percentage_red) * 3
         elif image_type == ImageType.PHOTO:
             hue_factor = 0.2
-            color_mood = ((percentage_green * (100 / distance_to_green)) -
-                          (percentage_red * (100 / distance_to_red))) + hue_factor * \
-                         ((percentage_bright * (100 / distance_to_white)) -
-                          (percentage_dark * (100 / distance_to_black)))
-
-        image_text_len = self.index.get_image_text_len(doc_id)
-        # between 1 and 0 (above 80 ~0)
-        len_words = 1 / (math.exp(0.04 * image_text_len))
+            # between -1 and 1
+            color_mood = ((percentage_green/100 - percentage_red/100) * (1-hue_factor)) + \
+                         ((percentage_bright/100 - percentage_dark/100) * hue_factor)
+            # between -3 and 3
+            color_mood = color_mood * 3
 
         image_text_sentiment_score = self.index.get_image_text_sentiment_score(doc_id)
+        image_text_len = self.index.get_image_text_len(doc_id)
+        # between 1 and 3 (above 80 ~3)
+        len_words_value = 3 + (((-1) / (math.exp(0.04 * image_text_len))) * 2)
+        text_sentiment_factor = len_words_value * image_text_sentiment_score
 
-        return (color_mood * len_words), (image_text_sentiment_score * (1 - len_words)), abs(html_sentiment_score)
+        # shift between -3 and 3
+        html_sentiment_score = html_sentiment_score * 3
+
+        query_sentiment_score = sentiment_detection.sentiment_nltk(query)
+        if abs(query_sentiment_score) > 0.2:
+            if query_sentiment_score < 0:
+                query_negation = True
+            else:
+                query_negation = False
+
+        if query_negation:
+            color_mood = color_mood * (-1)
+            text_sentiment_factor = text_sentiment_factor * (-1)
+            html_sentiment_score = html_sentiment_score * (-1)
+
+        return color_mood, text_sentiment_factor, html_sentiment_score
 
     def query(self, query: List[str], argument_relevant: pd.DataFrame,
               top_k: int = -1, weights: List[float] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:

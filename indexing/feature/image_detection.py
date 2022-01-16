@@ -234,8 +234,8 @@ def color_mood(image, image_type='clipArt', plot=False):
     mask_red_1 = cv2.inRange(hsv, (0, 150, 80), (15, 255, 255))
     mask_red_2 = cv2.inRange(hsv, (150, 150, 80), (255, 255, 255))
     mask_red = cv2.bitwise_or(mask_red_1, mask_red_2)
-    mask_bright = cv2.inRange(hsv, (0, 0, 200), (255, 80, 255))
-    mask_dark = cv2.inRange(hsv, (0, 0, 0), (255, 255, 100))
+    mask_bright = cv2.inRange(hsv, (0, 0, 200), (255, 60, 255))
+    mask_dark = cv2.inRange(hsv, (0, 0, 0), (255, 255, 60))
 
     number_pixels = hsv.size / 3
     percentage_green = (cv2.countNonZero(mask_green) / number_pixels) * 100
@@ -268,17 +268,6 @@ def color_mood(image, image_type='clipArt', plot=False):
         "percentage_dark": percentage_dark,
         "average_color": average
     }
-
-    # use following code for calculation in runtime
-    '''
-    if image_type == 'clipart':
-        color_mood = (percentage_green * (100 / distance_to_green)) - (percentage_red * (100 / distance_to_red))
-    elif image_type == 'photo':
-        hue_factor = 0.2
-        color_mood = ((percentage_green * (100 / distance_to_green)) - (percentage_red * (100 / distance_to_red))) + \
-                     hue_factor * ((percentage_bright * (100 / distance_to_white)) - (
-                    percentage_dark * (100 / distance_to_black)))
-    '''
 
     return color_mood
 

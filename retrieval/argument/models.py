@@ -60,6 +60,7 @@ class StandardArgumentModel(ArgumentModel):
         :param doc_id: document to calculate the relevance for
         :return: argument score
         """
+
         image_roi_area = self.index.get_image_roi_area(doc_id)
         # use cazy function to get a score between 0 and 1 with optimum near 0.8
         diagramm_factor = self.log_normal_density_function(image_roi_area)
@@ -73,9 +74,21 @@ class StandardArgumentModel(ArgumentModel):
         # (number words - value) [0 - 0][40 - 1][110 - 2][asymptotisch 3]
         text_factor = (1 - (1 / (math.exp(0.01 * image_text_len)))) * 3
 
-        html_sentiment_score = self.index.get_html_sentiment_score(doc_id)
+        html_sentiment_score = (self.index.get_html_sentiment_score(doc_id) + 1) * 1.5
 
-        return diagramm_factor, text_sentiment_factor, text_factor, html_sentiment_score
+        percentage_green = self.index.get_image_percentage_green(doc_id)
+        percentage_red = self.index.get_image_percentage_red(doc_id)
+        # assume clipat=1, right?
+        image_type = self.index.get_image_type(doc_id)
+        if image_type == 1:
+            # max-value is 3
+            color_score = (percentage_red/100)*3 + (percentage_green/100)*3
+        else:
+            # max-value is 1
+            color_score = (percentage_red/100) + (percentage_green/100)
+
+        # every value min-value: 0 , max-value: 3
+        return diagramm_factor, text_sentiment_factor, text_factor, html_sentiment_score, color_score
 
     @staticmethod
     def log_normal_density_function(x: float) -> float:
@@ -107,7 +120,7 @@ class StandardArgumentModel(ArgumentModel):
             top_k = min(len(self.index), top_k)
 
         df = pd.DataFrame(index=topic_relevant.index, columns=['diagram_factor', 'text_sentiment_factor',
-                                                               'text_factor', 'html_sentiment_score'])
+                                                               'text_factor', 'html_sentiment_score', 'color-score'])
 
         for doc_id in topic_relevant.index:
             df.loc[doc_id, :] = self.score(query, doc_id)
@@ -115,7 +128,7 @@ class StandardArgumentModel(ArgumentModel):
         df_norm = df / df.abs().max()
 
         if weights is None:
-            np_weights = np.array([1, 1, 1, 1])
+            np_weights = np.array([0, 1, 1, 1, 1])
         else:
             np_weights = np.array(weights)
 
