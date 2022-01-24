@@ -364,8 +364,7 @@ def stance_eval(fidx: FeatureIndex, topics: List[Topic]):
                  start_dec=1000000, end_dec=1, start_weights=weights)
 
 
-def get_model_data_arg(topics: List[Topic], fidx: FeatureIndex) -> None:
-    result = pd.DataFrame()
+def get_model_data_arg(topics: List[Topic], fidx: FeatureIndex) -> pd.DataFrame:
     df = fidx.dataframe.copy()
     df['arg_eval'] = 0
     df['topic'] = 0
