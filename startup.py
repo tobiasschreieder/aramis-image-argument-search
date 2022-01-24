@@ -16,6 +16,7 @@ from evaluation import save_eval, Argumentative, Stance, get_eval, has_eval
 from indexing.feature import html_preprocessing
 import numpy as np
 from evaluation.analysis import main as analysis_main
+from evaluation import get_model_data_arg
 
 
 def init_logging():
@@ -86,7 +87,11 @@ def main():
     # data = html_preprocessing.html_test()
     # np.save('data12', data)
 
-    analysis_main()
+    # analysis_main()
+
+    findex = FeatureIndex.load(23158)
+    topics = [2, 4, 8, 21, 27, 33, 36, 40, 43, 45, 48]
+    df = get_model_data_arg(topics, findex)
 
 
 if __name__ == '__main__':
