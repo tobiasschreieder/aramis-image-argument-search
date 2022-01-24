@@ -78,7 +78,7 @@ def main():
     log.info('do main stuff')
 
     # start_flask()
-    # findex = FeatureIndex.create_index(10, n_jobs=6)
+    # findex = FeatureIndex.create_index()
     # findex.calculate_sentiment_score_v2(n_jobs=6)
     # findex.save()
     # start_server(None)

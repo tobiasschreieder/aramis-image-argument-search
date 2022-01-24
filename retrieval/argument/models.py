@@ -135,6 +135,6 @@ class StandardArgumentModel(ArgumentModel):
         np_weights = np_weights / np_weights.sum()
 
         for doc_id in topic_relevant.index:
-            topic_relevant.loc[doc_id, 'argument'] = (df_norm.loc[doc_id, :].to_numpy() * np_weights).sum()
+            topic_relevant.loc[doc_id, 'argument'] = (df_norm.loc[doc_id, :].to_numpy() * np_weights).mean()
 
         return topic_relevant.nlargest(top_k, 'argument', keep='all')
