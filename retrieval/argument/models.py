@@ -28,7 +28,7 @@ class ArgumentModel:
         return 1.0
 
     def query(self, query: List[str], topic_relevant: pd.DataFrame,
-              top_k: int = -1) -> List[Tuple[str, float]]:
+              top_k: int = -1, **kwargs) -> List[Tuple[str, float]]:
         """
         Queries a given preprocessed query against the index using a model scoring function
 
@@ -138,3 +138,48 @@ class StandardArgumentModel(ArgumentModel):
             topic_relevant.loc[doc_id, 'argument'] = (df_norm.loc[doc_id, :].to_numpy() * np_weights).mean()
 
         return topic_relevant.nlargest(top_k, 'argument', keep='all')
+
+
+class NNArgumentModel(ArgumentModel):
+
+    def score(self, query: List[str], doc_id: str) -> List[float]:
+        """
+        Calculates the argument score for a document (given by index and doc_id) and query (give ans query term list)
+        :param query: preprocessed query in list representation to calculate the relevance for
+        :param doc_id: document to calculate the relevance for
+        :return: argument score
+        """
+
+        image_roi_area = self.index.get_image_roi_area(doc_id)
+        diagramm_factor = self.log_normal_density_function(image_roi_area)
+
+        image_text_sentiment_score = self.index.get_image_text_sentiment_score(doc_id)
+        image_text_len = self.index.get_image_text_len(doc_id)
+        html_sentiment_score = self.index.get_html_sentiment_score(doc_id)
+
+        percentage_green = self.index.get_image_percentage_green(doc_id)
+        percentage_red = self.index.get_image_percentage_red(doc_id)
+        # assume clipat=1, right?
+        image_type = self.index.get_image_type(doc_id)
+        if image_type == 1:
+            # max-value is 3
+            color_score = (percentage_red / 100) * 3 + (percentage_green / 100) * 3
+        else:
+            # max-value is 1
+            color_score = (percentage_red / 100) + (percentage_green / 100)
+
+        # TODO NN
+
+        score = 0  # <----- Neurales Netz
+
+        return score
+
+    @staticmethod
+    def log_normal_density_function(x: float) -> float:
+        if x == 0:
+            return 0
+        elif x == 1:
+            return 0
+        else:
+            return ((1 / (math.sqrt(2 * math.pi) * 0.16 * (-x + 1))) * math.exp(
+                ((math.log((-x + 1), 10) + 0.49) ** 2) / -0.0512) * 0.12)

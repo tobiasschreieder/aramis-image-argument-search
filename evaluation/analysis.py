@@ -12,7 +12,8 @@ from plotly.express.colors import qualitative
 from evaluation import get_df
 from .configuration import Configuration
 from indexing import TopicQueryTermIndex, get_all_topic_indexes, FeatureIndex, TopicTermIndex, Topic, SpacyPreprocessor
-from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardArgumentModel, StandardStanceModel
+from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardArgumentModel, \
+    StandardStanceModel, NNArgumentModel
 
 log = logging.getLogger('analysis')
 
@@ -383,15 +384,16 @@ def main():
 
     findex = FeatureIndex.load(23158)
 
-    topics = [2, 4, 8, 21, 27, 33, 36, 40, 43, 45, 48]
+    topics_no = [2, 4, 8, 21, 27, 33, 36, 40, 43, 45, 48]
 
-    topics = [Topic.get(t) for t in topics]
+    topics = [Topic.get(t) for t in topics_no]
 
     # arg_eval(findex, topics)
     # stance_eval(findex, topics)
-    # t = get_relevant_eval(topics[0])
-    t = get_model_data_arg(topics, findex)
-    print(t)
 
-    # plot_arg_scoring_eval(StandardArgumentModel(findex), topics, [200001.0, 1010001.0, 1, 72221000001, -61419999999]).show()
-    # plot_stance_scoring_eval(StandardStanceModel(findex), topics, (1, 1, 1)).show()
+    # t = get_model_data_arg(topics, findex)
+    # print(t)
+
+    # plot_arg_scoring_eval(StandardArgumentModel(findex), topics_no, [200001.0, 1010001.0, 1, 72221000001, -61419999999]).show()
+    plot_arg_scoring_eval(NNArgumentModel(findex), topics_no, [200001.0, 1010001.0, 1, 72221000001, -61419999999]).show()
+    # plot_stance_scoring_eval(StandardStanceModel(findex), topics_no, (1, 1, 1)).show()
