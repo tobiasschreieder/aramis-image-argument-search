@@ -253,8 +253,8 @@ def text_analysis(image):
     height = image.shape[0]
     width = image.shape[1]
 
-    n_cols = 6
-    n_rows = 6
+    n_cols = 10
+    n_rows = 10
     cols_interval = width / n_cols
     rows_interval = height / n_rows
 
