@@ -1,10 +1,14 @@
 import math
 import os
 # to get no console-print from tensorflow
+import keras
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
 import pandas as pd
+pd.options.mode.chained_assignment = None
+
 import matplotlib.pyplot as plt
 from pathlib import Path
 from keras.callbacks import EarlyStopping
@@ -12,7 +16,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Sequential, load_model
 
 
-overfitCallback = EarlyStopping(monitor='accuracy', min_delta=0, patience=30)
+overfitCallback = EarlyStopping(monitor='accuracy', min_delta=0, patience=5)
 
 
 def train_network(model_name: str, df: pd.DataFrame):
@@ -26,6 +30,8 @@ def train_network(model_name: str, df: pd.DataFrame):
     for index, row in df.iterrows():
         df.loc[index, :] = scale_data(row)
     print("finished scaling")
+
+    print(df)
 
     # shuffle data-rows
     df.sample(frac=1)
@@ -53,12 +59,13 @@ def train_network(model_name: str, df: pd.DataFrame):
     input_dim = len(x[0])
 
     model = Sequential()
-    model.add(Dense(40, input_dim=input_dim, activation="relu"))
-    model.add(Dense(20, activation="relu"))
-    model.add(Dense(1, activation="relu"))
+    model.add(Dense(100, input_dim=input_dim, activation="relu"))
+    model.add(Dense(80, activation="relu"))
+    model.add(Dense(40, activation="relu"))
+    model.add(Dense(1, activation="sigmoid"))
 
     model.compile(loss="mse", optimizer="Adam", metrics=["accuracy"])
-    history = model.fit(x, y, epochs=600, batch_size=10, validation_data=(x_test, y_test), callbacks=[overfitCallback])
+    history = model.fit(x, y, epochs=600, batch_size=50, validation_data=(x_test, y_test), callbacks=[overfitCallback])
 
     Path("indexing/models/" + str(model_name)).mkdir(parents=True, exist_ok=True)
 
@@ -86,22 +93,26 @@ def train_network(model_name: str, df: pd.DataFrame):
     model.save('indexing/models/' + str(model_name) + '/model.hS')
 
 
-def make_prediction(model_name: str, input_features: pd.Series) -> list:
+def make_prediction(model: keras.Model, input_data: list) -> list:
     """
     Method to predict some steps for a runners level
     :param model_name: name of the trained network
     :return: a list of all predictions. Every prediction is a list of 40 values due to the 40-nodes-last-layer
     """
 
-    my_model = load_model('indexing/models/' + str(model_name) + '/model.hS', compile=False)
+    input_data_scaled = []
+    for row in input_data:
+        scaled_row = scale_data(row)
+        input_data_scaled.append(scaled_row)
 
-    input_features = scale_data(input_features)
-    x = np.array(input_features)
+    x = np.array(input_data_scaled)
 
-    predictions = my_model.predict(np.array([x, ]))
+    predictions = model.predict(x)
 
-    print(predictions[0][0])
-    return predictions[0][0]
+    predictions = [value[0] for value in predictions]
+
+    print(predictions)
+    return predictions
 
 
 def log_normal_density_function(x: float) -> float:
@@ -141,5 +152,6 @@ def scale_data(df_row: pd.Series) -> pd.DataFrame:
     df_row['image_average_color_r'] = df_row['image_average_color_r'] / 360
     df_row['image_average_color_g'] = df_row['image_average_color_g'] / 360
     df_row['image_average_color_b'] = df_row['image_average_color_b'] / 360
+    df_row['image_roi_area'] = log_normal_density_function(df_row['image_roi_area'])
 
     return df_row

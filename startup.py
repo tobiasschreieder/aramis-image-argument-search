@@ -87,15 +87,13 @@ def main():
     # data = html_preprocessing.html_test()
     # np.save('data12', data)
 
-    '''
     findex = FeatureIndex.load(23158)
     topics = [2, 4, 8, 21, 27, 33, 36, 40, 43, 45, 48]
     topics = [Topic.get(t) for t in topics]
 
     df = get_model_data_arg(topics, findex)
 
-    features_neural_network.train_network("first_model", df=df)
-    '''
+    features_neural_network.train_network("second_smaller_model", df=df)
 
     analysis_main()
 
