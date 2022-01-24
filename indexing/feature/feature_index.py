@@ -27,7 +27,7 @@ class FeatureIndex:
             see joblib.parallel.Parallel
         :return: An index object
         """
-        # 132.1 min
+        # ~122 min
         image_ids = DataEntry.get_image_ids(max_images)
 
         '''
@@ -99,11 +99,16 @@ class FeatureIndex:
                                                       'image_text_sentiment_score',
                                                       'image_percentage_green',
                                                       'image_percentage_red',
+                                                      'image_percentage_blue',
+                                                      'image_percentage_yellow',
                                                       'image_percentage_bright',
                                                       'image_percentage_dark',
                                                       'image_average_color_r',
                                                       'image_average_color_g',
                                                       'image_average_color_b',
+                                                      'image_dominant_color_r',
+                                                      'image_dominant_color_g',
+                                                      'image_dominant_color_b',
                                                       'image_type',
                                                       'image_roi_area',
                                                       ])
@@ -115,11 +120,16 @@ class FeatureIndex:
             'image_text_sentiment_score': np.float,
             'image_percentage_green': np.float,
             'image_percentage_red': np.float,
+            'image_percentage_blue': np.float,
+            'image_percentage_yellow': np.float,
             'image_percentage_bright': np.float,
             'image_percentage_dark': np.float,
             'image_average_color_r': np.float,
             'image_average_color_g': np.float,
             'image_average_color_b': np.float,
+            'image_dominant_color_r': np.float,
+            'image_dominant_color_g': np.float,
+            'image_dominant_color_b': np.float,
             'image_type': np.int8,
             'image_roi_area': np.float,
         })
@@ -127,7 +137,7 @@ class FeatureIndex:
         index.dataframe.set_index('image_id', inplace=True, verify_integrity=True)
 
         # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-        print(index.dataframe.to_string())
+        # print(index.dataframe.to_string())
 
         return index
 
@@ -178,6 +188,24 @@ class FeatureIndex:
         index.log.debug('Done')
         return index
 
+    def calculate_sentiment_score_v2(self, n_jobs: int = -2) -> None:
+        def calc_doc_features(image_id) -> list:
+            self.log.debug("indexing document id = %s", image_id)
+
+            text = html_preprocessing.run_html_preprocessing(image_id)
+            if text:
+                html_sentiment_score = sentiment_detection.sentiment_nltk(text)
+            else:
+                html_sentiment_score = 0
+
+            return html_sentiment_score
+
+        with Parallel(n_jobs=n_jobs, verbose=2) as parallel:
+            data = parallel(delayed(calc_doc_features)(image_id) for image_id in self.dataframe.index)
+
+        self.dataframe = self.dataframe.assign(html_sentiment_score_v2=pd.Series(data, index=self.dataframe.index))
+        self.save()
+
     def __len__(self) -> int:
         return len(self.dataframe)
 
@@ -189,6 +217,15 @@ class FeatureIndex:
         :return: html_sentiment_score for image id
         """
         return self.dataframe.loc[image_id, 'html_sentiment_score']
+
+    def get_html_sentiment_score_v2(self, image_id: str) -> float:
+        """
+        Returns the html_sentiment_score_v2 for the given image id.
+
+        :param image_id: id of the image
+        :return: html_sentiment_score_v2 for image id
+        """
+        return self.dataframe.loc[image_id, 'html_sentiment_score_v2']
 
     def get_image_text_len(self, image_id: str) -> float:
         """
@@ -226,6 +263,24 @@ class FeatureIndex:
         """
         return self.dataframe.loc[image_id, 'image_percentage_red']
 
+    def get_image_percentage_blue(self, image_id: str) -> float:
+        """
+        Returns the image_percentage_blue for the given image id.
+
+        :param image_id: id of the image
+        :return: image_percentage_blue for image id
+        """
+        return self.dataframe.loc[image_id, 'image_percentage_blue']
+
+    def get_image_percentage_yellow(self, image_id: str) -> float:
+        """
+        Returns the image_percentage_yellow for the given image id.
+
+        :param image_id: id of the image
+        :return: image_percentage_yellow for image id
+        """
+        return self.dataframe.loc[image_id, 'image_percentage_yellow']
+
     def get_image_percentage_bright(self, image_id: str) -> float:
         """
         Returns the image_percentage_bright for the given image id.
@@ -254,6 +309,16 @@ class FeatureIndex:
         cols = ['image_average_color_r', 'image_average_color_g', 'image_average_color_b']
         return self.dataframe.loc[image_id, cols].to_numpy()
 
+    def get_image_dominant_color(self, image_id: str) -> np.ndarray:
+        """
+        Returns the image_dominant_color for the given image id. Represented as RGB in a numpy array.
+
+        :param image_id: id of the image
+        :return: image_dominant_color for image id
+        """
+        cols = ['image_dominant_color_r', 'image_dominant_color_g', 'image_dominant_color_b']
+        return self.dataframe.loc[image_id, cols].to_numpy()
+
     def get_image_type(self, image_id: str) -> image_detection.ImageType:
         """
         Returns the image_type for the given image id.
@@ -272,12 +337,12 @@ class FeatureIndex:
         """
         return self.dataframe.loc[image_id, 'image_roi_area']
 
-    def get_all_fetures(self, image_id: str) -> pd.Series:
+    def get_all_features(self, image_id: str) -> pd.Series:
         """
-        Returns all imges features.
+        Returns all images features.
 
         :param image_id: id of the image
-        :return: image_roi_area for image id
+        :return: all features for image_id
         """
         df = self.dataframe.loc[image_id, :]
         return df
