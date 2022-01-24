@@ -50,6 +50,42 @@ def save_df():
     df.to_csv(eval_file, sep=' ')
 
 
+def clean_image_eval(data):
+    """
+    Clean wrong data in image_eval.txt
+    Set "Argumentative" to "NONE" and "Stance" to "NEUTRAL" if topic is not relevant
+    :param data: Dataframe of image_eval
+    :return: cleaned data as Dataframe
+    """
+    data = data.reset_index()
+
+    wrong_argument = 0
+    wrong_stance = 0
+
+    for i in data.index:
+        column = data.loc[i]
+
+        topic = column.loc["Topic_correct"]
+        argument = column.loc["Argumentative"]
+        stance = column.loc["Stance"]
+
+        if not topic:
+            if argument != "NONE":
+                wrong_argument += 1
+                data.at[i, "Argumentative"] = "NONE"
+
+            if stance != "NEUTRAL":
+                wrong_stance += 1
+                data.at[i, "Stance"] = "NEUTRAL"
+
+    print("Cleaned Argumentative values:", str(wrong_argument))
+    print("Cleaned Stance values:", str(wrong_stance))
+
+    data = data.set_index("image_id")
+
+    return data
+
+
 def has_eval(image_id: str, topic: int = None) -> bool:
     if topic:
         try:
