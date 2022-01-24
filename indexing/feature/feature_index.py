@@ -264,3 +264,13 @@ class FeatureIndex:
         :return: image_roi_area for image id
         """
         return self.dataframe.loc[image_id, 'image_roi_area']
+
+    def get_all_fetures(self, image_id: str) -> float:
+        """
+        Returns the image_roi_area for the given image id.
+
+        :param image_id: id of the image
+        :return: image_roi_area for image id
+        """
+        df = self.dataframe.loc[image_id, :]
+        return df

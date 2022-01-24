@@ -10,7 +10,7 @@ from bs4.element import Tag
 from config import Config
 from frontend import start_server
 from indexing import StandardTermIndex, FeatureIndex, TopicQueryTermIndex, TopicTermIndex, get_all_topic_indexes, \
-    DataEntry, Topic
+    DataEntry, Topic, features_neural_network
 from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel
 from evaluation import save_eval, Argumentative, Stance, get_eval, has_eval
 from indexing.feature import html_preprocessing
@@ -87,11 +87,17 @@ def main():
     # data = html_preprocessing.html_test()
     # np.save('data12', data)
 
-    analysis_main()
+    '''
+    findex = FeatureIndex.load(23158)
+    topics = [2, 4, 8, 21, 27, 33, 36, 40, 43, 45, 48]
+    topics = [Topic.get(t) for t in topics]
 
-    # findex = FeatureIndex.load(23158)
-    # topics = [2, 4, 8, 21, 27, 33, 36, 40, 43, 45, 48]
-    # df = get_model_data_arg(topics, findex)
+    df = get_model_data_arg(topics, findex)
+
+    features_neural_network.train_network("first_model", df=df)
+    '''
+
+    analysis_main()
 
 
 if __name__ == '__main__':

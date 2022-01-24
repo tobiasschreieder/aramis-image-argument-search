@@ -5,7 +5,7 @@ from typing import List, Tuple
 import numpy as np
 import pandas as pd
 
-from indexing import FeatureIndex
+from indexing import FeatureIndex, features_neural_network
 
 
 class ArgumentModel:
@@ -168,9 +168,8 @@ class NNArgumentModel(ArgumentModel):
             # max-value is 1
             color_score = (percentage_red / 100) + (percentage_green / 100)
 
-        # TODO NN
-
-        score = 0  # <----- Neurales Netz
+        all_features = self.index.get_all_fetures(doc_id)
+        score = features_neural_network.make_prediction(model_name="first_model", input_features=all_features)
 
         return score
 

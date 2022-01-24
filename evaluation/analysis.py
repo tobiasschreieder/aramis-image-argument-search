@@ -171,6 +171,7 @@ def plot_scoring_eval(model, topics: List[int],
     a.resize((rows, cols), refcheck=False)
 
     for row in range(rows):
+        print("%s / %s" % (row, rows))
         for col in range(cols):
             t = a[row, col]
 
