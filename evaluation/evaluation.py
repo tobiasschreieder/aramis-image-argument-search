@@ -81,7 +81,7 @@ def clean_image_eval(data):
     print("Cleaned Argumentative values:", str(wrong_argument))
     print("Cleaned Stance values:", str(wrong_stance))
 
-    data = data.set_index("image_id")
+    data = data.set_index(['image_id', 'user', 'Topic'])
 
     return data
 
