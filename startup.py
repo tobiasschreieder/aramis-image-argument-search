@@ -2,21 +2,14 @@ import datetime
 import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
-from pathlib import Path
-
-from bs4 import BeautifulSoup
-from bs4.element import Tag
 
 from config import Config
-from frontend import start_server
-from indexing import StandardTermIndex, FeatureIndex, TopicQueryTermIndex, TopicTermIndex, get_all_topic_indexes, \
-    DataEntry, Topic, features_neural_network
-from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel
-from evaluation import save_eval, Argumentative, Stance, get_eval, has_eval
-from indexing.feature import html_preprocessing
-import numpy as np
-from evaluation.analysis import main as analysis_main
 from evaluation import get_model_data_arg
+from evaluation.analysis import main as analysis_main
+from frontend import start_server
+from indexing import StandardTermIndex, FeatureIndex, TopicQueryTermIndex, get_all_topic_indexes, \
+    Topic, features_neural_network
+from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel
 
 
 def init_logging():
@@ -82,20 +75,20 @@ def main():
     # findex = FeatureIndex.create_index()
     # findex.calculate_sentiment_score_v2(n_jobs=6)
     # findex.save()
-    # start_server(None)
+    start_server(None)
 
     # data = html_preprocessing.html_test()
     # np.save('data12', data)
 
-    findex = FeatureIndex.load(23158)
-    topics = [2, 4, 8, 21, 27, 33, 36, 40, 43, 45, 48]
-    topics = [Topic.get(t) for t in topics]
-
-    df = get_model_data_arg(topics, findex)
-
-    features_neural_network.train_network("second_smaller_model", df=df)
-
-    analysis_main()
+    # findex = FeatureIndex.load(23158)
+    # topics = [2, 4, 8, 21, 27, 33, 36, 40, 43, 45, 48]
+    # topics = [Topic.get(t) for t in topics]
+    #
+    # df = get_model_data_arg(topics, findex)
+    #
+    # features_neural_network.train_network("second_smaller_model", df=df)
+    #
+    # analysis_main()
 
 
 if __name__ == '__main__':

@@ -15,3 +15,5 @@ deskew
 scikit-image
 plotly
 Kaleido
+keras
+tensorflow

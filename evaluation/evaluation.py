@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 
 from config import Config
-from indexing import Topic, DataEntry
+from indexing import Topic, DataEntry, FeatureIndex
 
 cfg = Config.get()
 log = logging.getLogger('Evaluation')
@@ -128,3 +128,32 @@ def save_eval(image_id: str, user: str, topic: int, topic_correct: bool, arg: Ar
     df.loc[(image_id, user, topic), :] = [topic_correct, arg.name, stance.name]
     save_df()
     log.debug('Saved evaluation for %s %s %s: %s %s %s', image_id, user, topic, topic_correct, arg, stance)
+
+
+def get_model_data_arg(topics: List[Topic], fidx: FeatureIndex) -> pd.DataFrame:
+    data = fidx.dataframe.copy()
+    data['arg_eval'] = 0
+    data['topic'] = 0
+    for topic in topics:
+        t_df: pd.DataFrame = get_df().loc[(slice(None), slice(None), topic.number), :]
+        data.loc[t_df.loc[t_df['Topic_correct'], :].index.unique(0), 'topic'] = 1
+        data.loc[t_df.loc[
+                 (t_df['Topic_correct'] & (t_df['Argumentative'] == 'STRONG')), :].index.unique(0), 'arg_eval'] = 1
+        data.loc[t_df.loc[
+                 (t_df['Topic_correct'] & (t_df['Argumentative'] == 'WEAK')), :].index.unique(0), 'arg_eval'] = 0.5
+    return data.loc[(data['topic'] == 1), :].drop('topic', axis=1)
+
+
+def get_model_data_stance(topics: List[Topic], fidx: FeatureIndex) -> pd.DataFrame:
+    data = fidx.dataframe.copy()
+    data['topic'] = 0
+    for topic in topics:
+        t_df: pd.DataFrame = get_df().loc[(slice(None), slice(None), topic.number), :]
+        data.loc[t_df.loc[t_df['Topic_correct'], :].index.unique(0), 'topic'] = 1
+        data.loc[t_df.loc[
+                 (t_df['Topic_correct'] & (t_df['Stance'] == 'PRO')), :].index.unique(0), 'stance_eval'] = 1
+        data.loc[t_df.loc[
+                 (t_df['Topic_correct'] & (t_df['Stance'] == 'NEUTRAL')), :].index.unique(0), 'stance_eval'] = 0.5
+        data.loc[t_df.loc[
+                 (t_df['Topic_correct'] & (t_df['Stance'] == 'CON')), :].index.unique(0), 'stance_eval'] = 0
+    return data.loc[(data['topic'] == 1), :].drop('topic', axis=1).dropna()

@@ -1,6 +1,7 @@
 import logging
 import math
-from typing import List, Tuple
+from pathlib import Path
+from typing import List
 
 import keras
 import numpy as np
@@ -30,7 +31,7 @@ class ArgumentModel:
         return 1.0
 
     def query(self, query: List[str], topic_relevant: pd.DataFrame,
-              top_k: int = -1, **kwargs) -> List[Tuple[str, float]]:
+              top_k: int = -1) -> pd.DataFrame:
         """
         Queries a given preprocessed query against the index using a model scoring function
 
@@ -54,6 +55,15 @@ class ArgumentModel:
 
 class StandardArgumentModel(ArgumentModel):
     log = logging.getLogger('StandardArgumentModel')
+
+    def __init__(self, index: FeatureIndex, weights: List[float] = None):
+        """
+        Constructor for model base class,
+        :param index: index to get relevance data from
+        :param weights: weights for query
+        """
+        super().__init__(index)
+        self.weights = weights
 
     def score(self, query: List[str], doc_id: str) -> float:
         """
@@ -103,11 +113,10 @@ class StandardArgumentModel(ArgumentModel):
                 ((math.log((-x + 1), 10) + 0.49) ** 2) / -0.0512) * 0.12)
 
     def query(self, query: List[str], topic_relevant: pd.DataFrame,
-              top_k: int = -1, weights: List[float] = None) -> pd.DataFrame:
+              top_k: int = -1) -> pd.DataFrame:
         """
         Queries a given preprocessed query against the index using a model scoring function
 
-        :param weights: TODO
         :param topic_relevant: DataFrame with data for topic score
         :param query: preprocessed query in list representation to calculate the relevance for
         :param top_k: number of top results to return
@@ -129,10 +138,10 @@ class StandardArgumentModel(ArgumentModel):
 
         df_norm = df / df.abs().max()
 
-        if weights is None:
+        if self.weights is None:
             np_weights = np.array([0, 1, 1, 1, 1])
         else:
-            np_weights = np.array(weights)
+            np_weights = np.array(self.weights)
 
         np_weights = np_weights / np_weights.sum()
 
@@ -152,22 +161,13 @@ class NNArgumentModel(ArgumentModel):
         :param index: index to get relevance data from
         """
         super().__init__(index)
-        self.model = load_model('indexing/models/' + str(model_name) + '/model.hS', compile=False)
-
-    def score(self, query: List[str], doc_id: str) -> List[float]:
-        """
-        Calculates the argument score for a document (given by index and doc_id) and query (give ans query term list)
-        :param query: preprocessed query in list representation to calculate the relevance for
-        :param doc_id: document to calculate the relevance for
-        :return: argument score
-        """
-        all_features = self.index.get_all_fetures(doc_id)
-        score = features_neural_network.make_prediction(model=self.model, input_features=all_features)
-
-        return score
+        model_path = Path('indexing/models/' + str(model_name) + '/model.hS')
+        if not model_path.exists():
+            raise FileNotFoundError(f'The model {model_name} does not exists.')
+        self.model = load_model(model_path.as_posix(), compile=False)
 
     def query(self, query: List[str], topic_relevant: pd.DataFrame,
-              top_k: int = -1, **kwargs) -> List[Tuple[str, float]]:
+              top_k: int = -1, **kwargs) -> pd.DataFrame:
         """
         Queries a given preprocessed query against the index using a model scoring function
 
