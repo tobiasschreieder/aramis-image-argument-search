@@ -257,4 +257,4 @@ def main():
     findex = FeatureIndex.load(23158)
 
     plot_arg_scoring_eval(StandardArgumentModel(findex), [21, 27, 33, 48], (1, 1, 1, 1)).show()
-    plot_stance_scoring_eval(StandardStanceModel(findex), [21, 27, 33, 48], (1, 1, 1)).show()
+    plot_stance_scoring_eval(StandardStanceModel(findex), topics=[21, 27, 33, 48], weights=(1, 1, 1)).show()

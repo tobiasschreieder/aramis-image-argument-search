@@ -119,6 +119,9 @@ class FeatureIndex:
 
         index.dataframe.set_index('image_id', inplace=True, verify_integrity=True)
 
+        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        print(index.dataframe.to_string())
+
         return index
 
     def save(self) -> None:
