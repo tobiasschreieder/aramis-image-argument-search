@@ -87,11 +87,11 @@ def main():
     # data = html_preprocessing.html_test()
     # np.save('data12', data)
 
-    # analysis_main()
+    analysis_main()
 
-    findex = FeatureIndex.load(23158)
-    topics = [2, 4, 8, 21, 27, 33, 36, 40, 43, 45, 48]
-    df = get_model_data_arg(topics, findex)
+    # findex = FeatureIndex.load(23158)
+    # topics = [2, 4, 8, 21, 27, 33, 36, 40, 43, 45, 48]
+    # df = get_model_data_arg(topics, findex)
 
 
 if __name__ == '__main__':
