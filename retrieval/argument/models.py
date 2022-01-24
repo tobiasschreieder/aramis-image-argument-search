@@ -2,10 +2,12 @@ import logging
 import math
 from typing import List, Tuple
 
+import keras
 import numpy as np
 import pandas as pd
 
 from indexing import FeatureIndex, features_neural_network
+from tensorflow.keras.models import load_model
 
 
 class ArgumentModel:
@@ -142,6 +144,16 @@ class StandardArgumentModel(ArgumentModel):
 
 class NNArgumentModel(ArgumentModel):
 
+    model: keras.Model
+
+    def __init__(self, index: FeatureIndex, model_name: str):
+        """
+        Constructor for model base class,
+        :param index: index to get relevance data from
+        """
+        super().__init__(index)
+        self.model = load_model('indexing/models/' + str(model_name) + '/model.hS', compile=False)
+
     def score(self, query: List[str], doc_id: str) -> List[float]:
         """
         Calculates the argument score for a document (given by index and doc_id) and query (give ans query term list)
@@ -149,36 +161,33 @@ class NNArgumentModel(ArgumentModel):
         :param doc_id: document to calculate the relevance for
         :return: argument score
         """
-
-        image_roi_area = self.index.get_image_roi_area(doc_id)
-        diagramm_factor = self.log_normal_density_function(image_roi_area)
-
-        image_text_sentiment_score = self.index.get_image_text_sentiment_score(doc_id)
-        image_text_len = self.index.get_image_text_len(doc_id)
-        html_sentiment_score = self.index.get_html_sentiment_score(doc_id)
-
-        percentage_green = self.index.get_image_percentage_green(doc_id)
-        percentage_red = self.index.get_image_percentage_red(doc_id)
-        # assume clipat=1, right?
-        image_type = self.index.get_image_type(doc_id)
-        if image_type == 1:
-            # max-value is 3
-            color_score = (percentage_red / 100) * 3 + (percentage_green / 100) * 3
-        else:
-            # max-value is 1
-            color_score = (percentage_red / 100) + (percentage_green / 100)
-
         all_features = self.index.get_all_fetures(doc_id)
-        score = features_neural_network.make_prediction(model_name="first_model", input_features=all_features)
+        score = features_neural_network.make_prediction(model=self.model, input_features=all_features)
 
         return score
 
-    @staticmethod
-    def log_normal_density_function(x: float) -> float:
-        if x == 0:
-            return 0
-        elif x == 1:
-            return 0
+    def query(self, query: List[str], topic_relevant: pd.DataFrame,
+              top_k: int = -1, **kwargs) -> List[Tuple[str, float]]:
+        """
+        Queries a given preprocessed query against the index using a model scoring function
+
+        :param topic_relevant: DataFrame with data for topic score
+        :param query: preprocessed query in list representation to calculate the relevance for
+        :param top_k: number of top results to return
+        :return: given DataFrame with a additional column for argument score.
+            Frame is sorted and reduced to top_k rows
+        """
+        self.log.debug('start argument process for query %s', query)
+
+        if top_k < 0:
+            top_k = len(self.index)
         else:
-            return ((1 / (math.sqrt(2 * math.pi) * 0.16 * (-x + 1))) * math.exp(
-                ((math.log((-x + 1), 10) + 0.49) ** 2) / -0.0512) * 0.12)
+            top_k = min(len(self.index), top_k)
+
+        features_list = [self.index.get_all_fetures(doc_id) for doc_id in topic_relevant.index]
+        results = features_neural_network.make_prediction(model=self.model, input_data=features_list)
+
+        for i, doc_id in enumerate(topic_relevant.index):
+            topic_relevant.loc[doc_id, 'argument'] = results[i]
+
+        return topic_relevant.nlargest(top_k, 'argument', keep='all')

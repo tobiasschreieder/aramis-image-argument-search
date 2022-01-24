@@ -387,7 +387,7 @@ def main():
 
     topics_no = [2, 4, 8, 21, 27, 33, 36, 40, 43, 45, 48]
 
-    topics = [Topic.get(t) for t in topics_no]
+    # topics = [Topic.get(t) for t in topics_no]
 
     # arg_eval(findex, topics)
     # stance_eval(findex, topics)
@@ -396,5 +396,5 @@ def main():
     # print(t)
 
     # plot_arg_scoring_eval(StandardArgumentModel(findex), topics_no, [200001.0, 1010001.0, 1, 72221000001, -61419999999]).show()
-    plot_arg_scoring_eval(NNArgumentModel(findex), topics_no, [200001.0, 1010001.0, 1, 72221000001, -61419999999]).show()
+    plot_arg_scoring_eval(NNArgumentModel(findex, 'second_smaller_model'), topics_no, [1, 1, 1, 1, 1]).show()
     # plot_stance_scoring_eval(StandardStanceModel(findex), topics_no, (1, 1, 1)).show()

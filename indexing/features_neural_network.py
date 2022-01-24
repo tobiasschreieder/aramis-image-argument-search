@@ -125,7 +125,7 @@ def log_normal_density_function(x: float) -> float:
             ((math.log((-x + 1), 10) + 0.49) ** 2) / -0.0512) * 0.12)
 
 
-def scale_data(df_row: pd.Series) -> pd.DataFrame:
+def scale_data(df_row: pd.DataFrame) -> pd.DataFrame:
     '''
     'image_id': pd.StringDtype(),
     'html_sentiment_score': np.float,
