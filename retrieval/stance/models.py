@@ -77,15 +77,15 @@ class StandardStanceModel(StanceModel):
         image_average_color = self.index.get_image_average_color(doc_id)
         html_sentiment_score = self.index.get_html_sentiment_score(doc_id)
 
-        distance_to_green = math.sqrt(
-            (image_average_color[0] - 0) ** 2 + (image_average_color[1] - 255) ** 2 + (image_average_color[2] - 0) ** 2)
-        distance_to_red = math.sqrt(
-            (image_average_color[0] - 255) ** 2 + (image_average_color[1] - 0) ** 2 + (image_average_color[2] - 0) ** 2)
-        distance_to_black = math.sqrt(
-            (image_average_color[0] - 0) ** 2 + (image_average_color[1] - 0) ** 2 + (image_average_color[2] - 0) ** 2)
-        distance_to_white = math.sqrt(
-            (image_average_color[0] - 255) ** 2 + (image_average_color[1] - 255) ** 2 + (
-                    image_average_color[2] - 255) ** 2)
+        # distance_to_green = math.sqrt(
+        #     (image_average_color[0] - 0) ** 2 + (image_average_color[1] - 255) ** 2 + (image_average_color[2] - 0) ** 2)
+        # distance_to_red = math.sqrt(
+        #     (image_average_color[0] - 255) ** 2 + (image_average_color[1] - 0) ** 2 + (image_average_color[2] - 0) ** 2)
+        # distance_to_black = math.sqrt(
+        #     (image_average_color[0] - 0) ** 2 + (image_average_color[1] - 0) ** 2 + (image_average_color[2] - 0) ** 2)
+        # distance_to_white = math.sqrt(
+        #     (image_average_color[0] - 255) ** 2 + (image_average_color[1] - 255) ** 2 + (
+        #             image_average_color[2] - 255) ** 2)
 
         # between 0 and 3
         color_mood = 0
@@ -108,12 +108,8 @@ class StandardStanceModel(StanceModel):
         # shift between -3 and 3
         html_sentiment_score = html_sentiment_score * 3
 
-        query_sentiment_score = sentiment_detection.sentiment_nltk(query)
-        if abs(query_sentiment_score) > 0.2:
-            if query_sentiment_score < 0:
-                query_negation = True
-            else:
-                query_negation = False
+        query_sentiment_score = sentiment_detection.sentiment_nltk(' '.join(query))
+        query_negation = (query_sentiment_score < 0) if abs(query_sentiment_score) > 0.2 else False
 
         if query_negation:
             color_mood = color_mood * (-1)
@@ -158,7 +154,7 @@ class StandardStanceModel(StanceModel):
         np_weights = np_weights/np_weights.sum()
 
         for doc_id in argument_relevant.index:
-            score = (df_norm.loc[doc_id, :].to_numpy() * np_weights).sum()
+            score = (df_norm.loc[doc_id, :].to_numpy() * np_weights).mean()
             argument_relevant.loc[doc_id, 'stance'] = score
             if score > 0:
                 pro_scores.loc[doc_id, 'stance'] = score

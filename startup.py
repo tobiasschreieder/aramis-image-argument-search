@@ -78,15 +78,15 @@ def main():
     log.info('do main stuff')
 
     # start_flask()
-    findex = FeatureIndex.create_index(100, n_jobs=6)
+    # findex = FeatureIndex.create_index()
     # findex.calculate_sentiment_score_v2(n_jobs=6)
-    findex.save()
+    # findex.save()
     # start_server(None)
 
     # data = html_preprocessing.html_test()
     # np.save('data12', data)
 
-    # analysis_main()
+    analysis_main()
 
 
 if __name__ == '__main__':
