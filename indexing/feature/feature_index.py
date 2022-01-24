@@ -60,9 +60,11 @@ class FeatureIndex:
             image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
             text_analysis = image_detection.text_analysis(image_rgb)
-            color_mood = image_detection.color_mood(image_rgb)
 
             image_rgb_small = cv2.resize(image_rgb, (200, 200), interpolation=cv2.INTER_AREA)
+
+            color_mood = image_detection.color_mood(image_rgb_small)
+            dominant_color = image_detection.dominant_color(image_rgb_small)
             image_type = image_detection.detect_image_type(image_rgb_small)
             roi_area = image_detection.diagramms_from_image(image_rgb_small)
 
@@ -73,11 +75,16 @@ class FeatureIndex:
                 text_analysis['text_sentiment_score'],
                 color_mood['percentage_green'],
                 color_mood['percentage_red'],
+                color_mood['percentage_blue'],
+                color_mood['percentage_yellow'],
                 color_mood['percentage_bright'],
                 color_mood['percentage_dark'],
                 color_mood['average_color'][0],
                 color_mood['average_color'][1],
                 color_mood['average_color'][2],
+                dominant_color[0],
+                dominant_color[1],
+                dominant_color[2],
                 image_type.value,
                 roi_area
             ]

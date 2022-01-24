@@ -7,8 +7,8 @@ import numpy as np
 import pytesseract
 from cv2 import cv2
 from deskew import determine_skew
+from pytesseract import Output
 from skimage.transform import rotate
-from sklearn.cluster import KMeans
 
 import indexing.feature.sentiment_detection as sentiment_detection
 
@@ -61,20 +61,6 @@ def deskew(image):
     angle = determine_skew(thresholding(grayscale))
     rotated = rotate(grayscale, angle, resize=True) * 255
     return rotated.astype(np.uint8)
-
-
-def textposition_from_image(image, plot=False):
-    h, w, c = image.shape
-    boxes = pytesseract.image_to_boxes(image)
-    if plot:
-        for b in boxes.splitlines():
-            b = b.split(' ')
-            image = cv2.rectangle(image, (int(b[1]), h - int(b[2])), (int(b[3]), h - int(b[4])), (0, 255, 0), 2)
-
-        cv2.imshow('Result', image)
-        cv2.waitKey(0)
-
-    return boxes
 
 
 def shapes_from_image(image, plot=False):
@@ -219,56 +205,38 @@ def detect_image_type(image, plot=False) -> ImageType:
     return image_type
 
 
-def color_mood(image, image_type='clipArt', plot=False):
+def color_mood(image):
     # image_type ('clipart', 'photo')
 
     average = image.mean(axis=0).mean(axis=0)
 
-    distance_to_green = math.sqrt((average[0] - 0) ** 2 + (average[1] - 255) ** 2 + (average[2] - 0) ** 2)
-    distance_to_red = math.sqrt((average[0] - 255) ** 2 + (average[1] - 0) ** 2 + (average[2] - 0) ** 2)
-    distance_to_black = math.sqrt((average[0] - 0) ** 2 + (average[1] - 0) ** 2 + (average[2] - 0) ** 2)
-    distance_to_white = math.sqrt((average[0] - 255) ** 2 + (average[1] - 255) ** 2 + (average[2] - 255) ** 2)
-
-    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    mask_green = cv2.inRange(hsv, (40, 20, 80), (70, 255, 255))
-    mask_red_1 = cv2.inRange(hsv, (0, 150, 80), (15, 255, 255))
-    mask_red_2 = cv2.inRange(hsv, (150, 150, 80), (255, 255, 255))
+    hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+    mask_green = cv2.inRange(hsv, (36, 50, 80), (70, 255, 255))
+    mask_red_1 = cv2.inRange(hsv, (0, 50, 80), (20, 255, 255))
+    mask_red_2 = cv2.inRange(hsv, (160, 50, 80), (255, 255, 255))
     mask_red = cv2.bitwise_or(mask_red_1, mask_red_2)
+    mask_blue = cv2.inRange(hsv, (100, 50, 80), (130, 255, 255))
+    mask_yellow = cv2.inRange(hsv, (20, 50, 80), (36, 255, 255))
     mask_bright = cv2.inRange(hsv, (0, 0, 200), (255, 60, 255))
     mask_dark = cv2.inRange(hsv, (0, 0, 0), (255, 255, 60))
 
     number_pixels = hsv.size / 3
     percentage_green = (cv2.countNonZero(mask_green) / number_pixels) * 100
     percentage_red = (cv2.countNonZero(mask_red) / number_pixels) * 100
+    percentage_blue = (cv2.countNonZero(mask_blue) / number_pixels) * 100
+    percentage_yellow = (cv2.countNonZero(mask_yellow) / number_pixels) * 100
     percentage_bright = (cv2.countNonZero(mask_bright) / number_pixels) * 100
     percentage_dark = (cv2.countNonZero(mask_dark) / number_pixels) * 100
-
-    if plot:
-        '''
-        cv2.imshow(str('Green = ' + str(percentage_green)), mask_green)
-        cv2.imshow(str('Red = ' + str(percentage_red)), mask_red)
-        cv2.imshow(str('Bright = ' + str(percentage_bright)), mask_bright)
-        cv2.imshow(str('Dark = ' + str(percentage_dark)), mask_dark)
-        cv2.waitKey()
-        '''
-
-        print("percentage_green: ", percentage_green, "  // (100/distance_to_green) = ", (100 / distance_to_green),
-              "  // product = ", (percentage_green * (100 / distance_to_green)))
-        print("percentage_red: ", percentage_red, "  // (100/distance_to_red) = ", (100 / distance_to_red),
-              "  // product = ", (percentage_red * (100 / distance_to_red)))
-        print("percentage_bright: ", percentage_bright, "  // (100/distance_to_white) = ", (100 / distance_to_white),
-              "  // product = ", (percentage_bright * (100 / distance_to_white)))
-        print("percentage_dark: ", percentage_dark, "  // (100/distance_to_black) = ", (100 / distance_to_black),
-              "  // product = ", (percentage_dark * (100 / distance_to_black)))
 
     color_mood = {
         "percentage_green": percentage_green,
         "percentage_red": percentage_red,
+        "percentage_blue": percentage_blue,
+        "percentage_yellow": percentage_yellow,
         "percentage_bright": percentage_bright,
         "percentage_dark": percentage_dark,
         "average_color": average
     }
-
     return color_mood
 
 
@@ -276,7 +244,64 @@ def text_analysis(image):
     image = cv2.resize(image, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
     preprocessed_image = erode_dilate(get_grayscale(image))
 
-    text = pytesseract.image_to_string(preprocessed_image, lang='eng', config='--psm 11')
+    df = pytesseract.image_to_data(preprocessed_image, output_type=Output.DATAFRAME, lang='eng', config='--psm 11')
+    df = df.loc[df['conf'] > 0]
+
+    text = ""
+    text_area = 0
+
+    height = image.shape[0]
+    width = image.shape[1]
+
+    n_cols = 6
+    n_rows = 6
+    cols_interval = width / n_cols
+    rows_interval = height / n_rows
+
+    text_position = {}
+
+    for index, row in df.iterrows():
+        text = text + " " + row['text']
+        area = row['width'] * row['height']
+        text_area += area
+        x_coord = row['width'] + row['left']
+        y_coord = row['height'] + row['top']
+        coord_col = x_coord // cols_interval
+        coord_row = y_coord // rows_interval
+        text_box = int((coord_row * n_cols) + coord_col)
+        if text_box in text_position:
+            text_position[text_box] += area
+        else:
+            text_position[text_box] = area
+
+    text_area_precentage = text_area / (width * height)
+
+    current_area = 0
+
+    left_main_text = width
+    right_main_text = 0
+    top_main_text = height
+    bottom_main_text = 0
+
+    for box, area in {k: v for k, v in sorted(text_position.items(), key=lambda item: item[1], reverse=True)}.items():
+        if current_area > (0.5 * text_area):
+            break
+        current_left = (box % n_cols) * cols_interval
+        current_right = ((box % n_cols) + 1) * cols_interval
+        current_top = (box // n_cols) * rows_interval
+        current_bottom = ((box // n_cols) + 1) * rows_interval
+
+        if left_main_text > current_left:
+            left_main_text = current_left
+        if right_main_text < current_right:
+            right_main_text = current_right
+        if top_main_text > current_top:
+            top_main_text = current_top
+        if bottom_main_text < current_bottom:
+            bottom_main_text = current_bottom
+
+        current_area += area
+
     text = clean_text(text)
 
     text_len = len(text.split(" "))
@@ -284,52 +309,24 @@ def text_analysis(image):
 
     text_analysis = {
         "text_len": text_len,
-        "text_sentiment_score": text_sentiment_score
+        "text_area_percentage": text_area_precentage,
+        "text_sentiment_score": text_sentiment_score,
+        "text_area_left": left_main_text / width,
+        "text_area_rigth": right_main_text / width,
+        "text_area_top": top_main_text / height,
+        "text_area_bottom": bottom_main_text / height
     }
     return text_analysis
 
 
-def dominant_colors(image):
-    image = cv2.resize(image, (150, 150), interpolation=cv2.INTER_AREA)
-    height, width, _ = np.shape(image)
+def dominant_color(image):
+    a2D = image.reshape(-1, image.shape[-1])
+    col_range = (256, 256, 256)  # generically : a2D.max(0)+1
+    a1D = np.ravel_multi_index(a2D.T, col_range)
+    dominant_color = np.unravel_index(np.bincount(a1D).argmax(), col_range)
+    return dominant_color
 
-    # reshape the image to be a simple list of RGB pixels
-    image = image.reshape((height * width, 3))
 
-    # we'll pick the 5 most common colors
-    num_clusters = 5
-    clusters = KMeans(n_clusters=num_clusters)
-    clusters.fit(image)
-
-    # count the dominant colors and put them in "buckets"
-    numLabels = np.arange(0, len(np.unique(clusters.labels_)) + 1)
-    hist, _ = np.histogram(clusters.labels_, bins=numLabels)
-    hist = hist.astype('float32')
-    hist /= hist.sum()
-    histogram = hist
-    # then sort them, most-common first
-    combined = zip(histogram, clusters.cluster_centers_)
-    combined = sorted(combined, key=lambda x: x[0], reverse=True)
-
-    # finally, we'll output a graphic showing the colors in order
-    bars = []
-    hsv_values = []
-    for index, rows in enumerate(combined):
-
-        height, width, color = 100, 100, rows[1]
-        bar = np.zeros((height, width, 3), np.uint8)
-        bar[:] = color
-        red, green, blue = int(color[2]), int(color[1]), int(color[0])
-        hsv_bar = cv2.cvtColor(bar, cv2.COLOR_BGR2HSV)
-        hue, sat, val = hsv_bar[0][0]
-        rgb = (red, green, blue)
-        hsv = (hue, sat, val)
-
-        print(f'Bar {index + 1}')
-        print(f'  RGB values: {rgb}')
-        print(f'  HSV values: {hsv}')
-        hsv_values.append(hsv)
-        bars.append(bar)
-
-    cv2.imshow(f'{num_clusters} Most Common Colors', np.hstack(bars))
-    cv2.waitKey(0)
+def color_to_decimal(color):
+    color_decimal = color[0] + (color[1] * 256) + (color[2] * 65536)
+    return color_decimal
