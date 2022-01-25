@@ -84,9 +84,10 @@ def avg_precision_stance_error(model: StanceModel, topics: List[Topic], k: int =
     pro_error = 0
     con_error = 0
     for topic in topics:
-        scores = calc_topic_scores(model, topic, 'arg').nlargest(k, 'score', keep='all')
-        relevant_pro = scores.loc[scores['value'] == 'PRO', 'value'].count()
-        relevant_con = scores.loc[scores['value'] == 'CON', 'value'].count()
+        pro_scores = calc_topic_scores(model, topic, 'arg').nlargest(k, 'score', keep='all')
+        con_scores = calc_topic_scores(model, topic, 'arg').nsmallest(k, 'score', keep='all')
+        relevant_pro = pro_scores.loc[pro_scores['value'] == 'PRO', 'value'].count()
+        relevant_con = con_scores.loc[con_scores['value'] == 'CON', 'value'].count()
         pro_error += relevant_pro / k
         con_error += relevant_con / k
     pro_error /= len(topics)

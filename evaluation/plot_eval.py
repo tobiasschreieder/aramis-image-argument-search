@@ -61,6 +61,9 @@ def plot_scoring_eval(model, topics: List[int],
     else:
         raise NotImplementedError('Cant plot more than 12 topics in one plot, tried %s', len(topics))
 
+    k = 20
+    round_int = 4
+
     sub_titel = []
     for t in topics:
         topic_title = Topic.get(t).title
@@ -71,8 +74,9 @@ def plot_scoring_eval(model, topics: List[int],
     a = np.array(topics)
     a.resize((rows, cols), refcheck=False)
 
+    avg_precision = [-1, -1]
+
     for row in range(rows):
-        print("%s / %s" % (row, rows))
         for col in range(cols):
             t = a[row, col]
 
@@ -97,6 +101,34 @@ def plot_scoring_eval(model, topics: List[int],
                 fig.add_histogram(x=x, name=infos[i][0], showlegend=show_legend, row=row + 1, col=col + 1,
                                   legendgroup=infos[i][0], marker={'color': infos[i][1]})
 
-    fig.update_layout(title=f'{infos[1]} Scoring')
+            precision_text = ''
+            if infos[0] == 'argument':
+                df_20 = df.nlargest(k, 'score', keep='all')
+                precision_20 = df_20.loc[df_20['value'] == 'STRONG', 'value'].count() / k
+                precision_text = f'Precision@{k}: {round(precision_20, round_int)}'
+                avg_precision[0] += precision_20
+            elif infos[0] == 'stance':
+                pro_scores = df.nlargest(k, 'score', keep='first')
+                con_scores = df.nsmallest(k, 'score', keep='first')
+                p_pro = pro_scores.loc[pro_scores['value'] == 'PRO', 'value'].count() / k
+                p_con = con_scores.loc[con_scores['value'] == 'CON', 'value'].count() / k
+                precision_text = f'Precision@{k}:<br>Pro: {round(p_pro, round_int)}<br>Con: {round(p_con, round_int)}' \
+                                 f'<br>Avg: {round((p_pro+p_con)/2, round_int)}<br>'
+                avg_precision[0] += p_pro
+                avg_precision[1] += p_con
+            fig.add_annotation(row=row + 1, col=col + 1, text=precision_text,
+                               xref='x domain', yref='y domain', showarrow=False, x=0.95, y=0.95)
+
+    precision_title = f'<br><sup>Precision@{k}: '
+    if avg_precision[1] == -1:
+        precision_title += f'{round((avg_precision[0]+1)/len(topics), 4)}</sup>'
+    else:
+        pro = (avg_precision[0]+1)/len(topics)
+        con = (avg_precision[1]+1)/len(topics)
+        avg = (pro+con) / 2
+        precision_title += f'Pro {round(pro, round_int)}, Con {round(con, round_int)}, ' \
+                           f'Avg {round(avg, round_int)}</sup>'
+
+    fig.update_layout(title=f'{infos[1]} Scoring {precision_title}')
 
     return fig

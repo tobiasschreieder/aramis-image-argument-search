@@ -142,9 +142,9 @@ def make_prediction(model: keras.Model, input_data: list) -> list:
 
     predictions = model.predict(x)
 
-    predictions = [value[0] for value in predictions]
+    # predictions = [value[0] for value in predictions]
 
-    print(predictions)
+    # print(predictions)
     return predictions
 
 
