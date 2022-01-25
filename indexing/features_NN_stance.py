@@ -2,11 +2,14 @@ import math
 import os
 # to get no console-print from tensorflow
 import keras
+import tensorflow as tf
+from keras.losses import mean_squared_error
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
 import pandas as pd
+
 pd.options.mode.chained_assignment = None
 
 import matplotlib.pyplot as plt
@@ -15,8 +18,7 @@ from keras.callbacks import EarlyStopping
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Sequential, load_model
 
-
-overfitCallback = EarlyStopping(monitor='accuracy', min_delta=0, patience=5)
+overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=5)
 
 
 def train_network(model_name: str, df: pd.DataFrame):
@@ -25,6 +27,8 @@ def train_network(model_name: str, df: pd.DataFrame):
     :param model_name: the model_name for the folder to save the network
     :return: None
     """
+
+    model_name = model_name + "_stance"
 
     print("start scaling dataframe")
     for index, row in df.iterrows():
@@ -37,19 +41,20 @@ def train_network(model_name: str, df: pd.DataFrame):
     text_position = df['text_position']
     df = df.drop('text_position', 1)
 
-    df_eval = df.loc[df['topic'].isin([27, 33])].drop('topic', 1)
-    df = df.loc[~df['topic'].isin([27, 33])]
+    df_eval = df.loc[df['topic'].isin([2, 4])].drop('topic', 1)
+    df = df.loc[~df['topic'].isin([2, 4])]
 
     '''
+
     df_len = len(df.index)
     split_index = round(df_len * 0.8)
-    
+
     df_train = df.iloc[:split_index, :]
     df_test = df.iloc[split_index:, :]
     '''
 
-    df_test = df.loc[df['topic'].isin([40, 43])]
-    df_train = df.loc[~df['topic'].isin([40, 43])]
+    df_test = df.loc[df['topic'].isin([8, 21])]
+    df_train = df.loc[~df['topic'].isin([8, 21])]
 
     print(df_test)
     print(df_train)
@@ -57,19 +62,19 @@ def train_network(model_name: str, df: pd.DataFrame):
     df_test = df_test.drop('topic', 1)
     df_train = df_train.drop('topic', 1)
 
-    x = df_train.loc[:, df_train.columns != 'arg_eval']
+    x = df_train.loc[:, df_train.columns != 'stance_eval']
     x = x.loc[:, x.columns != 'image_id']
     x = np.asarray(x)
 
-    y = df_train['arg_eval']
-    y = np.asarray(y)
+    y = df_train['stance_eval']
+    y = np.asarray([list(i) for i in y])
 
-    x_test = df_test.loc[:, df_test.columns != 'arg_eval']
+    x_test = df_test.loc[:, df_test.columns != 'stance_eval']
     x_test = x_test.loc[:, x_test.columns != 'image_id']
     x_test = np.asarray(x_test)
 
-    y_test = df_test['arg_eval']
-    y_test = np.asarray(y_test)
+    y_test = df_test['stance_eval']
+    y_test = np.asarray([list(i) for i in y_test])
 
     input_dim = len(x[0])
     print("Current network ist trained with %s features." % (input_dim))
@@ -77,9 +82,9 @@ def train_network(model_name: str, df: pd.DataFrame):
     model = Sequential()
     model.add(Dense(10, input_dim=input_dim, activation="relu"))
     model.add(Dense(5, activation="relu"))
-    model.add(Dense(1, activation="sigmoid"))
+    model.add(Dense(2, activation="sigmoid"))
 
-    model.compile(loss="mse", optimizer="Adam", metrics=["accuracy"])
+    model.compile(loss=custom_loss, optimizer="Adam", metrics=["accuracy"])
     history = model.fit(x, y, epochs=100, batch_size=50, validation_data=(x_test, y_test), callbacks=[overfitCallback])
 
     Path("indexing/models/" + str(model_name)).mkdir(parents=True, exist_ok=True)
@@ -106,6 +111,18 @@ def train_network(model_name: str, df: pd.DataFrame):
     plt.savefig('indexing/models/' + str(model_name) + '/loss_function.png')
 
     model.save('indexing/models/' + str(model_name) + '/model.hS')
+
+
+def custom_loss(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
+    """
+    custom-loss-function for the training.
+    :param y_true: the real data with size (batch_size x input_size)
+    :param y_pred: the predicted data (batch_size x input_size)
+    :return: a Tensor size: (batch_size x 1)
+    """
+    y_true_diff = tf.math.subtract(y_true[:, 0:1], y_true[:, 1:2])
+    y_pred_diff = tf.math.subtract(y_pred[:, 0:1], y_pred[:, 1:2])
+    return mean_squared_error(y_true_diff, y_pred_diff)
 
 
 def make_prediction(model: keras.Model, input_data: list) -> list:
@@ -142,7 +159,6 @@ def log_normal_density_function(x: float) -> float:
 
 
 def scale_data(df_row: pd.Series) -> pd.Series:
-
     df_row['html_sentiment_score'] = (df_row['html_sentiment_score'] + 1) / 2
     df_row['text_len'] = (1 - (1 / (math.exp(0.01 * df_row['text_len'])))) * 3
     df_row['text_sentiment_score'] = (df_row['text_sentiment_score'] + 1) / 2

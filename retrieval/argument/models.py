@@ -7,7 +7,7 @@ import keras
 import numpy as np
 import pandas as pd
 
-from indexing import FeatureIndex, features_neural_network
+from indexing import FeatureIndex, features_NN_argument
 from tensorflow.keras.models import load_model
 
 
@@ -185,7 +185,7 @@ class NNArgumentModel(ArgumentModel):
             top_k = min(len(self.index), top_k)
 
         features_list = [self.index.get_all_features(doc_id) for doc_id in topic_relevant.index]
-        results = features_neural_network.make_prediction(model=self.model, input_data=features_list)
+        results = features_NN_argument.make_prediction(model=self.model, input_data=features_list)
 
         for i, doc_id in enumerate(topic_relevant.index):
             topic_relevant.loc[doc_id, 'argument'] = results[i]

@@ -4,11 +4,11 @@ import os
 from logging.handlers import TimedRotatingFileHandler
 
 from config import Config
-from evaluation import get_model_data_arg
+from evaluation import get_model_data_arg, get_model_data_stance
 from evaluation.analysis import main as analysis_main
 from frontend import start_server
 from indexing import StandardTermIndex, FeatureIndex, TopicQueryTermIndex, get_all_topic_indexes, \
-    Topic, features_neural_network
+    Topic, features_NN_argument, features_NN_stance
 from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel
 
 
@@ -85,9 +85,12 @@ def main():
     topics = [Topic.get(t) for t in topics_no]
 
     df = get_model_data_arg(topics, findex)
-    features_neural_network.train_network("first_bigger_model", df=df)
+    features_NN_argument.train_network("test_1", df=df)
 
-    analysis_main(model_name='first_bigger_model', topics_no=topics_no)
+    df = get_model_data_stance(topics, findex)
+    features_NN_stance.train_network("test_1", df=df)
+
+    analysis_main(model_name='test_1', topics_no=topics_no)
 
 
 if __name__ == '__main__':

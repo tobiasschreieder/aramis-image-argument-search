@@ -8,7 +8,7 @@ import pandas as pd
 from keras.models import load_model
 from tensorflow import keras
 
-from indexing import FeatureIndex, ImageType, features_neural_network
+from indexing import FeatureIndex, ImageType, features_NN_stance
 from indexing.feature import sentiment_detection
 
 
@@ -207,8 +207,8 @@ class NNStanceModel(StanceModel):
         else:
             top_k = min(len(self.index), top_k)
 
-        features_list = [self.index.get_all_fetures(doc_id) for doc_id in argument_relevant.index]
-        results = features_neural_network.make_prediction(model=self.model, input_data=features_list)
+        features_list = [self.index.get_all_features(doc_id) for doc_id in argument_relevant.index]
+        results = features_NN_stance.make_prediction(model=self.model, input_data=features_list)
 
         pro_scores = argument_relevant.copy()
         con_scores = argument_relevant.copy()
