@@ -1,6 +1,8 @@
+import datetime
 import logging
 from typing import Dict, List, Tuple
 
+import numpy as np
 import pandas as pd
 
 from indexing import TopicQueryTermIndex, get_all_topic_indexes, FeatureIndex, TopicTermIndex, Topic
@@ -85,14 +87,20 @@ def find_rs_weights(rs: RetrievalSystem, topics: List[Topic], optimum: str = 'bo
     else:
         precision_pos = 2
 
-    best_precision = 0
-    best_weights = (0.33, 0.33, 1.5)
-    for w_top in range(0, 1, 0.1):
-        for w_arg in range(0, 1, 0.1):
+    best_precision = 0.1895
+    best_weights = (0.33, 0.66, 20)
+    i = 7*7
+    for w_top in np.linspace(0, 1, 7):
+        for w_arg in np.linspace(0, 1, 7):
+
             if w_top + w_arg > 1:
+                i -= 1
                 continue
 
-            for w_fetch in range(1, 5, 0.5):
+            for w_fetch in [20]:  # np.linspace(1, 5, 3):
+                i -= 1
+                log.info(f'cur w:%s', (w_top, w_arg, w_fetch))
+                then = datetime.datetime.now()
                 rs.topic_weight = w_top
                 rs.arg_weight = w_arg
                 rs.stance_weight = 1 - w_top - w_arg
@@ -102,14 +110,17 @@ def find_rs_weights(rs: RetrievalSystem, topics: List[Topic], optimum: str = 'bo
                     best_weights = (w_top, w_arg, w_fetch)
                     best_precision = temp_precision
 
-                log.debug('%s|%s w:%s', round(best_precision, eta),
-                          round(temp_precision, eta), best_weights)
+                took = datetime.datetime.now()-then
+                left = took * i
+                log.info('%s|%s w:%s took:%s, ~%s left', round(best_precision, eta),
+                         round(temp_precision, eta), best_weights, took, left)
 
-    log.debug('Found best weights %s with precision %s', best_weights, best_precision)
+    log.info('Found best weights %s with precision %s', best_weights, best_precision)
     return best_weights
 
 
 def main():
-    rs = get_retrieval_system(Configuration(), '', '')
+    model_name = 'test_1'
+    rs = get_retrieval_system(Configuration(), model_name + "_argument", model_name + "_stance")
     topics = [Topic.get(t) for t in [2, 4, 8, 21, 27, 33, 36, 37, 40, 43, 45, 48]]
     find_rs_weights(rs, topics)
