@@ -258,7 +258,9 @@ def text_analysis(image):
     cols_interval = width / n_cols
     rows_interval = height / n_rows
 
-    text_position = {}
+    text_position_dict = {}
+    for i in range(n_cols * n_rows):
+        text_position_dict[i] = 0
 
     for index, row in df.iterrows():
         text = text + " " + row['text']
@@ -269,10 +271,7 @@ def text_analysis(image):
         coord_col = x_coord // cols_interval
         coord_row = y_coord // rows_interval
         text_box = int((coord_row * n_cols) + coord_col)
-        if text_box in text_position:
-            text_position[text_box] += area
-        else:
-            text_position[text_box] = area
+        text_position_dict[text_box] += area
 
     text_area_precentage = text_area / (width * height)
 
@@ -283,7 +282,7 @@ def text_analysis(image):
     top_main_text = height
     bottom_main_text = 0
 
-    for box, area in {k: v for k, v in sorted(text_position.items(), key=lambda item: item[1], reverse=True)}.items():
+    for box, area in {k: v for k, v in sorted(text_position_dict.items(), key=lambda item: item[1], reverse=True)}.items():
         if current_area > (0.5 * text_area):
             break
         current_left = (box % n_cols) * cols_interval
@@ -302,6 +301,9 @@ def text_analysis(image):
 
         current_area += area
 
+    for box in text_position_dict:
+        text_position_dict[box] = text_position_dict[box] / text_area
+
     text = clean_text(text)
 
     text_len = len(text.split(" "))
@@ -315,7 +317,7 @@ def text_analysis(image):
         "text_area_rigth": right_main_text / width,
         "text_area_top": top_main_text / height,
         "text_area_bottom": bottom_main_text / height,
-        "text_position": text_position
+        "text_position": text_position_dict
     }
     return text_analysis
 
