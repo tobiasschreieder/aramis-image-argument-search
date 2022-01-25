@@ -36,9 +36,8 @@ plotly_color = qualitative.Plotly
 # best cfg = all best parameters
 
 
-def main():
+def main(model_name: str, topics_no: list):
 
     findex = FeatureIndex.load(23158)
 
-    topics_no = [2, 4, 8, 21, 27, 33, 36, 40, 43, 45, 48]
-    plot_arg_scoring_eval(NNArgumentModel(findex, 'second_smaller_model'), topics_no).show()
+    plot_arg_scoring_eval(NNArgumentModel(findex, model_name), topics_no).show()

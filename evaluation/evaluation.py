@@ -136,12 +136,15 @@ def get_model_data_arg(topics: List[Topic], fidx: FeatureIndex) -> pd.DataFrame:
     data['topic'] = 0
     for topic in topics:
         t_df: pd.DataFrame = get_df().loc[(slice(None), slice(None), topic.number), :]
-        data.loc[t_df.loc[t_df['Topic_correct'], :].index.unique(0), 'topic'] = 1
+        # print(t_df)
+        # print(t_df.loc[t_df['Topic_correct'], :].index.unique(0))
+        data.loc[t_df.loc[t_df['Topic_correct'], :].index.unique(0), 'topic'] = topic.number
+        # data['topic'] = data['topic'].replace([1], topic.number)
         data.loc[t_df.loc[
                  (t_df['Topic_correct'] & (t_df['Argumentative'] == 'STRONG')), :].index.unique(0), 'arg_eval'] = 1
         data.loc[t_df.loc[
                  (t_df['Topic_correct'] & (t_df['Argumentative'] == 'WEAK')), :].index.unique(0), 'arg_eval'] = 0.5
-    return data.loc[(data['topic'] == 1), :].drop('topic', axis=1)
+    return data.loc[data['topic'] > 0, :]
 
 
 def get_model_data_stance(topics: List[Topic], fidx: FeatureIndex) -> pd.DataFrame:

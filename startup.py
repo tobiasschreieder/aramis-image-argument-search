@@ -72,23 +72,22 @@ def main():
     log.info('do main stuff')
 
     # start_flask()
-    findex = FeatureIndex.create_index()
+    # findex = FeatureIndex.create_index()
     # findex.calculate_sentiment_score_v2(n_jobs=6)
-    findex.save()
+    # findex.save()
     # start_server(None)
 
     # data = html_preprocessing.html_test()
     # np.save('data12', data)
 
-    # findex = FeatureIndex.load(23158)
-    # topics = [2, 4, 8, 21, 27, 33, 36, 40, 43, 45, 48]
-    # topics = [Topic.get(t) for t in topics]
-    #
-    # df = get_model_data_arg(topics, findex)
-    #
-    # features_neural_network.train_network("second_smaller_model", df=df)
-    #
-    # analysis_main()
+    findex = FeatureIndex.load(23158)
+    topics_no = [2, 4, 8, 21, 27, 33, 36, 37, 40, 43, 45, 48]
+    topics = [Topic.get(t) for t in topics_no]
+
+    df = get_model_data_arg(topics, findex)
+    features_neural_network.train_network("first_bigger_model", df=df)
+
+    analysis_main(model_name='first_bigger_model', topics_no=topics_no)
 
 
 if __name__ == '__main__':

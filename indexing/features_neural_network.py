@@ -31,16 +31,31 @@ def train_network(model_name: str, df: pd.DataFrame):
         df.loc[index, :] = scale_data(row)
     print("finished scaling")
 
-    print(df)
-
     # shuffle data-rows
     df.sample(frac=1)
 
+    text_position = df['text_position']
+    df = df.drop('text_position', 1)
+
+    df_eval = df.loc[df['topic'].isin([27, 33])].drop('topic', 1)
+    df = df.loc[~df['topic'].isin([27, 33])]
+
+    '''
     df_len = len(df.index)
     split_index = round(df_len * 0.8)
-
+    
     df_train = df.iloc[:split_index, :]
     df_test = df.iloc[split_index:, :]
+    '''
+
+    df_test = df.loc[df['topic'].isin([40, 43])]
+    df_train = df.loc[~df['topic'].isin([40, 43])]
+
+    print(df_test)
+    print(df_train)
+
+    df_test = df_test.drop('topic', 1)
+    df_train = df_train.drop('topic', 1)
 
     x = df_train.loc[:, df_train.columns != 'arg_eval']
     x = x.loc[:, x.columns != 'image_id']
@@ -57,15 +72,15 @@ def train_network(model_name: str, df: pd.DataFrame):
     y_test = np.asarray(y_test)
 
     input_dim = len(x[0])
+    print("Current network ist trained with %s features." % (input_dim))
 
     model = Sequential()
-    model.add(Dense(100, input_dim=input_dim, activation="relu"))
-    model.add(Dense(80, activation="relu"))
-    model.add(Dense(40, activation="relu"))
+    model.add(Dense(10, input_dim=input_dim, activation="relu"))
+    model.add(Dense(5, activation="relu"))
     model.add(Dense(1, activation="sigmoid"))
 
     model.compile(loss="mse", optimizer="Adam", metrics=["accuracy"])
-    history = model.fit(x, y, epochs=600, batch_size=50, validation_data=(x_test, y_test), callbacks=[overfitCallback])
+    history = model.fit(x, y, epochs=100, batch_size=50, validation_data=(x_test, y_test), callbacks=[overfitCallback])
 
     Path("indexing/models/" + str(model_name)).mkdir(parents=True, exist_ok=True)
 
@@ -102,10 +117,11 @@ def make_prediction(model: keras.Model, input_data: list) -> list:
 
     input_data_scaled = []
     for row in input_data:
+        row = row.drop('text_position')
         scaled_row = scale_data(row)
         input_data_scaled.append(scaled_row)
 
-    x = np.array(input_data_scaled)
+    x = np.array(input_data_scaled).astype('float32')
 
     predictions = model.predict(x)
 
@@ -125,33 +141,23 @@ def log_normal_density_function(x: float) -> float:
             ((math.log((-x + 1), 10) + 0.49) ** 2) / -0.0512) * 0.12)
 
 
-def scale_data(df_row: pd.DataFrame) -> pd.DataFrame:
-    '''
-    'image_id': pd.StringDtype(),
-    'html_sentiment_score': np.float,
-    'image_text_len': np.int,
-    'image_text_sentiment_score': np.float,
-    'image_percentage_green': np.float,
-    'image_percentage_red': np.float,
-    'image_percentage_bright': np.float,
-    'image_percentage_dark': np.float,
-    'image_average_color_r': np.float,
-    'image_average_color_g': np.float,
-    'image_average_color_b': np.float,
-    'image_type': np.int8,
-    'image_roi_area': np.float,
-    '''
+def scale_data(df_row: pd.Series) -> pd.Series:
 
     df_row['html_sentiment_score'] = (df_row['html_sentiment_score'] + 1) / 2
-    df_row['image_text_len'] = (1 - (1 / (math.exp(0.01 * df_row['image_text_len'])))) * 3
-    df_row['image_text_sentiment_score'] = (df_row['image_text_sentiment_score'] + 1) / 2
+    df_row['text_len'] = (1 - (1 / (math.exp(0.01 * df_row['text_len'])))) * 3
+    df_row['text_sentiment_score'] = (df_row['text_sentiment_score'] + 1) / 2
     df_row['image_percentage_green'] = df_row['image_percentage_green'] / 100
     df_row['image_percentage_red'] = df_row['image_percentage_red'] / 100
+    df_row['image_percentage_blue'] = df_row['image_percentage_blue'] / 100
+    df_row['image_percentage_yellow'] = df_row['image_percentage_yellow'] / 100
     df_row['image_percentage_bright'] = df_row['image_percentage_bright'] / 100
     df_row['image_percentage_dark'] = df_row['image_percentage_dark'] / 100
     df_row['image_average_color_r'] = df_row['image_average_color_r'] / 360
     df_row['image_average_color_g'] = df_row['image_average_color_g'] / 360
     df_row['image_average_color_b'] = df_row['image_average_color_b'] / 360
+    df_row['image_dominant_color_r'] = df_row['image_dominant_color_r'] / 360
+    df_row['image_dominant_color_g'] = df_row['image_dominant_color_g'] / 360
+    df_row['image_dominant_color_b'] = df_row['image_dominant_color_b'] / 360
     df_row['image_roi_area'] = log_normal_density_function(df_row['image_roi_area'])
 
     return df_row

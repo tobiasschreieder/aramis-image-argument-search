@@ -184,7 +184,7 @@ class NNArgumentModel(ArgumentModel):
         else:
             top_k = min(len(self.index), top_k)
 
-        features_list = [self.index.get_all_fetures(doc_id) for doc_id in topic_relevant.index]
+        features_list = [self.index.get_all_features(doc_id) for doc_id in topic_relevant.index]
         results = features_neural_network.make_prediction(model=self.model, input_data=features_list)
 
         for i, doc_id in enumerate(topic_relevant.index):

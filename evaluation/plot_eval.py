@@ -61,7 +61,11 @@ def plot_scoring_eval(model, topics: List[int],
     else:
         raise NotImplementedError('Cant plot more than 12 topics in one plot, tried %s', len(topics))
 
-    sub_titel = [f'Topic {Topic.get(t).number} - {Topic.get(t).title}' for t in topics]
+    sub_titel = []
+    for t in topics:
+        topic_title = Topic.get(t).title
+        topic_title = (topic_title[:37] + '..') if len(topic_title) > 40 else topic_title
+        sub_titel.append(f'Topic {Topic.get(t).number} - {topic_title}')
     fig = make_subplots(rows=rows, cols=cols, shared_xaxes=True, x_title='Score', y_title='Count',
                         vertical_spacing=0.05, horizontal_spacing=0.01, subplot_titles=sub_titel)
     a = np.array(topics)
