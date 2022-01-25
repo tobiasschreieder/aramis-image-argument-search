@@ -314,7 +314,8 @@ def text_analysis(image):
         "text_area_left": left_main_text / width,
         "text_area_rigth": right_main_text / width,
         "text_area_top": top_main_text / height,
-        "text_area_bottom": bottom_main_text / height
+        "text_area_bottom": bottom_main_text / height,
+        "text_position": text_position
     }
     return text_analysis
 
