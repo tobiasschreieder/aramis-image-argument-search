@@ -136,10 +136,7 @@ def get_model_data_arg(topics: List[Topic], fidx: FeatureIndex) -> pd.DataFrame:
     data['topic'] = 0
     for topic in topics:
         t_df: pd.DataFrame = get_df().loc[(slice(None), slice(None), topic.number), :]
-        # print(t_df)
-        # print(t_df.loc[t_df['Topic_correct'], :].index.unique(0))
         data.loc[t_df.loc[t_df['Topic_correct'], :].index.unique(0), 'topic'] = topic.number
-        # data['topic'] = data['topic'].replace([1], topic.number)
         data.loc[t_df.loc[
                  (t_df['Topic_correct'] & (t_df['Argumentative'] == 'STRONG')), :].index.unique(0), 'arg_eval'] = 1
         data.loc[t_df.loc[
@@ -152,11 +149,11 @@ def get_model_data_stance(topics: List[Topic], fidx: FeatureIndex) -> pd.DataFra
     data['topic'] = 0
     for topic in topics:
         t_df: pd.DataFrame = get_df().loc[(slice(None), slice(None), topic.number), :]
-        data.loc[t_df.loc[t_df['Topic_correct'], :].index.unique(0), 'topic'] = 1
+        data.loc[t_df.loc[t_df['Topic_correct'], :].index.unique(0), 'topic'] = topic.number
         data.loc[t_df.loc[
-                 (t_df['Topic_correct'] & (t_df['Stance'] == 'PRO')), :].index.unique(0), 'stance_eval'] = 1
+                 (t_df['Topic_correct'] & (t_df['Stance'] == 'PRO')), :].index.unique(0), 'stance_eval'] = (1, 0)
         data.loc[t_df.loc[
-                 (t_df['Topic_correct'] & (t_df['Stance'] == 'NEUTRAL')), :].index.unique(0), 'stance_eval'] = 0.5
+                 (t_df['Topic_correct'] & (t_df['Stance'] == 'NEUTRAL')), :].index.unique(0), 'stance_eval'] = (0, 0)
         data.loc[t_df.loc[
-                 (t_df['Topic_correct'] & (t_df['Stance'] == 'CON')), :].index.unique(0), 'stance_eval'] = 0
-    return data.loc[(data['topic'] == 1), :].drop('topic', axis=1).dropna()
+                 (t_df['Topic_correct'] & (t_df['Stance'] == 'CON')), :].index.unique(0), 'stance_eval'] = (0, 1)
+    return data.loc[(data['topic'] > 0), :]
