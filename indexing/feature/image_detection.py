@@ -263,11 +263,11 @@ def text_analysis(image):
         text_position_dict[i] = 0
 
     for index, row in df.iterrows():
-        text = text + " " + row['text']
+        text = text + " " + str(row['text'])
         area = row['width'] * row['height']
         text_area += area
-        x_coord = row['width'] + row['left']
-        y_coord = row['height'] + row['top']
+        x_coord = row['width']/2 + row['left']
+        y_coord = row['height']/2 + row['top']
         coord_col = x_coord // cols_interval
         coord_row = y_coord // rows_interval
         text_box = int((coord_row * n_cols) + coord_col)
@@ -301,8 +301,9 @@ def text_analysis(image):
 
         current_area += area
 
-    for box in text_position_dict:
-        text_position_dict[box] = text_position_dict[box] / text_area
+    if not text_area == 0:
+        for box in text_position_dict:
+            text_position_dict[box] = text_position_dict[box] / text_area
 
     text = clean_text(text)
 
@@ -314,7 +315,7 @@ def text_analysis(image):
         "text_area_percentage": text_area_precentage,
         "text_sentiment_score": text_sentiment_score,
         "text_area_left": left_main_text / width,
-        "text_area_rigth": right_main_text / width,
+        "text_area_right": right_main_text / width,
         "text_area_top": top_main_text / height,
         "text_area_bottom": bottom_main_text / height,
         "text_position": text_position_dict

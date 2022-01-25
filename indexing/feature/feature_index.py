@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from typing import Dict, List
 
 import cv2
 import numpy as np
@@ -27,7 +28,7 @@ class FeatureIndex:
             see joblib.parallel.Parallel
         :return: An index object
         """
-        # ~122 min
+        # ~122 min -> 136.9min
         image_ids = DataEntry.get_image_ids(max_images)
 
         '''
@@ -68,11 +69,19 @@ class FeatureIndex:
             image_type = image_detection.detect_image_type(image_rgb_small)
             roi_area = image_detection.diagramms_from_image(image_rgb_small)
 
+            text_area_str = FeatureIndex._convert_text_area_to_str(text_analysis['text_position'])
+
             id_list = [
                 image_id,
                 html_sentiment_score,
                 text_analysis['text_len'],
                 text_analysis['text_sentiment_score'],
+                text_analysis['text_area_percentage'],
+                text_analysis['text_area_left'],
+                text_analysis['text_area_right'],
+                text_analysis['text_area_top'],
+                text_analysis['text_area_bottom'],
+                text_area_str,
                 color_mood['percentage_green'],
                 color_mood['percentage_red'],
                 color_mood['percentage_blue'],
@@ -95,8 +104,14 @@ class FeatureIndex:
 
         index.dataframe = pd.DataFrame(data, columns=['image_id',
                                                       'html_sentiment_score',
-                                                      'image_text_len',
-                                                      'image_text_sentiment_score',
+                                                      'text_len',
+                                                      'text_sentiment_score',
+                                                      'text_area_percentage',
+                                                      'text_area_left',
+                                                      'text_area_right',
+                                                      'text_area_top',
+                                                      'text_area_bottom',
+                                                      'text_position',
                                                       'image_percentage_green',
                                                       'image_percentage_red',
                                                       'image_percentage_blue',
@@ -116,8 +131,14 @@ class FeatureIndex:
         index.dataframe = index.dataframe.astype(dtype={
             'image_id': pd.StringDtype(),
             'html_sentiment_score': np.float,
-            'image_text_len': np.int,
-            'image_text_sentiment_score': np.float,
+            'text_len': np.int,
+            'text_sentiment_score': np.float,
+            'text_area_percentage': np.float,
+            'text_area_left': np.float,
+            'text_area_right': np.float,
+            'text_area_top': np.float,
+            'text_area_bottom': np.float,
+            'text_position': pd.StringDtype(),
             'image_percentage_green': np.float,
             'image_percentage_red': np.float,
             'image_percentage_blue': np.float,
@@ -209,6 +230,27 @@ class FeatureIndex:
     def __len__(self) -> int:
         return len(self.dataframe)
 
+    @staticmethod
+    def _convert_text_area_to_str(text_area_list: Dict[int, int]) -> str:
+        result = ''
+        for k in text_area_list.keys():
+            if text_area_list[k] == 0:
+                result += '|'
+            else:
+                result += str(int(round(text_area_list[k]*1000, 0))) + '|'
+        return result[:-1]
+
+    @staticmethod
+    def _convert_text_area_from_str(text_area_str: str) -> List[int]:
+        result = []
+        for val in text_area_str.split('|'):
+            if val == '':
+                result.append(0)
+            else:
+                i = int(val)/1000
+                result.append(i)
+        return result
+
     def get_html_sentiment_score(self, image_id: str) -> float:
         """
         Returns the html_sentiment_score for the given image id.
@@ -227,23 +269,77 @@ class FeatureIndex:
         """
         return self.dataframe.loc[image_id, 'html_sentiment_score_v2']
 
-    def get_image_text_len(self, image_id: str) -> float:
+    def get_text_len(self, image_id: str) -> float:
         """
-        Returns the image_text_len for the given image id.
+        Returns the text_len for the given image id.
 
         :param image_id: id of the image
-        :return: image_text_len for image id
+        :return: text_len for image id
         """
-        return self.dataframe.loc[image_id, 'image_text_len']
+        return self.dataframe.loc[image_id, 'text_len']
 
-    def get_image_text_sentiment_score(self, image_id: str) -> float:
+    def get_text_sentiment_score(self, image_id: str) -> float:
         """
-        Returns the image_text_sentiment_score for the given image id.
+        Returns the text_sentiment_score for the given image id.
 
         :param image_id: id of the image
-        :return: image_text_sentiment_score for image id
+        :return: text_sentiment_score for image id
         """
-        return self.dataframe.loc[image_id, 'image_text_sentiment_score']
+        return self.dataframe.loc[image_id, 'text_sentiment_score']
+
+    def get_text_area_percentage(self, image_id: str) -> float:
+        """
+        Returns the text_area_percentage for the given image id.
+
+        :param image_id: id of the image
+        :return: text_area_percentage for image id
+        """
+        return self.dataframe.loc[image_id, 'text_area_percentage']
+
+    def get_text_area_left(self, image_id: str) -> float:
+        """
+        Returns the text_area_left for the given image id.
+
+        :param image_id: id of the image
+        :return: text_area_left for image id
+        """
+        return self.dataframe.loc[image_id, 'text_area_left']
+
+    def get_text_area_right(self, image_id: str) -> float:
+        """
+        Returns the text_area_right for the given image id.
+
+        :param image_id: id of the image
+        :return: text_area_right for image id
+        """
+        return self.dataframe.loc[image_id, 'text_area_right']
+
+    def get_text_area_top(self, image_id: str) -> float:
+        """
+        Returns the text_area_top for the given image id.
+
+        :param image_id: id of the image
+        :return: text_area_top for image id
+        """
+        return self.dataframe.loc[image_id, 'text_area_top']
+
+    def get_text_area_bottom(self, image_id: str) -> float:
+        """
+        Returns the text_area_bottom for the given image id.
+
+        :param image_id: id of the image
+        :return: text_area_bottom for image id
+        """
+        return self.dataframe.loc[image_id, 'text_area_bottom']
+
+    def get_text_position(self, image_id: str) -> List[int]:
+        """
+        Returns the text_position for the given image id.
+
+        :param image_id: id of the image
+        :return: text_position for image id
+        """
+        return self._convert_text_area_from_str(self.dataframe.loc[image_id, 'text_position'])
 
     def get_image_percentage_green(self, image_id: str) -> float:
         """
@@ -344,5 +440,29 @@ class FeatureIndex:
         :param image_id: id of the image
         :return: all features for image_id
         """
-        df = self.dataframe.loc[image_id, :]
+        cols = [
+            'html_sentiment_score',
+            'text_len',
+            'text_sentiment_score',
+            'text_area_percentage',
+            'text_area_left',
+            'text_area_right',
+            'text_area_top',
+            'text_area_bottom',
+            'image_percentage_green',
+            'image_percentage_red',
+            'image_percentage_blue',
+            'image_percentage_yellow',
+            'image_percentage_bright',
+            'image_percentage_dark',
+            'image_average_color_r',
+            'image_average_color_g',
+            'image_average_color_b',
+            'image_dominant_color_r',
+            'image_dominant_color_g',
+            'image_dominant_color_b',
+            'image_type',
+            'image_roi_area',
+        ]
+        df = self.dataframe.loc[image_id, cols]
         return df
