@@ -69,7 +69,7 @@ class FeatureIndex:
             image_type = image_detection.detect_image_type(image_rgb_small)
             roi_area = image_detection.diagramms_from_image(image_rgb_small)
 
-            text_area_str = FeatureIndex._convert_text_area_to_str(text_analysis['text_position'])
+            text_area_str = FeatureIndex.convert_text_area_to_str(text_analysis['text_position'])
 
             id_list = [
                 image_id,
@@ -231,7 +231,7 @@ class FeatureIndex:
         return len(self.dataframe)
 
     @staticmethod
-    def _convert_text_area_to_str(text_area_list: Dict[int, int]) -> str:
+    def convert_text_area_to_str(text_area_list: Dict[int, int]) -> str:
         result = ''
         for k in text_area_list.keys():
             if text_area_list[k] == 0:
@@ -241,7 +241,7 @@ class FeatureIndex:
         return result[:-1]
 
     @staticmethod
-    def _convert_text_area_from_str(text_area_str: str) -> List[int]:
+    def convert_text_area_from_str(text_area_str: str) -> List[int]:
         result = []
         for val in text_area_str.split('|'):
             if val == '':
@@ -339,7 +339,7 @@ class FeatureIndex:
         :param image_id: id of the image
         :return: text_position for image id
         """
-        return self._convert_text_area_from_str(self.dataframe.loc[image_id, 'text_position'])
+        return self.convert_text_area_from_str(self.dataframe.loc[image_id, 'text_position'])
 
     def get_image_percentage_green(self, image_id: str) -> float:
         """
@@ -440,29 +440,5 @@ class FeatureIndex:
         :param image_id: id of the image
         :return: all features for image_id
         """
-        cols = [
-            'html_sentiment_score',
-            'text_len',
-            'text_sentiment_score',
-            'text_area_percentage',
-            'text_area_left',
-            'text_area_right',
-            'text_area_top',
-            'text_area_bottom',
-            'image_percentage_green',
-            'image_percentage_red',
-            'image_percentage_blue',
-            'image_percentage_yellow',
-            'image_percentage_bright',
-            'image_percentage_dark',
-            'image_average_color_r',
-            'image_average_color_g',
-            'image_average_color_b',
-            'image_dominant_color_r',
-            'image_dominant_color_g',
-            'image_dominant_color_b',
-            'image_type',
-            'image_roi_area',
-        ]
-        df = self.dataframe.loc[image_id, cols]
+        df = self.dataframe.loc[image_id, :]
         return df
