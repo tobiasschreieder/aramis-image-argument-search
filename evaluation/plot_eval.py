@@ -9,7 +9,7 @@ from plotly.express.colors import qualitative
 from plotly.subplots import make_subplots
 
 from indexing import Topic
-from retrieval import ArgumentModel, StanceModel
+from retrieval import ArgumentModel, StanceModel, NNStanceModel
 
 from .analysis_helper import calc_topic_scores
 
@@ -144,5 +144,74 @@ def plot_scoring_eval(model, topics: List[int],
                           f'Avg {round(avg, round_int)}</sup>'
 
     fig.update_layout(title=f'{infos[1]} Scoring {precision_title}')
+
+    return fig
+
+
+def plot_stance_confusion(model, topics: List[int]) -> go.Figure:
+    if len(topics) <= 2:
+        rows = 2
+        cols = 1
+    elif len(topics) <= 4:
+        rows = 2
+        cols = 2
+    elif len(topics) <= 6:
+        rows = 3
+        cols = 2
+    elif len(topics) <= 9:
+        rows = 3
+        cols = 3
+    elif len(topics) <= 12:
+        rows = 3
+        cols = 4
+    else:
+        raise NotImplementedError('Cant plot more than 12 topics in one plot, tried %s', len(topics))
+
+    infos = ('stance', 'Stance', ('PRO', plotly_color[2]), ('NEUTRAL', plotly_color[0]),
+             ('CON', plotly_color[1]), 'color_mood, image_text_sentiment, html_sentiment')
+
+    sub_titel = []
+    for t in topics:
+        topic_title = Topic.get(t).title
+        topic_title = (topic_title[:37] + '..') if len(topic_title) > 40 else topic_title
+        sub_titel.append(f'Topic {Topic.get(t).number} - {topic_title}')
+    fig = make_subplots(rows=rows, cols=cols, shared_yaxes=True, shared_xaxes=True, x_title='True Eval',
+                        y_title='Predicted Eval',
+                        vertical_spacing=0.06, horizontal_spacing=0.02, subplot_titles=sub_titel)
+    a = np.array(topics)
+    a.resize((rows, cols), refcheck=False)
+
+    for row in range(rows):
+        for col in range(cols):
+            t = a[row, col]
+
+            show_legend = False
+            if row == 0 and col == 0:
+                show_legend = True
+
+            if t == 0:
+                fig.add_histogram(x=[], name='', showlegend=show_legend,
+                                  row=row + 1, col=col + 1, legendgroup='')
+                continue
+            topic = Topic.get(t)
+
+            df = calc_topic_scores(model, topic, infos[0])
+
+            # show_legend = False
+            # if row == 0 and col == 0:
+            #     show_legend = True
+
+            x = ['CON', 'NEUTRAL', 'PRO']
+            y = [-1, 0, 1]
+            z = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+            for j, eval_val in enumerate(x):
+                count = df.loc[(df['value'] == eval_val), 'value'].count()
+                for i, score in enumerate(y):
+                    z[i][j] = df.loc[(df['value'] == eval_val) & (df['score'] == score), 'value'].count() / count
+
+            fig.add_heatmap(z=z, x=x, y=y, texttemplate='%{z:.4f}', colorscale='Blues', showscale=False,
+                            row=row + 1, col=col + 1,)
+
+    fig.update_layout(title=f'{infos[1]} Scoring')
 
     return fig

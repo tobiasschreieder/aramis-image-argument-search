@@ -86,18 +86,7 @@ class StandardStanceModel(StanceModel):
         percentage_red = self.index.get_image_percentage_red(doc_id)
         percentage_bright = self.index.get_image_percentage_bright(doc_id)
         percentage_dark = self.index.get_image_percentage_dark(doc_id)
-        image_average_color = self.index.get_image_average_color(doc_id)
         html_sentiment_score = self.index.get_html_sentiment_score(doc_id)
-
-        # distance_to_green = math.sqrt(
-        #     (image_average_color[0] - 0) ** 2 + (image_average_color[1] - 255) ** 2 + (image_average_color[2] - 0) ** 2)
-        # distance_to_red = math.sqrt(
-        #     (image_average_color[0] - 255) ** 2 + (image_average_color[1] - 0) ** 2 + (image_average_color[2] - 0) ** 2)
-        # distance_to_black = math.sqrt(
-        #     (image_average_color[0] - 0) ** 2 + (image_average_color[1] - 0) ** 2 + (image_average_color[2] - 0) ** 2)
-        # distance_to_white = math.sqrt(
-        #     (image_average_color[0] - 255) ** 2 + (image_average_color[1] - 255) ** 2 + (
-        #             image_average_color[2] - 255) ** 2)
 
         # between 0 and 3
         color_mood = 0
@@ -111,8 +100,8 @@ class StandardStanceModel(StanceModel):
             # between -3 and 3
             color_mood = color_mood * 3
 
-        image_text_sentiment_score = self.index.get_image_text_sentiment_score(doc_id)
-        image_text_len = self.index.get_image_text_len(doc_id)
+        image_text_sentiment_score = self.index.get_text_sentiment_score(doc_id)
+        image_text_len = self.index.get_text_len(doc_id)
         # between 1 and 3 (above 80 ~3)
         len_words_value = 3 + (((-1) / (math.exp(0.04 * image_text_len))) * 2)
         text_sentiment_factor = len_words_value * image_text_sentiment_score
@@ -214,20 +203,17 @@ class NNStanceModel(StanceModel):
             features_list.append(pd_series)
         results = features_NN_stance.make_prediction(model=self.model, input_data=features_list)
 
+        argument_relevant.loc[:, 'stance'] = np.nan
         pro_scores = argument_relevant.copy()
         con_scores = argument_relevant.copy()
-        print("arumentative_df: ", argument_relevant)
+        # print("arumentative_df: ", argument_relevant)
         for i, doc_id in enumerate(argument_relevant.index):
             score = results[i]
-            # diff = score[0] - score[1]
             argument_relevant.loc[doc_id, 'stance'] = score
             if score > 0:
                 pro_scores.loc[doc_id, 'stance'] = score
             elif score < 0:
-                con_scores.loc[doc_id, 'stance'] = 1 - score
+                con_scores.loc[doc_id, 'stance'] = abs(score)
 
-        if pro_scores.empty:
-            return None, con_scores.nlargest(top_k, 'stance', keep='all')
-        if con_scores.empty:
-            return pro_scores.nlargest(top_k, 'stance', keep='all'), None
+        # TODO no score left
         return pro_scores.nlargest(top_k, 'stance', keep='all'), con_scores.nlargest(top_k, 'stance', keep='all')

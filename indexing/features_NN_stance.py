@@ -219,8 +219,8 @@ def scale_data(df_row: pd.Series) -> pd.Series:
 
 
 def make_prediction(model: keras.Model, input_data: list):
-    model_argument = load_model("indexing/models/test_1_argument/model.hS")
-    results_argument = features_NN_argument.make_prediction(model=model_argument, input_data=input_data)
+    # model_argument = load_model("indexing/models/test_1_argument/model.hS")
+    # results_argument = features_NN_argument.make_prediction(model=model_argument, input_data=input_data)
 
     column_list = ['image_percentage_green',
                    'image_percentage_red',
@@ -256,14 +256,14 @@ def make_prediction(model: keras.Model, input_data: list):
     predictions = model.predict(x=input_data_network)
 
     predictions = categorial_to_eval(predictions)
-    results = []
-
-    for i in range(len(predictions)):
-        if predictions[i] == 1:
-            results.append(results_argument[i])
-        elif predictions[i] == -1:
-            results.append(((-1)*results_argument[i]))
-        else:
-            results.append(0)
+    # results = []
+    #
+    # for i in range(len(predictions)):
+    #     if predictions[i] == 1:
+    #         results.append(results_argument[i])
+    #     elif predictions[i] == -1:
+    #         results.append(((-1)*results_argument[i]))
+    #     else:
+    #         results.append(0)
 
     return predictions

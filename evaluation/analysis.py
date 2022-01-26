@@ -9,7 +9,7 @@ from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardArgumentMo
     StandardStanceModel, NNArgumentModel, ArgumentModel, NNStanceModel
 from .analysis_helper import get_relevant_eval, calc_precision_recall, calc_topic_scores, calc_f1
 from .configuration import Configuration
-from .plot_eval import plot_arg_scoring_eval, plot_stance_scoring_eval
+from .plot_eval import plot_arg_scoring_eval, plot_stance_scoring_eval, plot_stance_confusion
 
 log = logging.getLogger('analysis')
 
@@ -44,4 +44,5 @@ def main(model_name: str, topics_no: list):
     findex = FeatureIndex.load(23158)
 
     # plot_arg_scoring_eval(NNArgumentModel(findex, model_name_argument), topics_no).show()
-    plot_stance_scoring_eval(NNStanceModel(findex, model_name_stance), topics_no).show()
+    # plot_stance_scoring_eval(NNStanceModel(findex, model_name_stance), topics_no).show()
+    plot_stance_confusion(NNStanceModel(findex, model_name_stance), topics_no).show()
