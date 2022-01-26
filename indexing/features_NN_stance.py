@@ -37,6 +37,10 @@ def train_network(model_name: str, df: pd.DataFrame):
     '''
     model_name = model_name + "_stance"
 
+    df['html_sentiment_score_con'] = 0
+    df['text_sentiment_score_con'] = 0
+    df['query_sentiment_con'] = 0
+
     # --- handling the scaling, train and test-data
     print("start scaling dataframe")
     for index, row in df.iterrows():
@@ -50,15 +54,18 @@ def train_network(model_name: str, df: pd.DataFrame):
                    'image_percentage_bright',
                    'image_percentage_dark',
                    'html_sentiment_score',
+                   'html_sentiment_score_con',
                    'text_len',
                    'text_sentiment_score',
+                   'text_sentiment_score_con',
                    'image_average_color_r',
                    'image_average_color_g',
                    'image_average_color_b',
                    'image_dominant_color_r',
                    'image_dominant_color_g',
                    'image_dominant_color_b',
-                   'query_sentiment']
+                   'query_sentiment',
+                   'query_sentiment_con']
 
     split_data = split_train_test_data(df, column_list)
     x_train = split_data['x_train']
@@ -75,7 +82,7 @@ def train_network(model_name: str, df: pd.DataFrame):
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=["accuracy"])
 
     history = model.fit(x=x_train, y=y_train,
-                        epochs=16, batch_size=5,
+                        epochs=25, batch_size=5,
                         validation_data=(x_test, y_test))
                         #callbacks=[overfitCallback])
 
@@ -154,8 +161,20 @@ def categorial_to_eval(data):
         value_1 = value[1]
         value_2 = value[2]
 
-        result = (value_0 * (-1)) + (value_2 * 1)
+        '''
+        if value_1 > value_2*1.1 and value_1 > value_0*1.1:
+            result = 0
+        else:
+            result = (value_0 * (-1)) + (value_2 * 1)
         output_data.append(result)
+        '''
+
+        if value_0 >= value_1 and value_0 > value_2:
+            output_data.append(1)
+        elif value_2 >= value_0 and value_2 > value_1:
+            output_data.append(-1)
+        else:
+            output_data.append(0)
 
     return np.asarray(output_data)
 
@@ -171,9 +190,7 @@ def log_normal_density_function(x: float) -> float:
 
 
 def scale_data(df_row: pd.Series) -> pd.Series:
-    df_row['html_sentiment_score'] = df_row['html_sentiment_score']
     df_row['text_len'] = (1 - (1 / (math.exp(0.01 * df_row['text_len'])))) * 3
-    df_row['text_sentiment_score'] = df_row['text_sentiment_score']
     df_row['image_percentage_green'] = df_row['image_percentage_green'] / 100
     df_row['image_percentage_red'] = df_row['image_percentage_red'] / 100
     df_row['image_percentage_blue'] = df_row['image_percentage_blue'] / 100
@@ -188,66 +205,20 @@ def scale_data(df_row: pd.Series) -> pd.Series:
     df_row['image_dominant_color_b'] = df_row['image_dominant_color_b'] / 360
     df_row['image_roi_area'] = log_normal_density_function(df_row['image_roi_area'])
     df_row['query_sentiment'] = sentiment_detection.sentiment_nltk(df_row['query_sentiment'])
+    if df_row['query_sentiment'] < 0:
+        df_row['query_sentiment_con'] = df_row['query_sentiment'] * (-1)
+        df_row['query_sentiment'] = 0
+    if df_row['text_sentiment_score'] < 0:
+        df_row['text_sentiment_score_con'] = df_row['text_sentiment_score'] * (-1)
+        df_row['text_sentiment_score'] = 0
+    if df_row['html_sentiment_score'] < 0:
+        df_row['html_sentiment_score_con'] = df_row['html_sentiment_score'] * (-1)
+        df_row['html_sentiment_score'] = 0
 
     return df_row
 
 
-def make_prediction(model: keras.Model, input_data: list) -> list:
-    """
-    Method to predict some steps for a runners level
-    :param model_name: name of the trained network
-    :return: a list of all predictions. Every prediction is a list of 40 values due to the 40-nodes-last-layer
-    """
-
-    tp_input_data = []
-    color_input_data = []
-    primary_features_input_data = []
-
-    for row in input_data:
-        scaled_row = scale_data(row)
-
-        tp_str = scaled_row['text_position']
-        list_from_str = FeatureIndex.convert_text_area_from_str(tp_str)
-        dim_heatmap = int(math.sqrt(len(list_from_str)))
-        chunked_list = list()
-        for i in range(0, len(list_from_str), dim_heatmap):
-            chunked_list.append(list_from_str[i:i + dim_heatmap])
-        tp_input_data.append(chunked_list)
-
-        color_input = scaled_row[['image_average_color_r',
-                                  'image_average_color_g',
-                                  'image_average_color_b',
-                                  'image_dominant_color_r',
-                                  'image_dominant_color_g',
-                                  'image_dominant_color_b']]
-        color_input_data.append(np.asarray(color_input).astype('float32'))
-
-        primary_input = scaled_row[['image_percentage_green',
-                                    'image_percentage_red',
-                                    'image_percentage_blue',
-                                    'image_percentage_yellow',
-                                    'image_percentage_bright',
-                                    'image_percentage_dark',
-                                    'html_sentiment_score',
-                                    'text_len',
-                                    'text_sentiment_score',
-                                    'image_type',
-                                    'image_roi_area']]
-        primary_features_input_data.append(np.asarray(primary_input).astype('float32'))
-
-    tp_input_data = np.expand_dims(tp_input_data, axis=3)
-    color_input_data = np.asarray(color_input_data)
-    primary_features_input_data = np.asarray(primary_features_input_data)
-
-    predictions = model.predict(x=[tp_input_data, color_input_data, primary_features_input_data])
-
-    predictions = [value[0] for value in predictions]
-
-    print(predictions)
-    return predictions
-
-
-def make_prediction_LorenzIdea(model: keras.Model, input_data: list):
+def make_prediction(model: keras.Model, input_data: list):
     model_argument = load_model("indexing/models/test_1_argument/model.hS")
     results_argument = features_NN_argument.make_prediction(model=model_argument, input_data=input_data)
 
@@ -258,33 +229,41 @@ def make_prediction_LorenzIdea(model: keras.Model, input_data: list):
                    'image_percentage_bright',
                    'image_percentage_dark',
                    'html_sentiment_score',
+                   'html_sentiment_score_con',
                    'text_len',
                    'text_sentiment_score',
+                   'text_sentiment_score_con',
                    'image_average_color_r',
                    'image_average_color_g',
                    'image_average_color_b',
                    'image_dominant_color_r',
                    'image_dominant_color_g',
                    'image_dominant_color_b',
-                   'query_sentiment']
+                   'query_sentiment',
+                   'query_sentiment_con']
 
-    non_argumentative_data = []
     input_data_network = []
     for i in range(len(input_data)):
+
+        input_data[i]['html_sentiment_score_con'] = 0
+        input_data[i]['text_sentiment_score_con'] = 0
+        input_data[i]['query_sentiment_con'] = 0
         scaled_row = scale_data(input_data[i])
         row_input = scaled_row[column_list]
-        # row_input['argumentativeness'] = results_argument[i]
         input_data_network.append(row_input)
-        if results_argument[i] < 0.4:
-            pass
-            # non_argumentative_data.append(i)
 
     input_data_network = np.asarray(input_data_network).astype('float32')
     predictions = model.predict(x=input_data_network)
 
     predictions = categorial_to_eval(predictions)
+    results = []
 
-    for i in non_argumentative_data:
-        predictions[i] = 0
+    for i in range(len(predictions)):
+        if predictions[i] == 1:
+            results.append(results_argument[i])
+        elif predictions[i] == -1:
+            results.append(((-1)*results_argument[i]))
+        else:
+            results.append(0)
 
     return predictions

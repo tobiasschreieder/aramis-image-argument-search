@@ -89,7 +89,7 @@ def main():
     features_NN_argument.train_network("test_1", df=df)
     '''
 
-    df = get_model_data_stance(topics, findex)
+    # df = get_model_data_stance(topics, findex)
     # features_NN_stance.train_network("test_1", df=df)
 
     analysis_main(model_name='test_1', topics_no=topics_no)

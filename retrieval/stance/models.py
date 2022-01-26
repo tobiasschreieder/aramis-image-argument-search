@@ -212,17 +212,22 @@ class NNStanceModel(StanceModel):
             pd_series = self.index.get_all_features(doc_id)
             pd_series['query_sentiment'] = " ".join(query)
             features_list.append(pd_series)
-        results = features_NN_stance.make_prediction_LorenzIdea(model=self.model, input_data=features_list)
+        results = features_NN_stance.make_prediction(model=self.model, input_data=features_list)
 
         pro_scores = argument_relevant.copy()
         con_scores = argument_relevant.copy()
+        print("arumentative_df: ", argument_relevant)
         for i, doc_id in enumerate(argument_relevant.index):
             score = results[i]
             # diff = score[0] - score[1]
             argument_relevant.loc[doc_id, 'stance'] = score
-            if score > 0:
+            if score > 0bette:
                 pro_scores.loc[doc_id, 'stance'] = score
             elif score < 0:
                 con_scores.loc[doc_id, 'stance'] = 1 - score
 
+        if pro_scores.empty:
+            return None, con_scores.nlargest(top_k, 'stance', keep='all')
+        if con_scores.empty:
+            return pro_scores.nlargest(top_k, 'stance', keep='all'), None
         return pro_scores.nlargest(top_k, 'stance', keep='all'), con_scores.nlargest(top_k, 'stance', keep='all')

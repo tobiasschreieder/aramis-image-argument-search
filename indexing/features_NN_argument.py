@@ -26,6 +26,10 @@ overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=10
 def train_network(model_name: str, df: pd.DataFrame):
     model_name = model_name + "_argument"
 
+    df['html_sentiment_score_con'] = 0
+    df['text_sentiment_score_con'] = 0
+    df['query_sentiment_con'] = 0
+
     # --- handling the scaling, train and test-data
     print("start scaling dataframe")
     for index, row in df.iterrows():
@@ -191,8 +195,10 @@ def get_diff_model_data(df_train: pd.DataFrame, df_test: pd.DataFrame):
                                        'image_percentage_bright',
                                        'image_percentage_dark',
                                        'html_sentiment_score',
+                                       'html_sentiment_score_con',
                                        'text_len',
                                        'text_sentiment_score',
+                                       'text_sentiment_score_con',
                                        'image_type',
                                        'image_roi_area']]
     primary_input_train = np.asarray(primary_features_train)
@@ -203,8 +209,10 @@ def get_diff_model_data(df_train: pd.DataFrame, df_test: pd.DataFrame):
                                      'image_percentage_bright',
                                      'image_percentage_dark',
                                      'html_sentiment_score',
+                                     'html_sentiment_score_con',
                                      'text_len',
                                      'text_sentiment_score',
+                                     'text_sentiment_score_con',
                                      'image_type',
                                      'image_roi_area']]
     primary_input_test = np.asarray(primary_features_test)
@@ -241,6 +249,12 @@ def scale_data(df_row: pd.Series) -> pd.Series:
     df_row['image_dominant_color_g'] = df_row['image_dominant_color_g'] / 360
     df_row['image_dominant_color_b'] = df_row['image_dominant_color_b'] / 360
     df_row['image_roi_area'] = log_normal_density_function(df_row['image_roi_area'])
+    if df_row['text_sentiment_score'] < 0:
+        df_row['text_sentiment_score_con'] = df_row['text_sentiment_score'] * (-1)
+        df_row['text_sentiment_score'] = 0
+    if df_row['html_sentiment_score'] < 0:
+        df_row['html_sentiment_score_con'] = df_row['html_sentiment_score'] * (-1)
+        df_row['html_sentiment_score'] = 0
 
     return df_row
 
@@ -257,6 +271,11 @@ def make_prediction(model: keras.Model, input_data: list) -> list:
     primary_features_input_data = []
 
     for row in input_data:
+
+        row['html_sentiment_score_con'] = 0
+        row['text_sentiment_score_con'] = 0
+        row['query_sentiment_con'] = 0
+
         scaled_row = scale_data(row)
 
         tp_str = scaled_row['text_position']
@@ -282,8 +301,10 @@ def make_prediction(model: keras.Model, input_data: list) -> list:
                                     'image_percentage_bright',
                                     'image_percentage_dark',
                                     'html_sentiment_score',
+                                    'html_sentiment_score_con',
                                     'text_len',
                                     'text_sentiment_score',
+                                    'text_sentiment_score_con',
                                     'image_type',
                                     'image_roi_area']]
         primary_features_input_data.append(np.asarray(primary_input).astype('float32'))
