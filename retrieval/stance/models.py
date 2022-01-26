@@ -221,7 +221,7 @@ class NNStanceModel(StanceModel):
             score = results[i]
             # diff = score[0] - score[1]
             argument_relevant.loc[doc_id, 'stance'] = score
-            if score > 0bette:
+            if score > 0:
                 pro_scores.loc[doc_id, 'stance'] = score
             elif score < 0:
                 con_scores.loc[doc_id, 'stance'] = 1 - score
