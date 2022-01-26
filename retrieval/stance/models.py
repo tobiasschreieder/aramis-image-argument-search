@@ -207,8 +207,12 @@ class NNStanceModel(StanceModel):
         else:
             top_k = min(len(self.index), top_k)
 
-        features_list = [self.index.get_all_features(doc_id) for doc_id in argument_relevant.index]
-        results = features_NN_stance.make_prediction(model=self.model, input_data=features_list)
+        features_list = []
+        for doc_id in argument_relevant.index:
+            pd_series = self.index.get_all_features(doc_id)
+            pd_series['query_sentiment'] = " ".join(query)
+            features_list.append(pd_series)
+        results = features_NN_stance.make_prediction_LorenzIdea(model=self.model, input_data=features_list)
 
         pro_scores = argument_relevant.copy()
         con_scores = argument_relevant.copy()
@@ -216,9 +220,9 @@ class NNStanceModel(StanceModel):
             score = results[i]
             # diff = score[0] - score[1]
             argument_relevant.loc[doc_id, 'stance'] = score
-            if score > 0.5:
+            if score > 0:
                 pro_scores.loc[doc_id, 'stance'] = score
-            elif score < 0.5:
+            elif score < 0:
                 con_scores.loc[doc_id, 'stance'] = 1 - score
 
         return pro_scores.nlargest(top_k, 'stance', keep='all'), con_scores.nlargest(top_k, 'stance', keep='all')

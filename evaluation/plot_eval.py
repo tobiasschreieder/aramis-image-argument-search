@@ -61,7 +61,7 @@ def plot_scoring_eval(model, topics: List[int],
     else:
         raise NotImplementedError('Cant plot more than 12 topics in one plot, tried %s', len(topics))
 
-    k = 20
+    k = 50
     round_int = 4
 
     sub_titel = []
