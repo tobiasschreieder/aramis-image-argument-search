@@ -214,11 +214,11 @@ class NNStanceModel(StanceModel):
         con_scores = argument_relevant.copy()
         for i, doc_id in enumerate(argument_relevant.index):
             score = results[i]
-            diff = score[0] - score[1]
-            argument_relevant.loc[doc_id, 'stance'] = diff
-            if diff > 0:
-                pro_scores.loc[doc_id, 'stance'] = diff
-            elif diff < 0:
-                con_scores.loc[doc_id, 'stance'] = diff
+            # diff = score[0] - score[1]
+            argument_relevant.loc[doc_id, 'stance'] = score
+            if score > 0.5:
+                pro_scores.loc[doc_id, 'stance'] = score
+            elif score < 0.5:
+                con_scores.loc[doc_id, 'stance'] = 1 - score
 
         return pro_scores.nlargest(top_k, 'stance', keep='all'), con_scores.nlargest(top_k, 'stance', keep='all')

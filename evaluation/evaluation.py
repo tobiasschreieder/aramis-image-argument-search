@@ -153,15 +153,15 @@ def get_model_data_stance(topics: List[Topic], fidx: FeatureIndex) -> pd.DataFra
         data.loc[t_df.loc[
                  (t_df['Topic_correct'] & (t_df['Stance'] == 'PRO')), :].index.unique(0), 'stance_eval'] = 1
         data.loc[t_df.loc[
-                 (t_df['Topic_correct'] & (t_df['Stance'] == 'NEUTRAL')), :].index.unique(0), 'stance_eval'] = 2
+                 (t_df['Topic_correct'] & (t_df['Stance'] == 'NEUTRAL')), :].index.unique(0), 'stance_eval'] = 0.5
         data.loc[t_df.loc[
-                 (t_df['Topic_correct'] & (t_df['Stance'] == 'CON')), :].index.unique(0), 'stance_eval'] = 3
+                 (t_df['Topic_correct'] & (t_df['Stance'] == 'CON')), :].index.unique(0), 'stance_eval'] = 0
 
-        m = data['stance_eval'].eq(1)
-        data.loc[m, 'stance_eval'] = pd.Series([(1, 0)] * m.sum(), index=m[m].index)
-        m = data['stance_eval'].eq(2)
-        data.loc[m, 'stance_eval'] = pd.Series([(0, 0)] * m.sum(), index=m[m].index)
-        m = data['stance_eval'].eq(3)
-        data.loc[m, 'stance_eval'] = pd.Series([(0, 1)] * m.sum(), index=m[m].index)
+        # m = data['stance_eval'].eq(1)
+        # data.loc[m, 'stance_eval'] = pd.Series([(1, 0)] * m.sum(), index=m[m].index)
+        # m = data['stance_eval'].eq(2)
+        # data.loc[m, 'stance_eval'] = pd.Series([(0, 0)] * m.sum(), index=m[m].index)
+        # m = data['stance_eval'].eq(3)
+        # data.loc[m, 'stance_eval'] = pd.Series([(0, 1)] * m.sum(), index=m[m].index)
 
     return data.loc[(data['topic'] > 0), :]
