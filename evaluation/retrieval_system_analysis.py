@@ -87,33 +87,30 @@ def find_rs_weights(rs: RetrievalSystem, topics: List[Topic], optimum: str = 'bo
     else:
         precision_pos = 2
 
-    best_precision = 0.1895
-    best_weights = (0.33, 0.66, 20)
-    i = 7*7
-    for w_top in np.linspace(0, 1, 7):
-        for w_arg in np.linspace(0, 1, 7):
+    logging.getLogger().setLevel(logging.INFO)
 
-            if w_top + w_arg > 1:
-                i -= 1
-                continue
+    # best_precision = 0.1895
+    # best_weights = (0.33, 0.66, 1 - 0.33 - 0.66)
+    best_precision = 0
+    best_weights = (0.5, 0.5, 0)
+    i = 5
+    for w_top in np.linspace(0, 1, 5):
+        w_arg = 1 - w_top
+        i -= 1
+        log.info(f'cur w:%s', (w_top, w_arg, 1 - w_top - w_arg))
+        then = datetime.datetime.now()
+        rs.topic_weight = w_top
+        rs.arg_weight = w_arg
+        rs.stance_weight = 0
+        temp_precision = round(avg_topic_precision(rs, topics, k)[precision_pos], eta)
+        if temp_precision > best_precision:
+            best_weights = (w_top, w_arg, 1 - w_top - w_arg)
+            best_precision = temp_precision
 
-            for w_fetch in [20]:  # np.linspace(1, 5, 3):
-                i -= 1
-                log.info(f'cur w:%s', (w_top, w_arg, w_fetch))
-                then = datetime.datetime.now()
-                rs.topic_weight = w_top
-                rs.arg_weight = w_arg
-                rs.stance_weight = 1 - w_top - w_arg
-                rs.prefetch_top_k = w_fetch
-                temp_precision = round(avg_topic_precision(rs, topics, k)[precision_pos], eta)
-                if temp_precision > best_precision:
-                    best_weights = (w_top, w_arg, w_fetch)
-                    best_precision = temp_precision
-
-                took = datetime.datetime.now()-then
-                left = took * i
-                log.info('%s|%s w:%s took:%s, ~%s left', round(best_precision, eta),
-                         round(temp_precision, eta), best_weights, took, left)
+        took = datetime.datetime.now() - then
+        left = took * i
+        log.info('%s|%s w:%s took:%s, ~%s left', round(best_precision, eta),
+                 round(temp_precision, eta), best_weights, took, left)
 
     log.info('Found best weights %s with precision %s', best_weights, best_precision)
     return best_weights

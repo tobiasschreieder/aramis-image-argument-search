@@ -14,3 +14,10 @@ You can install the application directly into ``\properties`` or install it anyw
 Check, if the ``\properties\tesseract\tesseract.exe`` exists, but if you have done everything correctly this file should be there.
 
 At least please run the ``run_once.py`` just once. After that everything is set up to have fun :D
+
+## Evaluation
+
+| Models used      | topic_weight | arg_weight | stance_weight | strong@20 | both@20 | topics     |
+|------------------|--------------|------------|---------------|-----------|---------|------------|
+| NNArg & NNStance | 0            | 1          | 0             | 0.0923    | 0.158   | all evaled |
+| NNArg & NNStance | 1            | 0          | 0             | 0.0736    | 0.131   | all evaled |

@@ -15,6 +15,8 @@ def calc_f1(precision: float, recall: float) -> float:
 
 
 def calc_precision_recall(results: List[str], relevant: List[str]) -> Tuple[float, float]:
+    if len(results) == 0:
+        return 0, 0
     res_set = set(results)
     rel_set = set(relevant)
     a = len(res_set.intersection(rel_set))

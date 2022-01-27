@@ -208,10 +208,12 @@ def plot_stance_confusion(model, topics: List[int]) -> go.Figure:
                 count = df.loc[(df['value'] == eval_val), 'value'].count()
                 for i, score in enumerate(y):
                     z[i][j] = df.loc[(df['value'] == eval_val) & (df['score'] == score), 'value'].count() / count
-
+            z.reverse()
+            y = x.copy()
+            y.reverse()
             fig.add_heatmap(z=z, x=x, y=y, texttemplate='%{z:.4f}', colorscale='Blues', showscale=False,
                             row=row + 1, col=col + 1,)
 
-    fig.update_layout(title=f'{infos[1]} Scoring')
+    fig.update_layout(title=f'{infos[1]} Scoring Confusion matrix')
 
     return fig

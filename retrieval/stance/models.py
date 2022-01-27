@@ -95,8 +95,8 @@ class StandardStanceModel(StanceModel):
         elif image_type == ImageType.PHOTO:
             hue_factor = 0.2
             # between -1 and 1
-            color_mood = ((percentage_green/100 - percentage_red/100) * (1-hue_factor)) + \
-                         ((percentage_bright/100 - percentage_dark/100) * hue_factor)
+            color_mood = ((percentage_green / 100 - percentage_red / 100) * (1 - hue_factor)) + \
+                         ((percentage_bright / 100 - percentage_dark / 100) * hue_factor)
             # between -3 and 3
             color_mood = color_mood * 3
 
@@ -151,7 +151,7 @@ class StandardStanceModel(StanceModel):
         else:
             np_weights = np.array(self.weights)
 
-        np_weights = np_weights/np_weights.sum()
+        np_weights = np_weights / np_weights.sum()
 
         for doc_id in argument_relevant.index:
             score = (df_norm.loc[doc_id, :].to_numpy() * np_weights).mean()
@@ -206,7 +206,6 @@ class NNStanceModel(StanceModel):
         argument_relevant.loc[:, 'stance'] = np.nan
         pro_scores = argument_relevant.copy()
         con_scores = argument_relevant.copy()
-        # print("arumentative_df: ", argument_relevant)
         for i, doc_id in enumerate(argument_relevant.index):
             score = results[i]
             argument_relevant.loc[doc_id, 'stance'] = score
@@ -215,5 +214,5 @@ class NNStanceModel(StanceModel):
             elif score < 0:
                 con_scores.loc[doc_id, 'stance'] = abs(score)
 
-        # TODO no score left
-        return pro_scores.nlargest(top_k, 'stance', keep='all'), con_scores.nlargest(top_k, 'stance', keep='all')
+        return pro_scores.dropna(axis=0).nlargest(top_k, 'stance', keep='all'), \
+            con_scores.dropna(axis=0).nlargest(top_k, 'stance', keep='all')
