@@ -317,5 +317,5 @@ def make_prediction(model: keras.Model, input_data: list) -> list:
 
     predictions = [value[0] for value in predictions]
 
-    print(predictions)
+    # print(predictions)
     return predictions

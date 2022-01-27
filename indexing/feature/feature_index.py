@@ -6,15 +6,30 @@ import cv2
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
+from sqlitedict import SqliteDict
 
 from . import html_preprocessing, sentiment_detection, image_detection
 from ..data_entry import DataEntry
+from ..preprocessing import SpacyPreprocessor
 
 
 class FeatureIndex:
     log = logging.getLogger('feature_index')
 
     dataframe: pd.DataFrame
+    text_sql: SqliteDict
+    _sql_file: Path
+
+    def __init__(self, max_images: int):
+        self._sql_file = Path('index/feature_index_{}.sqlite'.format(max_images))
+
+    def __enter__(self):
+        self.text_sql = SqliteDict(filename=self._sql_file, tablename='text', autocommit=False)
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.text_sql.close()
+        self.text_sql = None
 
     @classmethod
     def create_index(cls, max_images: int = -1, n_jobs: int = -2) -> 'FeatureIndex':
@@ -44,7 +59,7 @@ class FeatureIndex:
         - image_type
         - image_roi_area
         '''
-        index = cls()
+        index = cls(len(image_ids))
 
         def calc_doc_features(image_id) -> list:
             index.log.debug("indexing document id = %s", image_id)
@@ -70,6 +85,11 @@ class FeatureIndex:
             roi_area = image_detection.diagramms_from_image(image_rgb_small)
 
             text_area_str = FeatureIndex.convert_text_area_to_str(text_analysis['text_position'])
+
+            text_dict = {}
+            prep = SpacyPreprocessor()
+            text_dict['image_text'] = prep.preprocess(text_analysis['text'])
+            text_dict['html_text'] = prep.preprocess(text)
 
             id_list = [
                 image_id,
@@ -97,36 +117,44 @@ class FeatureIndex:
                 image_type.value,
                 roi_area
             ]
-            return id_list
+            return id_list, text_dict
 
         with Parallel(n_jobs=n_jobs, verbose=2) as parallel:
             data = parallel(delayed(calc_doc_features)(image_id) for image_id in image_ids)
 
-        index.dataframe = pd.DataFrame(data, columns=['image_id',
-                                                      'html_sentiment_score',
-                                                      'text_len',
-                                                      'text_sentiment_score',
-                                                      'text_area_percentage',
-                                                      'text_area_left',
-                                                      'text_area_right',
-                                                      'text_area_top',
-                                                      'text_area_bottom',
-                                                      'text_position',
-                                                      'image_percentage_green',
-                                                      'image_percentage_red',
-                                                      'image_percentage_blue',
-                                                      'image_percentage_yellow',
-                                                      'image_percentage_bright',
-                                                      'image_percentage_dark',
-                                                      'image_average_color_r',
-                                                      'image_average_color_g',
-                                                      'image_average_color_b',
-                                                      'image_dominant_color_r',
-                                                      'image_dominant_color_g',
-                                                      'image_dominant_color_b',
-                                                      'image_type',
-                                                      'image_roi_area',
-                                                      ])
+        result = []
+        with index:
+            for t in data:
+                result.append(t[0])
+                index.text_sql[t[0][0]] = t[1]
+            index.text_sql.commit()
+
+        index.dataframe = pd.DataFrame(result, columns=[
+            'image_id',
+            'html_sentiment_score',
+            'text_len',
+            'text_sentiment_score',
+            'text_area_percentage',
+            'text_area_left',
+            'text_area_right',
+            'text_area_top',
+            'text_area_bottom',
+            'text_position',
+            'image_percentage_green',
+            'image_percentage_red',
+            'image_percentage_blue',
+            'image_percentage_yellow',
+            'image_percentage_bright',
+            'image_percentage_dark',
+            'image_average_color_r',
+            'image_average_color_g',
+            'image_average_color_b',
+            'image_dominant_color_r',
+            'image_dominant_color_g',
+            'image_dominant_color_b',
+            'image_type',
+            'image_roi_area',
+        ])
 
         index.dataframe = index.dataframe.astype(dtype={
             'image_id': pd.StringDtype(),
@@ -157,9 +185,6 @@ class FeatureIndex:
 
         index.dataframe.set_index('image_id', inplace=True, verify_integrity=True)
 
-        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-        # print(index.dataframe.to_string())
-
         return index
 
     def save(self) -> None:
@@ -189,10 +214,10 @@ class FeatureIndex:
         :indexed_images: number of indexed images in saved index
         :return: Index object loaded from file
         """
-        return cls._load(Path('index/feature_index_{}.pkl'.format(indexed_images)))
+        return cls._load(Path('index/feature_index_{}.pkl'.format(indexed_images)), indexed_images)
 
     @classmethod
-    def _load(cls, file: Path) -> 'FeatureIndex':
+    def _load(cls, file: Path, indexed_images: int) -> 'FeatureIndex':
         """
         Loads an index from a file.
 
@@ -203,7 +228,7 @@ class FeatureIndex:
         if not file.exists():
             raise ValueError('No saved feature index for file {}'.format(file))
 
-        index = cls()
+        index = cls(indexed_images)
         index.log.debug('Load index from file %s', file)
         index.dataframe = pd.read_pickle(file)
         index.log.debug('Done')
@@ -229,6 +254,16 @@ class FeatureIndex:
 
     def __len__(self) -> int:
         return len(self.dataframe)
+
+    def get_html_text(self, image_id: str) -> List[str]:
+        if self.text_sql is None:
+            raise ValueError('Method called outside of with block.')
+        return self.text_sql[image_id]['html_text']
+
+    def get_image_text(self, image_id: str) -> List[str]:
+        if self.text_sql is None:
+            raise ValueError('Method called outside of with block.')
+        return self.text_sql[image_id]['image_text']
 
     @staticmethod
     def convert_text_area_to_str(text_area_list: Dict[int, int]) -> str:
