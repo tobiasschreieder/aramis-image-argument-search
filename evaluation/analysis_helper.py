@@ -25,22 +25,39 @@ def calc_precision_recall(results: List[str], relevant: List[str]) -> Tuple[floa
     return precision, recall
 
 
-def get_relevant_eval(topic: Topic) -> Tuple[List[str], List[str]]:
+def get_topic_correct(topic: Topic) -> List[str]:
+    t_df: pd.DataFrame = get_df().loc[(slice(None), slice(None), topic.number), :]
+    return t_df.loc[t_df['Topic_correct'], :].index.get_level_values(0).to_list()
+
+
+def get_relevant_eval(topic: Topic, strong: bool = True) -> Tuple[List[str], List[str]]:
     # Get relevant images pro
     t_df: pd.DataFrame = get_df().loc[(slice(None), slice(None), topic.number), :]
     t_df['relevant_pro'] = 1
-    t_df['relevant_pro'].where(
-        (t_df['Topic_correct'] & (t_df['Argumentative'] == 'STRONG') & (t_df['Stance'] == 'PRO')),
-        other=0, inplace=True,
-    )
+    if strong:
+        t_df['relevant_pro'].where(
+            (t_df['Topic_correct'] & (t_df['Argumentative'] == 'STRONG') & (t_df['Stance'] == 'PRO')),
+            other=0, inplace=True,
+        )
+    else:
+        t_df['relevant_pro'].where(
+            (t_df['Topic_correct'] & (t_df['Argumentative'] != 'NONE') & (t_df['Stance'] == 'PRO')),
+            other=0, inplace=True,
+        )
     relevant_p = t_df.loc[t_df['relevant_pro'] == 1].index.get_level_values(0).to_list()
 
     # Get relevant images con
     t_df['relevant_con'] = 1
-    t_df['relevant_con'].where(
-        (t_df['Topic_correct'] & (t_df['Argumentative'] == 'STRONG') & (t_df['Stance'] == 'CON')),
-        other=0, inplace=True,
-    )
+    if strong:
+        t_df['relevant_con'].where(
+            (t_df['Topic_correct'] & (t_df['Argumentative'] == 'STRONG') & (t_df['Stance'] == 'CON')),
+            other=0, inplace=True,
+        )
+    else:
+        t_df['relevant_con'].where(
+            (t_df['Topic_correct'] & (t_df['Argumentative'] != 'NONE') & (t_df['Stance'] == 'CON')),
+            other=0, inplace=True,
+        )
     relevant_c = t_df.loc[t_df['relevant_con'] == 1].index.get_level_values(0).to_list()
     return relevant_p, relevant_c
 

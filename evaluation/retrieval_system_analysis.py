@@ -7,7 +7,7 @@ import pandas as pd
 
 from indexing import TopicQueryTermIndex, get_all_topic_indexes, FeatureIndex, TopicTermIndex, Topic
 from retrieval import RetrievalSystem, TopicRankingDirichlet, NNArgumentModel, NNStanceModel
-from .analysis_helper import get_relevant_eval, calc_precision_recall
+from .analysis_helper import get_relevant_eval, calc_precision_recall, get_topic_correct
 from .configuration import Configuration
 
 log = logging.getLogger('rs_analysis')
@@ -61,14 +61,21 @@ def plot_topic_precision_recall_at_k(rs: RetrievalSystem, topics: List[int], max
     pass
 
 
-def avg_topic_precision(rs: RetrievalSystem, topics: List[Topic], k) -> Tuple[float, float, float]:
+def avg_topic_precision(rs: RetrievalSystem, topics: List[Topic], k, strong: bool = True,
+                        filter_topic: bool = True) -> Tuple[float, float, float]:
     pro_error = 0
     con_error = 0
     for topic in topics:
-        relevant_p, relevant_c = get_relevant_eval(topic)
-        result_p, result_c = rs.query(topic.title, top_k=k)
-        result_p = [s[0] for s in result_p]
-        result_c = [s[0] for s in result_c]
+        relevant_p, relevant_c = get_relevant_eval(topic, strong)
+        if filter_topic:
+            relevant_topic = get_topic_correct(topic)
+            result_p, result_c = rs.query(topic.title)
+            result_p = [s[0] for s in result_p if s[0] in relevant_topic][:k]
+            result_c = [s[0] for s in result_c if s[0] in relevant_topic][:k]
+        else:
+            result_p, result_c = rs.query(topic.title, top_k=k)
+            result_p = [s[0] for s in result_p]
+            result_c = [s[0] for s in result_c]
         pp, _ = calc_precision_recall(result_p, relevant_p)
         cp, _ = calc_precision_recall(result_c, relevant_c)
         pro_error += pp
@@ -78,7 +85,7 @@ def avg_topic_precision(rs: RetrievalSystem, topics: List[Topic], k) -> Tuple[fl
     return pro_error, con_error, (pro_error + con_error) / 2
 
 
-def find_rs_weights(rs: RetrievalSystem, topics: List[Topic], optimum: str = 'both', k: int = 20,
+def find_rs_weights(rs: RetrievalSystem, topics: List[Topic], strong: bool = True, optimum: str = 'both', k: int = 20,
                     eta: int = 5) -> Tuple[float, float, float]:
     if optimum.lower() == 'pro':
         precision_pos = 0
@@ -92,7 +99,7 @@ def find_rs_weights(rs: RetrievalSystem, topics: List[Topic], optimum: str = 'bo
     # best_precision = 0.1895
     # best_weights = (0.33, 0.66, 1 - 0.33 - 0.66)
     best_precision = 0
-    best_weights = (0.5, 0.5, 0)
+    best_weights = (0, 1, 0)
     i = 5
     for w_top in np.linspace(0, 1, 5):
         w_arg = 1 - w_top
@@ -102,7 +109,7 @@ def find_rs_weights(rs: RetrievalSystem, topics: List[Topic], optimum: str = 'bo
         rs.topic_weight = w_top
         rs.arg_weight = w_arg
         rs.stance_weight = 0
-        temp_precision = round(avg_topic_precision(rs, topics, k)[precision_pos], eta)
+        temp_precision = round(avg_topic_precision(rs, topics, k, strong=strong)[precision_pos], eta)
         if temp_precision > best_precision:
             best_weights = (w_top, w_arg, 1 - w_top - w_arg)
             best_precision = temp_precision
@@ -117,7 +124,16 @@ def find_rs_weights(rs: RetrievalSystem, topics: List[Topic], optimum: str = 'bo
 
 
 def main():
-    model_name = 'test_1'
+    model_name = 'test_3'
     rs = get_retrieval_system(Configuration(), model_name + "_argument", model_name + "_stance")
     topics = [Topic.get(t) for t in [2, 4, 8, 21, 27, 33, 36, 37, 40, 43, 45, 48]]
-    find_rs_weights(rs, topics)
+    rs.topic_weight = 0
+    rs.arg_weight = 1
+    rs.stance_weight = 0
+    log.info('Strong@20: %s', round(avg_topic_precision(rs, topics, 20, strong=True, filter_topic=True)[2], 5))
+    log.info('Strong@20: %s', round(avg_topic_precision(rs, topics, 20, strong=True, filter_topic=False)[2], 5))
+    log.info('Strong@50: %s', round(avg_topic_precision(rs, topics, 50, strong=True, filter_topic=True)[2], 5))
+    log.info('Both@20: %s', round(avg_topic_precision(rs, topics, 20, strong=False, filter_topic=True)[2], 5))
+    log.info('Both@50: %s', round(avg_topic_precision(rs, topics, 50, strong=False, filter_topic=True)[2], 5))
+
+    # find_rs_weights(rs, topics)
