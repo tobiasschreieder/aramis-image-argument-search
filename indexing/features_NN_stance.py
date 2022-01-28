@@ -23,7 +23,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.optimizers import SGD
 
-overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=10)
+overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=15)
 
 
 def train_network(model_name: str, df: pd.DataFrame):
@@ -40,11 +40,13 @@ def train_network(model_name: str, df: pd.DataFrame):
     df['html_sentiment_score_con'] = 0
     df['text_sentiment_score_con'] = 0
     df['query_sentiment_con'] = 0
+    df['query_html_context_con'] = 0
+    df['query_image_context_con'] = 0
 
     # --- handling the scaling, train and test-data
     print("start scaling dataframe")
     for index, row in df.iterrows():
-        df.loc[index, :] = scale_data(row)
+        df.loc[index, :] = preprocess_data(row)
     print("finished scaling")
 
     column_list = ['image_percentage_green',
@@ -65,7 +67,14 @@ def train_network(model_name: str, df: pd.DataFrame):
                    'image_dominant_color_g',
                    'image_dominant_color_b',
                    'query_sentiment',
-                   'query_sentiment_con']
+                   'query_sentiment_con',
+                   'query_html_eq',
+                   'query_image_eq',
+                   'query_html_context',
+                   'query_html_context_con',
+                   'query_image_context',
+                   'query_image_context_con',
+                   'query_image_align']
 
     split_data = split_train_test_data(df, column_list)
     x_train = split_data['x_train']
@@ -74,17 +83,17 @@ def train_network(model_name: str, df: pd.DataFrame):
     y_test = split_data['y_test']
 
     model = Sequential([
-        Dense(10, input_dim=len(column_list), activation='relu'),
-        Dense(5, activation='relu'),
+        Dense(15, input_dim=len(column_list), activation='relu'),
+        Dense(8, activation='relu'),
         Dense(3, activation='softmax')
     ])
 
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=["accuracy"])
 
     history = model.fit(x=x_train, y=y_train,
-                        epochs=25, batch_size=5,
-                        validation_data=(x_test, y_test))
-                        #callbacks=[overfitCallback])
+                        epochs=200, batch_size=5,
+                        validation_data=(x_test, y_test),
+                        callbacks=[overfitCallback])
 
     Path("indexing/models/" + str(model_name)).mkdir(parents=True, exist_ok=True)
 
@@ -124,8 +133,8 @@ def split_train_test_data(df: pd.DataFrame, column_list: list):
     # df_train = df.iloc[:split_index, :]
     # df_test = df.iloc[split_index:, :]
 
-    df_test = df.loc[df['topic'].isin([4, 21, 43, 48])]
-    df_train = df.loc[df['topic'].isin([2, 8, 33, 40, 27])]
+    df_test = df.loc[df['topic'].isin([27, 31, 33, 40])]
+    df_train = df.loc[~df['topic'].isin([27, 31, 33, 40])]
 
     y_train = df_train['stance_eval']
     y_train = eval_to_categorial(y_train)
@@ -189,7 +198,7 @@ def log_normal_density_function(x: float) -> float:
             ((math.log((-x + 1), 10) + 0.49) ** 2) / -0.0512) * 0.12)
 
 
-def scale_data(df_row: pd.Series) -> pd.Series:
+def preprocess_data(df_row: pd.Series) -> pd.Series:
     df_row['text_len'] = (1 - (1 / (math.exp(0.01 * df_row['text_len'])))) * 3
     df_row['image_percentage_green'] = df_row['image_percentage_green'] / 100
     df_row['image_percentage_red'] = df_row['image_percentage_red'] / 100
@@ -214,6 +223,9 @@ def scale_data(df_row: pd.Series) -> pd.Series:
     if df_row['html_sentiment_score'] < 0:
         df_row['html_sentiment_score_con'] = df_row['html_sentiment_score'] * (-1)
         df_row['html_sentiment_score'] = 0
+    if df_row['query_html_context'] < 0:
+        df_row['query_html_context_con'] = df_row['query_html_context'] * (-1)
+        df_row['query_html_context'] = 0
 
     return df_row
 
@@ -240,15 +252,23 @@ def make_prediction(model: keras.Model, input_data: list):
                    'image_dominant_color_g',
                    'image_dominant_color_b',
                    'query_sentiment',
-                   'query_sentiment_con']
+                   'query_sentiment_con',
+                   'query_html_eq',
+                   'query_image_eq',
+                   'query_html_context',
+                   'query_html_context_con',
+                   'query_image_context',
+                   'query_image_context_con',
+                   'query_image_align']
 
     input_data_network = []
     for i in range(len(input_data)):
-
         input_data[i]['html_sentiment_score_con'] = 0
         input_data[i]['text_sentiment_score_con'] = 0
         input_data[i]['query_sentiment_con'] = 0
-        scaled_row = scale_data(input_data[i])
+        input_data[i]['query_html_context_con'] = 0
+        input_data[i]['query_image_context_con'] = 0
+        scaled_row = preprocess_data(input_data[i])
         row_input = scaled_row[column_list]
         input_data_network.append(row_input)
 
@@ -256,14 +276,5 @@ def make_prediction(model: keras.Model, input_data: list):
     predictions = model.predict(x=input_data_network)
 
     predictions = categorial_to_eval(predictions)
-    # results = []
-    #
-    # for i in range(len(predictions)):
-    #     if predictions[i] == 1:
-    #         results.append(results_argument[i])
-    #     elif predictions[i] == -1:
-    #         results.append(((-1)*results_argument[i]))
-    #     else:
-    #         results.append(0)
 
     return predictions

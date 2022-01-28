@@ -8,6 +8,7 @@ import numpy as np
 
 from config import Config
 from indexing import Topic, DataEntry, FeatureIndex
+from retrieval.stance.models import NNStanceModel
 
 cfg = Config.get()
 log = logging.getLogger('Evaluation')
@@ -131,38 +132,95 @@ def save_eval(image_id: str, user: str, topic: int, topic_correct: bool, arg: Ar
 
 
 def get_model_data_arg(topics: List[Topic], fidx: FeatureIndex) -> pd.DataFrame:
-    data = fidx.dataframe.copy()
-    data['arg_eval'] = 0
-    data['topic'] = 0
-    for topic in topics:
-        t_df: pd.DataFrame = get_df().loc[(slice(None), slice(None), topic.number), :]
-        data.loc[t_df.loc[t_df['Topic_correct'], :].index.unique(0), 'topic'] = topic.number
-        data.loc[t_df.loc[
-                 (t_df['Topic_correct'] & (t_df['Argumentative'] == 'STRONG')), :].index.unique(0), 'arg_eval'] = 1
-        data.loc[t_df.loc[
-                 (t_df['Topic_correct'] & (t_df['Argumentative'] == 'WEAK')), :].index.unique(0), 'arg_eval'] = 0.5
-    return data.loc[data['topic'] > 0, :]
+    stored_df = Path("data/feature_df_arg.csv")
+    if stored_df.is_file():
+        data = pd.read_csv("data/feature_df_arg.csv")
+        return data
+    else:
+        print("need to calculate the featureIndex")
+        data = fidx.dataframe.copy()
+        data['arg_eval'] = 0
+        data['topic'] = 0
+        for topic in topics:
+            t_df: pd.DataFrame = get_df().loc[(slice(None), slice(None), topic.number), :]
+            data.loc[t_df.loc[t_df['Topic_correct'], :].index.unique(0), 'topic'] = topic.number
+            data.loc[t_df.loc[
+                     (t_df['Topic_correct'] & (t_df['Argumentative'] == 'STRONG')), :].index.unique(0), 'arg_eval'] = 1
+            data.loc[t_df.loc[
+                     (t_df['Topic_correct'] & (t_df['Argumentative'] == 'WEAK')), :].index.unique(0), 'arg_eval'] = 0.5
+
+        data = data.loc[data['topic'] > 0, :]
+
+        curr_pos = 0
+        data_len = len(data.index)
+
+        data['query_image_eq'] = 0
+        data['query_image_context'] = 0
+        data['query_image_align'] = 0
+
+        with fidx:
+            for index, row in data.iterrows():
+                if curr_pos % 100 == 0:
+                    print("preprocess image %s/%s" % (curr_pos, data_len))
+                curr_pos += 1
+                query = Topic.get(row['topic']).title
+                image_text = fidx.get_image_text(image_id=index)
+                data.at[index, 'query_image_eq'] = NNStanceModel.query_frequency(query, image_text)
+                data.at[index, 'query_image_context'] = NNStanceModel.context_sentiment(query, image_text)
+                # TODO: preprocess query and use image_text as a list
+                data.at[index, 'query_image_align'] = NNStanceModel.alignment_query(query, " ".join(image_text))
+
+        data.to_csv("data/feature_df_arg.csv")
+        return data
 
 
 def get_model_data_stance(topics: List[Topic], fidx: FeatureIndex) -> pd.DataFrame:
-    data = fidx.dataframe.copy()
-    data['topic'] = 0
-    data['query_sentiment'] = ""
-    for topic in topics:
-        t_df: pd.DataFrame = get_df().loc[(slice(None), slice(None), topic.number), :]
-        data.loc[t_df.loc[t_df['Topic_correct'], :].index.unique(0), 'topic'] = topic.number
-        data.loc[t_df.loc[
-                 (t_df['Topic_correct'] & (t_df['Stance'] == 'PRO')), :].index.unique(0), 'stance_eval'] = 1
-        data.loc[t_df.loc[
-                 (t_df['Topic_correct'] & (t_df['Stance'] == 'NEUTRAL')), :].index.unique(0), 'stance_eval'] = 0.5
-        data.loc[t_df.loc[
-                 (t_df['Topic_correct'] & (t_df['Stance'] == 'CON')), :].index.unique(0), 'stance_eval'] = 0
-        data.loc[data['topic'] == topic.number, 'query_sentiment'] = topic.title
-        # m = data['stance_eval'].eq(1)
-        # data.loc[m, 'stance_eval'] = pd.Series([(1, 0)] * m.sum(), index=m[m].index)
-        # m = data['stance_eval'].eq(2)
-        # data.loc[m, 'stance_eval'] = pd.Series([(0, 0)] * m.sum(), index=m[m].index)
-        # m = data['stance_eval'].eq(3)
-        # data.loc[m, 'stance_eval'] = pd.Series([(0, 1)] * m.sum(), index=m[m].index)
 
-    return data.loc[(data['topic'] > 0), :]
+    stored_df = Path("data/feature_df_stance.csv")
+    if stored_df.is_file():
+        data = pd.read_csv("data/feature_df_stance.csv")
+        return data
+    else:
+        print("need to calculate the featureIndex")
+        data = fidx.dataframe.copy()
+        data['topic'] = 0
+        data['query_sentiment'] = ""
+        for topic in topics:
+            t_df: pd.DataFrame = get_df().loc[(slice(None), slice(None), topic.number), :]
+            data.loc[t_df.loc[t_df['Topic_correct'], :].index.unique(0), 'topic'] = topic.number
+            data.loc[t_df.loc[
+                     (t_df['Topic_correct'] & (t_df['Stance'] == 'PRO')), :].index.unique(0), 'stance_eval'] = 1
+            data.loc[t_df.loc[
+                     (t_df['Topic_correct'] & (t_df['Stance'] == 'NEUTRAL')), :].index.unique(0), 'stance_eval'] = 0.5
+            data.loc[t_df.loc[
+                     (t_df['Topic_correct'] & (t_df['Stance'] == 'CON')), :].index.unique(0), 'stance_eval'] = 0
+            data.loc[data['topic'] == topic.number, 'query_sentiment'] = topic.title
+
+        data = data.loc[(data['topic'] > 0), :]
+
+        curr_pos = 0
+        data_len = len(data.index)
+
+        data['query_html_eq'] = 0
+        data['query_image_eq'] = 0
+        data['query_html_context'] = 0
+        data['query_image_context'] = 0
+        data['query_image_align'] = 0
+
+        with fidx:
+            for index, row in data.iterrows():
+                if curr_pos % 100 == 0:
+                    print("preprocess image %s/%s" % (curr_pos, data_len))
+                curr_pos += 1
+                query = Topic.get(row['topic']).title
+                html_text = fidx.get_html_text(image_id=index)
+                image_text = fidx.get_image_text(image_id=index)
+                data.at[index, 'query_html_eq'] = NNStanceModel.query_frequency(query, html_text)
+                data.at[index, 'query_image_eq'] = NNStanceModel.query_frequency(query, image_text)
+                data.at[index, 'query_html_context'] = NNStanceModel.context_sentiment(query, html_text)
+                data.at[index, 'query_image_context'] = NNStanceModel.context_sentiment(query, image_text)
+                # TODO: preprocess query and use image_text aas a list
+                data.at[index, 'query_image_align'] = NNStanceModel.alignment_query(query, " ".join(image_text))
+
+        data.to_csv("data/feature_df_stance.csv")
+        return data

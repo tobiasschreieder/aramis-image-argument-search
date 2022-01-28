@@ -17,7 +17,7 @@ class FeatureIndex:
     log = logging.getLogger('feature_index')
 
     dataframe: pd.DataFrame
-    text_sql: SqliteDict
+    text_sql: SqliteDict = None
     _sql_file: Path
 
     def __init__(self, max_images: int):

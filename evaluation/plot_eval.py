@@ -59,7 +59,14 @@ def plot_scoring_eval(model, topics: List[int],
         rows = 3
         cols = 4
     else:
-        raise NotImplementedError('Cant plot more than 12 topics in one plot, tried %s', len(topics))
+        rows = 3
+        cols = 4
+
+        for el in [36, 45, 37, 43]:
+            topics.remove(el)
+        if len(topics) > 12:
+            topics = topics[:12]
+        print('Cant plot more than 12 topics in one plot, tried %s', len(topics))
 
     k = 50
     round_int = 4
@@ -165,7 +172,14 @@ def plot_stance_confusion(model, topics: List[int]) -> go.Figure:
         rows = 3
         cols = 4
     else:
-        raise NotImplementedError('Cant plot more than 12 topics in one plot, tried %s', len(topics))
+        rows = 3
+        cols = 4
+
+        for el in [36, 45, 37, 43]:
+            topics.remove(el)
+        if len(topics) > 12:
+            topics = topics[:12]
+        print('Cant plot more than 12 topics in one plot, tried %s', len(topics))
 
     infos = ('stance', 'Stance', ('PRO', plotly_color[2]), ('NEUTRAL', plotly_color[0]),
              ('CON', plotly_color[1]), 'color_mood, image_text_sentiment, html_sentiment')
