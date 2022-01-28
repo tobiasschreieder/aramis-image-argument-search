@@ -1,7 +1,9 @@
+import datetime
 import logging
 import math
 from pathlib import Path
 from typing import List, Tuple
+from Bio import pairwise2
 
 import numpy as np
 import pandas as pd
@@ -178,6 +180,44 @@ class NNStanceModel(StanceModel):
             raise FileNotFoundError(f'The model {model_name} does not exists.')
         self.model = load_model(model_path.as_posix(), compile=False)
 
+    @staticmethod
+    def query_frequency(query: List[str], text: List[str]) -> float:
+        rho = 1
+        doc_length = len(text)
+        if doc_length == 0:
+            return 0
+        for term in query:
+            frequency = text.count(term)
+            if frequency == 0:
+                continue
+            try:
+                rho += np.log(frequency / doc_length)
+            except ValueError:
+                rho += 0
+        return float(rho)
+
+    @staticmethod
+    def context_sentiment(query: List[str], text: List[str]) -> float:
+        val = 0
+        scope = 3
+        for term in query:
+            last = 0
+            try:
+                while last < len(text):
+                    last = text.index(term, last+scope)
+                    context = text[last-scope:last+scope]
+                    val += sentiment_detection.sentiment_nltk(' '.join(context))
+            except ValueError:
+                pass
+        return val
+
+    @staticmethod
+    def alignment_query(query: List[str], text: List[str]) -> float:
+        a = pairwise2.align.localxx(query, text, gap_char=["-"])
+        if len(a) > 0:
+            return a[0].score
+        return 0
+
     def query(self, query: List[str], argument_relevant: pd.DataFrame,
               top_k: int = -1) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
@@ -197,10 +237,52 @@ class NNStanceModel(StanceModel):
             top_k = min(len(self.index), top_k)
 
         features_list = []
-        for doc_id in argument_relevant.index:
-            pd_series = self.index.get_all_features(doc_id)
-            pd_series['query_sentiment'] = " ".join(query)
-            features_list.append(pd_series)
+        then = datetime.datetime.now()
+        with self.index:
+            took_h1 = datetime.timedelta(seconds=0)
+            took_h2 = datetime.timedelta(seconds=0)
+            took_h3 = datetime.timedelta(seconds=0)
+            took_i1 = datetime.timedelta(seconds=0)
+            took_i2 = datetime.timedelta(seconds=0)
+            took_i3 = datetime.timedelta(seconds=0)
+            for doc_id in argument_relevant.index:
+                pd_series = self.index.get_all_features(doc_id)
+                pd_series['query_sentiment'] = " ".join(query)  # TODO ???????
+
+                then1 = datetime.datetime.now()
+                pd_series['query_html_eq'] = self.query_frequency(query, self.index.get_html_text(doc_id))
+                then2 = datetime.datetime.now()
+                pd_series['query_image_eq'] = self.query_frequency(query, self.index.get_image_text(doc_id))
+                then3 = datetime.datetime.now()
+                pd_series['query_html_context'] = self.context_sentiment(query, self.index.get_html_text(doc_id))
+                then4 = datetime.datetime.now()
+                pd_series['query_image_context'] = self.context_sentiment(query, self.index.get_image_text(doc_id))
+                then5 = datetime.datetime.now()
+                pd_series['query_html_align'] = self.alignment_query(query, self.index.get_html_text(doc_id))
+                then6 = datetime.datetime.now()
+                pd_series['query_image_align'] = self.alignment_query(query, self.index.get_image_text(doc_id))
+                then7 = datetime.datetime.now()
+
+                took_h1 += (then2-then1)
+                took_i1 += (then3-then2)
+                took_h2 += (then4-then3)
+                took_i2 += (then5-then4)
+                took_h3 += (then6-then5)
+                took_i3 += (then7-then6)
+                features_list.append(pd_series)
+                print(f'{doc_id} done took {then7 - then1}')
+
+            took_h1 /= len(argument_relevant.index)
+            took_i1 /= len(argument_relevant.index)
+            took_h2 /= len(argument_relevant.index)
+            took_i2 /= len(argument_relevant.index)
+            took_h3 /= len(argument_relevant.index)
+            took_i3 /= len(argument_relevant.index)
+            self.log.debug('HTML: eq: %s, context: %s, align: %s', took_h1, took_h2, took_h3)
+            self.log.debug('Imag: eq: %s, context: %s, align: %s', took_i1, took_i2, took_i3)
+
+        took = datetime.datetime.now() - then
+        self.log.debug('Took %s', took)
         results = features_NN_stance.make_prediction(model=self.model, input_data=features_list)
 
         argument_relevant.loc[:, 'stance'] = np.nan

@@ -18,3 +18,4 @@ Kaleido
 keras
 tensorflow
 sqlitedict
+Biopython
