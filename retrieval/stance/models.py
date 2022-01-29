@@ -224,7 +224,7 @@ class NNStanceModel(StanceModel):
     @staticmethod
     def alignment_query(query: List[str], text: List[str]) -> float:
         # looking for exact alignments of query in text
-        a = pairwise2.align.localxx(text, query)
+        a = pairwise2.align.localxx(text, query, gap_char=["-"])
         sum_score = 0
         number_alignments = 0
         for match in a:
@@ -266,13 +266,6 @@ class NNStanceModel(StanceModel):
             print("no feature_index.csv found. Please check this!")
             then = datetime.datetime.now()
             with self.index:
-                took_h1 = datetime.timedelta(seconds=0)
-                took_h2 = datetime.timedelta(seconds=0)
-                took_h3 = datetime.timedelta(seconds=0)
-                took_i1 = datetime.timedelta(seconds=0)
-                took_i2 = datetime.timedelta(seconds=0)
-                took_i3 = datetime.timedelta(seconds=0)
-
                 for doc_id in argument_relevant.index:
                     pd_series = self.index.get_all_features(doc_id)
                     pd_series['query_sentiment'] = " ".join(query)
@@ -283,18 +276,7 @@ class NNStanceModel(StanceModel):
                     pd_series['query_image_context'] = self.context_sentiment(query, self.index.get_image_text(doc_id))
                     pd_series['query_image_align'] = self.alignment_query(" ".join(query), " ".join(self.index.get_image_text(doc_id)))
                     features_list.append(pd_series)
-
-                took_h1 /= len(argument_relevant.index)
-                took_i1 /= len(argument_relevant.index)
-                took_h2 /= len(argument_relevant.index)
-                took_i2 /= len(argument_relevant.index)
-                took_h3 /= len(argument_relevant.index)
-                took_i3 /= len(argument_relevant.index)
-                self.log.debug('HTML: eq: %s, context: %s, align: %s', took_h1, took_h2, took_h3)
-                self.log.debug('Imag: eq: %s, context: %s, align: %s', took_i1, took_i2, took_i3)
-
-                took = datetime.datetime.now() - then
-                self.log.debug('Took %s', took)
+            self.log.debug('Feature calculation took %s', then-datetime.datetime.now())
 
         results = features_NN_stance.make_prediction(model=self.model, input_data=features_list)
 

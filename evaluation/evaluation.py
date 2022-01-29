@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 
 from config import Config
-from indexing import Topic, DataEntry, FeatureIndex
+from indexing import Topic, DataEntry, FeatureIndex, SpacyPreprocessor
 from retrieval.stance.models import NNStanceModel
 
 cfg = Config.get()
@@ -163,12 +163,11 @@ def get_model_data_arg(topics: List[Topic], fidx: FeatureIndex) -> pd.DataFrame:
                 if curr_pos % 100 == 0:
                     print("preprocess image %s/%s" % (curr_pos, data_len))
                 curr_pos += 1
-                query = Topic.get(row['topic']).title
+                query = SpacyPreprocessor().preprocess(Topic.get(row['topic']).title)
                 image_text = fidx.get_image_text(image_id=index)
                 data.at[index, 'query_image_eq'] = NNStanceModel.query_frequency(query, image_text)
                 data.at[index, 'query_image_context'] = NNStanceModel.context_sentiment(query, image_text)
-                # TODO: preprocess query and use image_text as a list
-                data.at[index, 'query_image_align'] = NNStanceModel.alignment_query(query, " ".join(image_text))
+                data.at[index, 'query_image_align'] = NNStanceModel.alignment_query(query, image_text)
 
         data.to_csv("data/feature_df_arg.csv")
         return data
@@ -212,15 +211,14 @@ def get_model_data_stance(topics: List[Topic], fidx: FeatureIndex) -> pd.DataFra
                 if curr_pos % 100 == 0:
                     print("preprocess image %s/%s" % (curr_pos, data_len))
                 curr_pos += 1
-                query = Topic.get(row['topic']).title
+                query = SpacyPreprocessor().preprocess(Topic.get(row['topic']).title)
                 html_text = fidx.get_html_text(image_id=index)
                 image_text = fidx.get_image_text(image_id=index)
                 data.at[index, 'query_html_eq'] = NNStanceModel.query_frequency(query, html_text)
                 data.at[index, 'query_image_eq'] = NNStanceModel.query_frequency(query, image_text)
                 data.at[index, 'query_html_context'] = NNStanceModel.context_sentiment(query, html_text)
                 data.at[index, 'query_image_context'] = NNStanceModel.context_sentiment(query, image_text)
-                # TODO: preprocess query and use image_text aas a list
-                data.at[index, 'query_image_align'] = NNStanceModel.alignment_query(query, " ".join(image_text))
+                data.at[index, 'query_image_align'] = NNStanceModel.alignment_query(query, image_text)
 
         data.to_csv("data/feature_df_stance.csv")
         return data

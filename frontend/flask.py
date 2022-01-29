@@ -89,7 +89,7 @@ def evaluation():
                 else:
                     topic_correct = False
 
-                save_eval(image_id=request.form['image_id'], user=user, topic_correct=topic_correct,
+                save_eval(image_id=request.form['image_id'], user=user.replace(' ', ''), topic_correct=topic_correct,
                           topic=selected_topic.number, arg=arg, stance=stance)
 
     if len(user) > 0:
