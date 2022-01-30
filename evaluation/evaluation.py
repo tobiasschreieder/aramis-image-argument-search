@@ -8,6 +8,7 @@ import numpy as np
 
 from config import Config
 from indexing import Topic, DataEntry, FeatureIndex, SpacyPreprocessor
+from indexing.feature import sentiment_detection
 from retrieval.stance.models import NNStanceModel
 
 cfg = Config.get()
@@ -154,20 +155,25 @@ def get_model_data_arg(topics: List[Topic], fidx: FeatureIndex) -> pd.DataFrame:
         curr_pos = 0
         data_len = len(data.index)
 
+        data['query_sentiment'] = 0
         data['query_image_eq'] = 0
         data['query_image_context'] = 0
         data['query_image_align'] = 0
 
         with fidx:
-            for index, row in data.iterrows():
-                if curr_pos % 100 == 0:
-                    print("preprocess image %s/%s" % (curr_pos, data_len))
-                curr_pos += 1
-                query = SpacyPreprocessor().preprocess(Topic.get(row['topic']).title)
-                image_text = fidx.get_image_text(image_id=index)
-                data.at[index, 'query_image_eq'] = NNStanceModel.query_frequency(query, image_text)
-                data.at[index, 'query_image_context'] = NNStanceModel.context_sentiment(query, image_text)
-                data.at[index, 'query_image_align'] = NNStanceModel.alignment_query(query, image_text)
+            topics = data['topic'].unique()
+            for topic in topics:
+                query = SpacyPreprocessor().preprocess(Topic.get(topic).title)
+                data_topic = data.loc[data['topic'] == topic]
+                for index, row in data_topic.iterrows():
+                    if curr_pos % 100 == 0:
+                        print("preprocess image %s/%s" % (curr_pos, data_len))
+                    curr_pos += 1
+                    image_text = fidx.get_image_text(image_id=index)
+                    data.at[index, 'query_sentiment'] = sentiment_detection.sentiment_nltk(Topic.get(topic).title)
+                    data.at[index, 'query_image_eq'] = NNStanceModel.query_frequency(query, image_text)
+                    data.at[index, 'query_image_context'] = NNStanceModel.context_sentiment(query, image_text)
+                    data.at[index, 'query_image_align'] = NNStanceModel.alignment_query(query, image_text)
 
         data.to_csv("data/feature_df_arg.csv")
         return data
@@ -178,7 +184,6 @@ def get_model_data_stance(topics: List[Topic], fidx: FeatureIndex) -> pd.DataFra
     stored_df = Path("data/feature_df_stance.csv")
     if stored_df.is_file():
         data = pd.read_csv("data/feature_df_stance.csv")
-        return data
     else:
         print("need to calculate the featureIndex")
         data = fidx.dataframe.copy()
@@ -207,18 +212,47 @@ def get_model_data_stance(topics: List[Topic], fidx: FeatureIndex) -> pd.DataFra
         data['query_image_align'] = 0
 
         with fidx:
-            for index, row in data.iterrows():
-                if curr_pos % 100 == 0:
-                    print("preprocess image %s/%s" % (curr_pos, data_len))
-                curr_pos += 1
-                query = SpacyPreprocessor().preprocess(Topic.get(row['topic']).title)
-                html_text = fidx.get_html_text(image_id=index)
-                image_text = fidx.get_image_text(image_id=index)
-                data.at[index, 'query_html_eq'] = NNStanceModel.query_frequency(query, html_text)
-                data.at[index, 'query_image_eq'] = NNStanceModel.query_frequency(query, image_text)
-                data.at[index, 'query_html_context'] = NNStanceModel.context_sentiment(query, html_text)
-                data.at[index, 'query_image_context'] = NNStanceModel.context_sentiment(query, image_text)
-                data.at[index, 'query_image_align'] = NNStanceModel.alignment_query(query, image_text)
+            topics = data['topic'].unique()
+            for topic in topics:
+                query = SpacyPreprocessor().preprocess(Topic.get(topic).title)
+                data_topic = data.loc[data['topic'] == topic]
+                for index, row in data_topic.iterrows():
+                    if curr_pos % 100 == 0:
+                        print("preprocess image %s/%s" % (curr_pos, data_len))
+                    curr_pos += 1
+
+                    html_text = fidx.get_html_text(image_id=index)
+                    image_text = fidx.get_image_text(image_id=index)
+
+                    data.at[index, 'query_sentiment'] = sentiment_detection.sentiment_nltk(" ".join(query))
+                    data.at[index, 'query_html_eq'] = NNStanceModel.query_frequency(query, html_text)
+                    data.at[index, 'query_image_eq'] = NNStanceModel.query_frequency(query, image_text)
+                    data.at[index, 'query_html_context'] = NNStanceModel.context_sentiment(query, html_text)
+                    data.at[index, 'query_image_context'] = NNStanceModel.context_sentiment(query, image_text)
+                    data.at[index, 'query_image_align'] = NNStanceModel.alignment_query(query, image_text)
 
         data.to_csv("data/feature_df_stance.csv")
-        return data
+
+    curr_pos = 0
+    data_len = len(data.index)
+
+    data['query_string'] = " "
+    data['html_string'] = " "
+
+    with fidx:
+        topics = data['topic'].unique()
+        for topic in topics:
+            query = SpacyPreprocessor().preprocess(Topic.get(topic).title)
+            data_topic = data.loc[data['topic'] == topic]
+            for index, row in data_topic.iterrows():
+                if curr_pos % 1000 == 0:
+                    print("collecting text %s/%s" % (curr_pos, data_len))
+                curr_pos += 1
+
+                html_text = fidx.get_html_text(image_id=row['image_id'])
+                # image_text = fidx.get_image_text(image_id=row['image_id'])
+
+                data.at[index, 'query_string'] = " ".join(query)
+                data.at[index, 'html_string'] = " ".join(html_text)
+
+    return data

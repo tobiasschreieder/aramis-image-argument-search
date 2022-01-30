@@ -27,8 +27,8 @@ def train_network(model_name: str, df: pd.DataFrame):
     model_name = model_name + "_argument"
 
     df['text_sentiment_score_con'] = 0
-    df['query_sentiment_con'] = 0
-    df['query_image_context_con'] = 0
+
+    print(df.columns)
 
     # --- handling the scaling, train and test-data
     print("start scaling dataframe")
@@ -68,8 +68,8 @@ def train_network(model_name: str, df: pd.DataFrame):
 
     history = model.fit(x=[tp_input_train, color_input_train, primary_input_train], y=y_train,
                         epochs=100, batch_size=50,
-                        validation_data=([tp_input_test, color_input_test, primary_input_test], y_test),
-                        callbacks=[overfitCallback])
+                        validation_data=([tp_input_test, color_input_test, primary_input_test], y_test))
+                        # callbacks=[overfitCallback])
 
     Path("indexing/models/" + str(model_name)).mkdir(parents=True, exist_ok=True)
 
@@ -132,8 +132,8 @@ def split_train_test_data(df: pd.DataFrame):
     df_test = df.iloc[split_index:, :]
     '''
 
-    df_test = df.loc[df['topic'].isin([27, 31, 33, 40])]
-    df_train = df.loc[~df['topic'].isin([27, 31, 33, 40])]
+    df_test = df.loc[df['topic'].isin([27, 31])]
+    df_train = df.loc[~df['topic'].isin([27, 31])]
 
     df_test = df_test.drop('topic', 1)
     df_train = df_train.drop('topic', 1)
@@ -198,11 +198,7 @@ def get_diff_model_data(df_train: pd.DataFrame, df_test: pd.DataFrame):
                                        'text_sentiment_score',
                                        'text_sentiment_score_con',
                                        'image_type',
-                                       'image_roi_area',
-                                       'query_image_eq',
-                                       'query_image_context',
-                                       'query_image_context_con',
-                                       'query_image_align']]
+                                       'image_roi_area']]
     primary_input_train = np.asarray(primary_features_train)
     primary_features_test = df_test[['image_percentage_green',
                                      'image_percentage_red',
@@ -214,11 +210,7 @@ def get_diff_model_data(df_train: pd.DataFrame, df_test: pd.DataFrame):
                                      'text_sentiment_score',
                                      'text_sentiment_score_con',
                                      'image_type',
-                                     'image_roi_area',
-                                     'query_image_eq',
-                                     'query_image_context',
-                                     'query_image_context_con',
-                                     'query_image_align']]
+                                     'image_roi_area']]
     primary_input_test = np.asarray(primary_features_test)
 
     return {'tp_input_train': tp_input_train, 'tp_input_test': tp_input_test,
@@ -237,7 +229,7 @@ def log_normal_density_function(x: float) -> float:
 
 
 def scale_data(df_row: pd.Series) -> pd.Series:
-    df_row['html_sentiment_score'] = (df_row['html_sentiment_score'] + 1) / 2
+    # df_row['html_sentiment_score'] = (df_row['html_sentiment_score'] + 1) / 2
     df_row['text_len'] = (1 - (1 / (math.exp(0.01 * df_row['text_len'])))) * 3
     df_row['text_sentiment_score'] = (df_row['text_sentiment_score'] + 1) / 2
     df_row['image_percentage_green'] = df_row['image_percentage_green'] / 100
@@ -273,7 +265,7 @@ def make_prediction(model: keras.Model, input_data: list) -> list:
 
     for row in input_data:
 
-        row['html_sentiment_score_con'] = 0
+        row['query_image_context_con'] = 0
         row['text_sentiment_score_con'] = 0
         row['query_sentiment_con'] = 0
 
@@ -305,11 +297,7 @@ def make_prediction(model: keras.Model, input_data: list) -> list:
                                     'text_sentiment_score',
                                     'text_sentiment_score_con',
                                     'image_type',
-                                    'image_roi_area',
-                                    'query_image_eq',
-                                    'query_image_context',
-                                    'query_image_context_con',
-                                    'query_image_align']]
+                                    'image_roi_area']]
         primary_features_input_data.append(np.asarray(primary_input).astype('float32'))
 
     tp_input_data = np.expand_dims(tp_input_data, axis=3)

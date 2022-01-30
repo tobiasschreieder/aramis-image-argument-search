@@ -268,7 +268,7 @@ class NNStanceModel(StanceModel):
             with self.index:
                 for doc_id in argument_relevant.index:
                     pd_series = self.index.get_all_features(doc_id)
-                    pd_series['query_sentiment'] = " ".join(query)
+                    pd_series['query_sentiment'] = sentiment_detection.sentiment_nltk(" ".join(pd_series['query_sentiment']))
 
                     pd_series['query_html_eq'] = self.query_frequency(query, self.index.get_html_text(doc_id))
                     pd_series['query_image_eq'] = self.query_frequency(query, self.index.get_image_text(doc_id))

@@ -2,14 +2,11 @@ import math
 import os
 
 # to get no console-print from tensorflow
+from keras.layers import BatchNormalization
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import keras
-
-from indexing import FeatureIndex
-from indexing import features_NN_argument
-from indexing.feature import sentiment_detection
 
 import numpy as np
 import pandas as pd
@@ -18,10 +15,12 @@ pd.options.mode.chained_assignment = None
 
 import matplotlib.pyplot as plt
 from pathlib import Path
+from tensorflow import string as tf_string
 from keras.callbacks import EarlyStopping
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.models import Sequential, load_model
-from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.layers import Dense, Input, concatenate
+from tensorflow.keras.models import Sequential, load_model, Model
+import tensorflow_hub as hub
+import tensorflow_text
 
 overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=15)
 
@@ -35,6 +34,30 @@ def train_network(model_name: str, df: pd.DataFrame):
 
     df = df.loc[df['argumentativeness'] > 0.4]
     '''
+
+    # --- Testing with ALBERT
+
+    albert_url = 'https://tfhub.dev/tensorflow/albert_en_base/2'
+    encoder = hub.KerasLayer(albert_url)
+    preprocessor_url = "https://tfhub.dev/tensorflow/albert_en_preprocess/3"
+    preprocessor = hub.KerasLayer(preprocessor_url)
+
+    text_input_html = Input(shape=(), dtype=tf_string)
+    encoder_inputs_html = preprocessor(text_input_html)
+    outputs_html = encoder(encoder_inputs_html)
+    pooled_output_html = outputs_html["pooled_output"]
+    embedding_model_html = Model(text_input_html, pooled_output_html)
+
+    model_html = Sequential()
+    model_html.add(embedding_model_html)
+    model_html.add(Dense(128, activation='relu'))
+    model_html.add(BatchNormalization())
+    model_html.add(Dense(30, activation='relu'))
+    model_html.add(BatchNormalization())
+    model_html.add(Dense(8, activation='relu'))
+
+    # ---
+
     model_name = model_name + "_stance"
 
     df['html_sentiment_score_con'] = 0
@@ -49,23 +72,13 @@ def train_network(model_name: str, df: pd.DataFrame):
         df.loc[index, :] = preprocess_data(row)
     print("finished scaling")
 
-    column_list = ['image_percentage_green',
-                   'image_percentage_red',
-                   'image_percentage_blue',
-                   'image_percentage_yellow',
-                   'image_percentage_bright',
+    column_list = ['image_percentage_bright',
                    'image_percentage_dark',
                    'html_sentiment_score',
                    'html_sentiment_score_con',
                    'text_len',
                    'text_sentiment_score',
                    'text_sentiment_score_con',
-                   'image_average_color_r',
-                   'image_average_color_g',
-                   'image_average_color_b',
-                   'image_dominant_color_r',
-                   'image_dominant_color_g',
-                   'image_dominant_color_b',
                    'query_sentiment',
                    'query_sentiment_con',
                    'query_html_eq',
@@ -82,18 +95,26 @@ def train_network(model_name: str, df: pd.DataFrame):
     y_train = split_data['y_train']
     y_test = split_data['y_test']
 
-    model = Sequential([
-        Dense(15, input_dim=len(column_list), activation='relu'),
-        Dense(8, activation='relu'),
-        Dense(3, activation='softmax')
-    ])
+    x_train_query = split_data['x_train_query']
+    x_train_html = split_data['x_train_html']
+    x_test_query = split_data['x_test_query']
+    x_test_html = split_data['x_test_html']
+
+    primary_inputs = Input(shape=len(x_train[0]))
+
+    combinedInput = concatenate([model_html.output, primary_inputs])
+    x = Dense(15, activation="relu")(combinedInput)
+    x = Dense(8, activation="relu")(x)
+    x = Dense(3, activation="softmax")(x)
+
+    model = Model(inputs=[model_html.input, primary_inputs], outputs=x)
 
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=["accuracy"])
 
-    history = model.fit(x=x_train, y=y_train,
-                        epochs=200, batch_size=5,
-                        validation_data=(x_test, y_test),
-                        callbacks=[overfitCallback])
+    history = model.fit(x=[x_train_html, x_train], y=y_train,
+                        epochs=10, batch_size=50,
+                        validation_data=([x_test_html, x_test], y_test))
+    # callbacks=[overfitCallback])
 
     Path("indexing/models/" + str(model_name)).mkdir(parents=True, exist_ok=True)
 
@@ -133,8 +154,8 @@ def split_train_test_data(df: pd.DataFrame, column_list: list):
     # df_train = df.iloc[:split_index, :]
     # df_test = df.iloc[split_index:, :]
 
-    df_test = df.loc[df['topic'].isin([27, 31, 33, 40])]
-    df_train = df.loc[~df['topic'].isin([27, 31, 33, 40])]
+    df_test = df.loc[df['topic'].isin([33, 27, 31])]
+    df_train = df.loc[~df['topic'].isin([33, 27, 31])]
 
     y_train = df_train['stance_eval']
     y_train = eval_to_categorial(y_train)
@@ -148,7 +169,14 @@ def split_train_test_data(df: pd.DataFrame, column_list: list):
     x_test = df_test[column_list]
     x_test = np.asarray(x_test).astype('float32')
 
-    return {'x_train': x_train, 'x_test': x_test, 'y_train': y_train, 'y_test': y_test, 'df_eval': df_eval}
+    x_train_query = df_train['query_string']
+    x_test_query = df_test['query_string']
+    x_train_html = df_train['html_string']
+    x_test_html = df_test['html_string']
+
+    return {'x_train': x_train, 'x_test': x_test, 'y_train': y_train, 'y_test': y_test, 'df_eval': df_eval,
+            'x_train_query': x_train_query, 'x_train_html': x_train_html,
+            'x_test_query': x_test_query, 'x_test_html': x_test_html}
 
 
 def eval_to_categorial(data):
@@ -213,7 +241,6 @@ def preprocess_data(df_row: pd.Series) -> pd.Series:
     df_row['image_dominant_color_g'] = df_row['image_dominant_color_g'] / 360
     df_row['image_dominant_color_b'] = df_row['image_dominant_color_b'] / 360
     df_row['image_roi_area'] = log_normal_density_function(df_row['image_roi_area'])
-    df_row['query_sentiment'] = sentiment_detection.sentiment_nltk(df_row['query_sentiment'])
     if df_row['query_sentiment'] < 0:
         df_row['query_sentiment_con'] = df_row['query_sentiment'] * (-1)
         df_row['query_sentiment'] = 0
@@ -234,23 +261,13 @@ def make_prediction(model: keras.Model, input_data: list):
     # model_argument = load_model("indexing/models/test_1_argument/model.hS")
     # results_argument = features_NN_argument.make_prediction(model=model_argument, input_data=input_data)
 
-    column_list = ['image_percentage_green',
-                   'image_percentage_red',
-                   'image_percentage_blue',
-                   'image_percentage_yellow',
-                   'image_percentage_bright',
+    column_list = ['image_percentage_bright',
                    'image_percentage_dark',
                    'html_sentiment_score',
                    'html_sentiment_score_con',
                    'text_len',
                    'text_sentiment_score',
                    'text_sentiment_score_con',
-                   'image_average_color_r',
-                   'image_average_color_g',
-                   'image_average_color_b',
-                   'image_dominant_color_r',
-                   'image_dominant_color_g',
-                   'image_dominant_color_b',
                    'query_sentiment',
                    'query_sentiment_con',
                    'query_html_eq',

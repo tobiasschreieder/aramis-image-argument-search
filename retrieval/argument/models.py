@@ -10,6 +10,8 @@ import pandas as pd
 from indexing import FeatureIndex, features_NN_argument
 from tensorflow.keras.models import load_model
 
+from indexing.feature import sentiment_detection
+
 
 class ArgumentModel:
     log = logging.getLogger('ArgumentModel')
@@ -184,7 +186,31 @@ class NNArgumentModel(ArgumentModel):
         else:
             top_k = min(len(self.index), top_k)
 
-        features_list = [self.index.get_all_features(doc_id) for doc_id in topic_relevant.index]
+        if top_k < 0:
+            top_k = len(self.index)
+        else:
+            top_k = min(len(self.index), top_k)
+
+        features_list = []
+
+        stored_df = Path("data/feature_df_arg.csv")
+
+        if stored_df.is_file():
+            data = pd.read_csv("data/feature_df_arg.csv")
+            for doc_id in topic_relevant.index:
+                features_list.append(data.loc[data['image_id'] == doc_id].squeeze())
+        else:
+            print("no feature_index.csv found. Please check this!")
+
+            with self.index:
+                for doc_id in topic_relevant.index:
+                    pd_series = self.index.get_all_features(doc_id)
+                    pd_series['query_sentiment'] = sentiment_detection.sentiment_nltk(" ".join(query))
+                    pd_series['query_image_eq'] = self.query_frequency(query, self.index.get_image_text(doc_id))
+                    pd_series['query_image_context'] = self.context_sentiment(query, self.index.get_image_text(doc_id))
+                    pd_series['query_image_align'] = self.alignment_query(" ".join(query), " ".join(self.index.get_image_text(doc_id)))
+                    features_list.append(pd_series)
+
         results = features_NN_argument.make_prediction(model=self.model, input_data=features_list)
 
         for i, doc_id in enumerate(topic_relevant.index):

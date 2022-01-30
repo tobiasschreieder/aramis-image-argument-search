@@ -176,7 +176,10 @@ def plot_stance_confusion(model, topics: List[int]) -> go.Figure:
         cols = 4
 
         for el in [36, 45, 37, 43]:
-            topics.remove(el)
+            try:
+                topics.remove(el)
+            except:
+                pass
         if len(topics) > 12:
             topics = topics[:12]
         print('Cant plot more than 12 topics in one plot, tried %s', len(topics))
