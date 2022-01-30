@@ -164,7 +164,7 @@ class NArgumentModel_v1:
         self.name = name
 
     @classmethod
-    def load(cls, name: str) -> 'NArgumentModel_v2':
+    def load(cls, name: str) -> 'NArgumentModel_v1':
         arg_model = cls(name)
         model_path = arg_model.dir_path.joinpath(name).joinpath('model.hS')
         if not model_path.exists():

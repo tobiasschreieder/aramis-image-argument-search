@@ -69,35 +69,39 @@ def get_primary_arg_data(data: pd.DataFrame, cols_to_get=[]) -> np.ndarray:
     return np.asarray(data[cols])
 
 
-def get_primary_stance_data(data: pd.DataFrame) -> np.ndarray:
-    cols = [
-        'image_percentage_green',
-        'image_percentage_red',
-        'image_percentage_blue',
-        'image_percentage_yellow',
-        'image_percentage_bright',
-        'image_percentage_dark',
-        'html_sentiment_score',
-        'html_sentiment_score_con',
-        'text_len',
-        'text_sentiment_score',
-        'text_sentiment_score_con',
-        'image_average_color_r',
-        'image_average_color_g',
-        'image_average_color_b',
-        'image_dominant_color_r',
-        'image_dominant_color_g',
-        'image_dominant_color_b',
-        'query_sentiment',
-        'query_sentiment_con',
-        'query_html_eq',
-        'query_image_eq',
-        'query_html_context',
-        'query_html_context_con',
-        'query_image_context',
-        'query_image_context_con',
-        'query_image_align'
-    ]
+def get_primary_stance_data(data: pd.DataFrame, cols_to_get=[]) -> np.ndarray:
+    if not cols_to_get:
+        cols = [
+            'image_percentage_green',
+            'image_percentage_red',
+            'image_percentage_blue',
+            'image_percentage_yellow',
+            'image_percentage_bright',
+            'image_percentage_dark',
+            'html_sentiment_score',
+            'html_sentiment_score_con',
+            'text_len',
+            'text_sentiment_score',
+            'text_sentiment_score_con',
+            'image_average_color_r',
+            'image_average_color_g',
+            'image_average_color_b',
+            'image_dominant_color_r',
+            'image_dominant_color_g',
+            'image_dominant_color_b',
+            'query_sentiment',
+            'query_sentiment_con',
+            'query_html_eq',
+            'query_image_eq',
+            'query_html_context',
+            'query_html_context_con',
+            'query_image_context',
+            'query_image_context_con',
+            'query_image_align'
+        ]
+    else:
+        cols = cols_to_get
+
     return np.asarray(data[cols])
 
 
