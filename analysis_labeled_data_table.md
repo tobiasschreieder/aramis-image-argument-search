@@ -1,4 +1,5 @@
 #Analysis of labeled data
+##Analysis per Topic
 | Topic Number | Topic Name | Topic Relevance | Argumentative | Strong Argumentative | Stance Pro | Stance Con | Relevant | Strong Relevant |
 |---|---|---|---|---|---|---|---|---|
 | 1 | Should teachers get tenure? | 0.5  (247) | 0.36  (178) | 0.11  (52) | 0.16  (79) | 0.06  (28) | 0.22 (106) | 0.1 (47) |
@@ -21,3 +22,14 @@
 | 45 | Should the penny stay in circulation? | 0.48  (174) | 0.09  (31) | 0.05  (18) | 0.02  (7) | 0.06  (21) | 0.08 (28) | 0.04 (16) |
 | 47 | Is homework beneficial? | 0.69  (329) | 0.25  (119) | 0.09  (41) | 0.04  (20) | 0.2  (98) | 0.2 (98) | 0.06 (27) |
 | 48 | Should the voting age be lowered? | 0.58  (193) | 0.56  (186) | 0.22  (74) | 0.26  (88) | 0.05  (15) | 0.31 (103) | 0.21 (69) |
+
+
+##Analysis Overall
+| Category | Value |
+|---|---|
+| Average Percentage Topic Relevance | 0.71 |
+| Average Percentage Argumentative | 0.46 |
+| Average Percentage Argumentative Strong | 0.14 |
+| Average Percentage Stance | 0.33 |
+| Average Percentage Relevant Images | 0.33 |
+| Average Percentage Relevant Images Strong | 0.13 |

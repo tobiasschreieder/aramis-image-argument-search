@@ -139,9 +139,25 @@ def print_eda():
           str(eda["average_percentage_relevant_images_strong"]))
 
 
-def create_eda_md_table(analysis: Dict):
+def preprocess_string(s: str) -> str:
+    """
+    Preprocess String
+    :param s: str
+    :return: s (str)
+    """
+    s = s.replace("_", " ")
+    s = s.title()
+    return s
+
+
+def create_eda_md_table(analysis: Dict, eda: Dict):
+    """
+    Create Markdown File with Table of EDA
+    :param analysis: Dictionary
+    """
     text = list()
     text.append("#Analysis of labeled data")
+    text.append("##Analysis per Topic")
     text.append("| Topic Number | Topic Name | Topic Relevance | Argumentative | Strong Argumentative | Stance Pro | "
                 "Stance Con | Relevant | Strong Relevant |")
     text.append("|---|---|---|---|---|---|---|---|---|")
@@ -162,6 +178,16 @@ def create_eda_md_table(analysis: Dict):
                   + " (" + str(analysis[i]["count_relevant_images"]) + ") "
         column += "| " + str(round(analysis[i]["percentage_relevant_images_strong"], 2)) \
                   + " (" + str(analysis[i]["count_relevant_images_strong"]) + ") "
+        column += "|"
+        text.append(column)
+
+    text.append("\n")
+    text.append("##Analysis Overall")
+    text.append("| Category | Value |")
+    text.append("|---|---|")
+    for i in eda:
+        column = "| " + preprocess_string(i) + " "
+        column += "| " + str(eda[i]) + " "
         column += "|"
         text.append(column)
 
