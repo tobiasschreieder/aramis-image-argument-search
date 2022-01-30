@@ -40,6 +40,6 @@ def main(model_name: str, topics_no: list):
 
     findex = FeatureIndex.load(23158)
 
-    plot_arg_scoring_eval(NNArgumentModel(findex, model_name), topics_no).show()
+    plot_arg_scoring_eval(NNArgumentModel(findex, model_name, version=3), topics_no).show()
     # plot_stance_scoring_eval(NNStanceModel(findex, model_name_stance), topics_no).show()
-    # plot_stance_confusion(NNStanceModel(findex, model_name), topics_no).show()
+    plot_stance_confusion(NNStanceModel(findex, model_name, version=3), topics_no).show()

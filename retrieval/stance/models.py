@@ -165,13 +165,13 @@ class StandardStanceModel(StanceModel):
 class NNStanceModel(StanceModel):
     model: NStanceModel
 
-    def __init__(self, index: FeatureIndex, model_name: str):
+    def __init__(self, index: FeatureIndex, model_name: str, version: int = 3):
         """
         Constructor for model base class,
         :param index: index to get relevance data from
         """
         super().__init__(index)
-        self.model = NStanceModel.load(model_name)
+        self.model = NStanceModel.load(model_name, version)
 
     def query(self, query: List[str], argument_relevant: pd.DataFrame,
               top_k: int = -1, **kwargs) -> Tuple[pd.DataFrame, pd.DataFrame]:

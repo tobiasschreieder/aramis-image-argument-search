@@ -82,8 +82,8 @@ def main():
 
     data = scale_data(preprocessed_data(findex, topics, train=True))
 
-    NArgumentModel.get('clean_test_1').train(data, test=[27, 31, 33])
-    # NStanceModel('clean_test_1').train(data, test=[27, 31, 33])
+    NArgumentModel.get('clean_test_1', version=3).train(data, test=[27, 31, 33])
+    NStanceModel.get('clean_test_1', version=2).train(data, test=[27, 31, 33])
 
     analysis_main(model_name='clean_test_1', topics_no=topics_no)
     # rs_analysis_main()

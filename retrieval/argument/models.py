@@ -7,6 +7,7 @@ import pandas as pd
 
 from indexing import FeatureIndex
 from indexing import NArgumentModel_v3, preprocess_data, scale_data
+from indexing.neural_net.arg_network import NArgumentModel
 
 
 class ArgumentModel:
@@ -150,15 +151,15 @@ class StandardArgumentModel(ArgumentModel):
 
 
 class NNArgumentModel(ArgumentModel):
-    model: NArgumentModel_v3
+    model: NArgumentModel
 
-    def __init__(self, index: FeatureIndex, model_name: str):
+    def __init__(self, index: FeatureIndex, model_name: str, version: int = 3):
         """
         Constructor for model base class,
         :param index: index to get relevance data from
         """
         super().__init__(index)
-        self.model = NArgumentModel_v3.load(model_name)
+        self.model = NArgumentModel.load(model_name, version)
 
     def query(self, query: List[str], topic_relevant: pd.DataFrame,
               top_k: int = -1, **kwargs) -> pd.DataFrame:

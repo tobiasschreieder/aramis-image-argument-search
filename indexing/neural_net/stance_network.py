@@ -1,3 +1,4 @@
+import abc
 import os
 from pathlib import Path
 from typing import List
@@ -17,11 +18,8 @@ pd.options.mode.chained_assignment = None
 overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=15)
 
 
-class NStanceModel_v2:
-    """
-    New Features
-    QueryInformation- and HTML-TextInformation-Usage
-    """
+class NStanceModel(abc.ABC):
+
     model: keras.Model
     name: str
     dir_path: Path = Path('index/models/stance/')
@@ -29,15 +27,41 @@ class NStanceModel_v2:
     def __init__(self, name: str):
         self.dir_path.mkdir(parents=True, exist_ok=True)
         self.name = name
+        self.topics_to_skip = [15, 31, 36, 37, 43, 45, 48]
 
-    @classmethod
-    def load(cls, name: str) -> 'NStanceModel_v2':
-        arg_model = cls(name)
+    @staticmethod
+    def get(name: str, version: int = 2) -> 'NStanceModel':
+        if version == 1:
+            return NStanceModelV1(name)
+        else:
+            return NStanceModelV2(name)
+
+    @staticmethod
+    def load(name: str, version: int = 2) -> 'NStanceModel':
+        arg_model = NStanceModel.get(name, version)
         model_path = arg_model.dir_path.joinpath(name).joinpath('model.hS')
         if not model_path.exists():
             raise FileNotFoundError(f'The model {name} does not exists.')
         arg_model.model = load_model(model_path.as_posix(), compile=False)
         return arg_model
+
+    def train(self, data: pd.DataFrame, test: List[int]) -> None:
+        pass
+
+    def predict(self, data: pd.DataFrame) -> List[float]:
+        pass
+
+
+class NStanceModelV2(NStanceModel):
+    """
+    New Features
+    QueryInformation- and HTML-TextInformation-Usage
+    """
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.dir_path = self.dir_path.joinpath('version_2')
+        self.dir_path.mkdir(parents=True, exist_ok=True)
 
     def train(self, data: pd.DataFrame, test: List[int]) -> None:
         df_train, df_test = split_data(data, test)
@@ -73,18 +97,15 @@ class NStanceModel_v2:
         return categorical_to_eval(predictions)
 
 
-class NStanceModel_v1:
+class NStanceModelV1(NStanceModel):
     """
     Model with just same features as the Argument-Model
     No queryInformation-usage
     """
-    model: keras.Model
-    name: str
-    dir_path: Path = Path('index/models/stance/')
 
     def __init__(self, name: str):
+        super().__init__(name)
         self.dir_path.mkdir(parents=True, exist_ok=True)
-        self.name = name
         self.cols_to_get_primary = [
             'image_percentage_green',
             'image_percentage_red',
@@ -99,15 +120,6 @@ class NStanceModel_v1:
             'image_average_color_g',
             'image_average_color_b',
         ]
-
-    @classmethod
-    def load(cls, name: str) -> 'NStanceModel_v1':
-        arg_model = cls(name)
-        model_path = arg_model.dir_path.joinpath(name).joinpath('model.hS')
-        if not model_path.exists():
-            raise FileNotFoundError(f'The model {name} does not exists.')
-        arg_model.model = load_model(model_path.as_posix(), compile=False)
-        return arg_model
 
     def train(self, data: pd.DataFrame, test: List[int]) -> None:
         df_train, df_test = split_data(data, test)
