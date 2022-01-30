@@ -66,8 +66,11 @@ def plot_scoring_eval(model, topics: List[int],
         cols = 5
 
         for el in [36, 45, 37, 43]:
-            topics.remove(el)
-        if len(topics) > 12:
+            try:
+                topics.remove(el)
+            except ValueError:
+                pass
+        if len(topics) > 20:
             topics = topics[:20]
         print('Cant plot more than 20 topics in one plot, tried %s', len(topics))
 
@@ -77,7 +80,7 @@ def plot_scoring_eval(model, topics: List[int],
     sub_titel = []
     for t in topics:
         topic_title = Topic.get(t).title
-        topic_title = (topic_title[:37] + '..') if len(topic_title) > 40 else topic_title
+        topic_title = (topic_title[:27] + '..') if len(topic_title) > 30 else topic_title
         sub_titel.append(f'Topic {Topic.get(t).number} - {topic_title}')
     fig = make_subplots(rows=rows, cols=cols, shared_xaxes=True, x_title='Score', y_title='Count',
                         vertical_spacing=0.05, horizontal_spacing=0.01, subplot_titles=sub_titel)
@@ -174,18 +177,21 @@ def plot_stance_confusion(model, topics: List[int]) -> go.Figure:
     elif len(topics) <= 12:
         rows = 3
         cols = 4
+    elif len(topics) <= 20:
+        rows = 4
+        cols = 5
     else:
-        rows = 3
-        cols = 4
+        rows = 4
+        cols = 5
 
         for el in [36, 45, 37, 43]:
             try:
                 topics.remove(el)
-            except:
+            except ValueError:
                 pass
-        if len(topics) > 12:
-            topics = topics[:12]
-        print('Cant plot more than 12 topics in one plot, tried %s', len(topics))
+        if len(topics) > 20:
+            topics = topics[:20]
+        print('Cant plot more than 20 topics in one plot, tried %s', len(topics))
 
     infos = ('stance', 'Stance', ('PRO', plotly_color[2]), ('NEUTRAL', plotly_color[0]),
              ('CON', plotly_color[1]), 'color_mood, image_text_sentiment, html_sentiment')
@@ -193,13 +199,16 @@ def plot_stance_confusion(model, topics: List[int]) -> go.Figure:
     sub_titel = []
     for t in topics:
         topic_title = Topic.get(t).title
-        topic_title = (topic_title[:37] + '..') if len(topic_title) > 40 else topic_title
+        topic_title = (topic_title[:30] + '..') if len(topic_title) > 32 else topic_title
         sub_titel.append(f'Topic {Topic.get(t).number} - {topic_title}')
     fig = make_subplots(rows=rows, cols=cols, shared_yaxes=True, shared_xaxes=True, x_title='True Eval',
                         y_title='Predicted Eval',
                         vertical_spacing=0.06, horizontal_spacing=0.02, subplot_titles=sub_titel)
     a = np.array(topics)
     a.resize((rows, cols), refcheck=False)
+
+    avg_error = 0
+    avg_count = 0
 
     for row in range(rows):
         for col in range(cols):
@@ -228,12 +237,17 @@ def plot_stance_confusion(model, topics: List[int]) -> go.Figure:
                 count = df.loc[(df['value'] == eval_val), 'value'].count()
                 for i, score in enumerate(y):
                     z[i][j] = df.loc[(df['value'] == eval_val) & (df['score'] == score), 'value'].count() / count
+                    if i != j:
+                        avg_count += 1
+                        avg_error += z[i][j]
             z.reverse()
             y = x.copy()
             y.reverse()
             fig.add_heatmap(z=z, x=x, y=y, texttemplate='%{z:.4f}', colorscale='Blues', showscale=False,
                             row=row + 1, col=col + 1,)
 
-    fig.update_layout(title=f'{infos[1]} Scoring Confusion matrix')
+    avg_error /= avg_count
+    avg_error *= 2
+    fig.update_layout(title=f'{infos[1]} Scoring Confusion matrix<br><sup>Avg Error: {round(avg_error, 4)}</sup>')
 
     return fig

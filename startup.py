@@ -7,7 +7,8 @@ from config import Config
 from evaluation.analysis import main as analysis_main
 from frontend import start_server
 from indexing import StandardTermIndex, FeatureIndex, TopicQueryTermIndex, get_all_topic_indexes, \
-    Topic, NArgumentModel_v3, NArgumentModel_v2, NStanceModel, preprocessed_data, scale_data
+    Topic, NStanceModel, preprocessed_data, scale_data
+from indexing.neural_net.arg_network import NArgumentModel
 from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel
 
 
@@ -81,9 +82,8 @@ def main():
 
     data = scale_data(preprocessed_data(findex, topics, train=True))
 
-    # NArgumentModel_v3('clean_test_1').train(data, test=[20, 27, 33])
-    NArgumentModel_v2('clean_test_1').train(data, test=[20, 27, 33])
-    # NStanceModel('clean_test_1').train(data, test=[20, 27, 33])
+    NArgumentModel.get('clean_test_1').train(data, test=[27, 31, 33])
+    # NStanceModel('clean_test_1').train(data, test=[27, 31, 33])
 
     analysis_main(model_name='clean_test_1', topics_no=topics_no)
     # rs_analysis_main()
