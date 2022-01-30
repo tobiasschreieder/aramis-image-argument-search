@@ -209,4 +209,4 @@ class NNStanceModel(StanceModel):
                 con_scores.loc[doc_id, 'stance'] = abs(score)
 
         return pro_scores.dropna(axis=0).nlargest(top_k, 'stance', keep='all'), \
-               con_scores.dropna(axis=0).nlargest(top_k, 'stance', keep='all')
+            con_scores.dropna(axis=0).nlargest(top_k, 'stance', keep='all')
