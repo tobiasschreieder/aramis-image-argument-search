@@ -1,9 +1,9 @@
 from typing import Tuple, Dict
 
-from evaluation import evaluation
+from evaluation import eval_data
 from indexing import data_entry
 
-data = evaluation.get_df()
+data = eval_data.get_df()
 data = data.reset_index()
 
 
@@ -17,9 +17,9 @@ def exploratory_data_analysis() -> Tuple[Dict, Dict]:
                  "percentage_topic_relevance": 0.0, "count_argumentative": 0, "percentage_argumentative": 0.0,
                  "count_argumentative_strong": 0, "percentage_argumentative_strong": 0.0,
                  "count_stance": 0, "percentage_stance": 0.0, "count_stance_pro": 0, "percentage_stance_pro": 0.0,
-                 "count_stance_con": 0, "percentage_stance_con": 0.0, "count_relevant_images": 0,
-                 "percentage_relevant_images": 0.0, "count_relevant_images_strong": 0,
-                 "percentage_relevant_images_strong": 0.0}
+                 "count_stance_con": 0, "percentage_stance_con": 0.0, "count_stance_neutral": 0,
+                 "percentage_stance_neutral": 0.0, "count_relevant_images": 0, "percentage_relevant_images": 0.0,
+                 "count_relevant_images_strong": 0, "percentage_relevant_images_strong": 0.0}
 
     for i in data.index:
         column = data.loc[i]
@@ -53,6 +53,9 @@ def exploratory_data_analysis() -> Tuple[Dict, Dict]:
         if stance == "CON":
             analysis[topic]["count_stance_con"] += 1
 
+        if stance == "NEUTRAL":
+            analysis[topic]["count_stance_neutral"] += 1
+
         if topic_relevance and argument != "NONE" and stance != "NEUTRAL":
             analysis[topic]["count_relevant_images"] += 1
 
@@ -82,37 +85,54 @@ def exploratory_data_analysis() -> Tuple[Dict, Dict]:
             analysis[topic]["count_stance_pro"] / analysis[topic]["count_images_in_topic"]
         analysis[topic]["percentage_stance_con"] = \
             analysis[topic]["count_stance_con"] / analysis[topic]["count_images_in_topic"]
+        analysis[topic]["percentage_stance_neutral"] = \
+            analysis[topic]["count_stance_neutral"] / analysis[topic]["count_images_in_topic"]
         analysis[topic]["percentage_relevant_images"] = \
             analysis[topic]["count_relevant_images"] / analysis[topic]["count_images_in_topic"]
         analysis[topic]["percentage_relevant_images_strong"] = \
             analysis[topic]["count_relevant_images_strong"] / analysis[topic]["count_images_in_topic"]
 
-    average_percentage_topic_relevance = 0.0
-    average_percentage_argumentative = 0.0
-    average_percentage_argumentative_strong = 0.0
-    average_percentage_stance = 0.0
-    average_percentage_relevant_images = 0.0
-    average_percentage_relevant_images_strong = 0.0
+    average_percentage_topic_relevance = 0
+    average_percentage_argumentative = 0
+    average_percentage_argumentative_strong = 0
+    average_percentage_stance = 0
+    average_percentage_stance_pro = 0
+    average_percentage_stance_con = 0
+    average_percentage_stance_neutral = 0
+    average_percentage_relevant_images = 0
+    average_percentage_relevant_images_strong = 0
 
+    counter = 0
     for topic in analysis:
-        average_percentage_topic_relevance += analysis[topic]["percentage_topic_relevance"]
-        average_percentage_argumentative += analysis[topic]["percentage_argumentative"]
-        average_percentage_argumentative_strong += analysis[topic]["percentage_argumentative_strong"]
-        average_percentage_stance += analysis[topic]["percentage_stance"]
-        average_percentage_relevant_images += analysis[topic]["percentage_relevant_images"]
-        average_percentage_relevant_images_strong += analysis[topic]["percentage_relevant_images_strong"]
+        counter += analysis[topic]["count_images_in_topic"]
+        average_percentage_topic_relevance += analysis[topic]["count_topic_relevance"]
+        average_percentage_argumentative += analysis[topic]["count_argumentative"]
+        average_percentage_argumentative_strong += analysis[topic]["count_argumentative_strong"]
+        average_percentage_stance += analysis[topic]["count_stance"]
+        average_percentage_stance_pro += analysis[topic]["count_stance_pro"]
+        average_percentage_stance_con += analysis[topic]["count_stance_con"]
+        average_percentage_stance_neutral += analysis[topic]["count_stance_neutral"]
+        average_percentage_relevant_images += analysis[topic]["count_relevant_images"]
+        average_percentage_relevant_images_strong += analysis[topic]["count_relevant_images_strong"]
+    print(average_percentage_topic_relevance, counter)
 
-    average_percentage_topic_relevance = round(average_percentage_topic_relevance / len(analysis), 2)
-    average_percentage_argumentative = round(average_percentage_argumentative / len(analysis), 2)
-    average_percentage_argumentative_strong = round(average_percentage_argumentative_strong / len(analysis), 2)
-    average_percentage_stance = round(average_percentage_stance / len(analysis), 2)
-    average_percentage_relevant_images = round(average_percentage_relevant_images / len(analysis), 2)
-    average_percentage_relevant_images_strong = round(average_percentage_relevant_images_strong / len(analysis), 2)
+    average_percentage_topic_relevance = round(average_percentage_topic_relevance / counter, 2)
+    average_percentage_argumentative = round(average_percentage_argumentative / counter, 2)
+    average_percentage_argumentative_strong = round(average_percentage_argumentative_strong / counter, 2)
+    average_percentage_stance = round(average_percentage_stance / counter, 2)
+    average_percentage_stance_pro = round(average_percentage_stance_pro / counter, 2)
+    average_percentage_stance_con = round(average_percentage_stance_con / counter, 2)
+    average_percentage_stance_neutral = round(average_percentage_stance_neutral / counter, 2)
+    average_percentage_relevant_images = round(average_percentage_relevant_images / counter, 2)
+    average_percentage_relevant_images_strong = round(average_percentage_relevant_images_strong / counter, 2)
 
     eda = {"average_percentage_topic_relevance": average_percentage_topic_relevance,
            "average_percentage_argumentative": average_percentage_argumentative,
            "average_percentage_argumentative_strong": average_percentage_argumentative_strong,
            "average_percentage_stance": average_percentage_stance,
+           "average_percentage_stance_pro": average_percentage_stance_pro,
+           "average_percentage_stance_con": average_percentage_stance_con,
+           "average_percentage_stance_neutral": average_percentage_stance_neutral,
            "average_percentage_relevant_images": average_percentage_relevant_images,
            "average_percentage_relevant_images_strong": average_percentage_relevant_images_strong}
 
@@ -134,6 +154,9 @@ def print_eda():
     print("Average percentage of argumentative images:", str(eda["average_percentage_argumentative"]))
     print("Average percentage of strong argumentative images:", str(eda["average_percentage_argumentative_strong"]))
     print("Average percentage of stance not neutral images:", str(eda["average_percentage_stance"]))
+    print("Average percentage of stance pro images:", str(eda["average_percentage_stance_pro"]))
+    print("Average percentage of stance con images:", str(eda["average_percentage_stance_con"]))
+    print("Average percentage of stance neutral images:", str(eda["average_percentage_stance_neutral"]))
     print("Average percentage of relevant images:", str(eda["average_percentage_relevant_images"]))
     print("Average percentage of relevant and strong argumentative images:",
           str(eda["average_percentage_relevant_images_strong"]))

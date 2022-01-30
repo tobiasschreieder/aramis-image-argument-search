@@ -27,9 +27,12 @@
 ##Analysis Overall
 | Category | Value |
 |---|---|
-| Average Percentage Topic Relevance | 0.71 |
+| Average Percentage Topic Relevance | 0.72 |
 | Average Percentage Argumentative | 0.46 |
 | Average Percentage Argumentative Strong | 0.14 |
-| Average Percentage Stance | 0.33 |
-| Average Percentage Relevant Images | 0.33 |
+| Average Percentage Stance | 0.34 |
+| Average Percentage Stance Pro | 0.2 |
+| Average Percentage Stance Con | 0.14 |
+| Average Percentage Stance Neutral | 0.66 |
+| Average Percentage Relevant Images | 0.34 |
 | Average Percentage Relevant Images Strong | 0.13 |
