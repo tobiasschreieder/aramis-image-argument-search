@@ -123,8 +123,11 @@ class NArgumentModel_v2:
         primary_in_train = get_primary_arg_data(df_train)
         primary_in_test = get_primary_arg_data(df_test)
 
-        x_train = color_in_train + primary_in_train
-        x_test = color_in_test + primary_in_test
+        x_train = []
+        x_test = []
+        for i in range(len(primary_in_train)):
+            x_train.append(color_in_train[i] + primary_in_train[i])
+            x_test.append(color_in_test[i] + primary_in_test[i])
 
         model = Sequential()
         model.add(Dense(10, input_dim=len(x_train), activation="relu"))
@@ -142,11 +145,14 @@ class NArgumentModel_v2:
         plot_history(history, self.dir_path.joinpath(self.name))
 
     def predict(self, data: pd.DataFrame) -> List[float]:
-        tp_in = get_text_position_data(data)
         color_in = get_color_data(data)
         primary_in = get_primary_arg_data(data)
 
-        predictions = self.model.predict(x=[tp_in, color_in, primary_in])
+        x_in = []
+        for i in range(len(primary_in)):
+            x_in.append(color_in[i] + primary_in[i])
+
+        predictions = self.model.predict(x=x_in)
         return [val[0] for val in predictions]
 
 
@@ -162,6 +168,22 @@ class NArgumentModel_v1:
     def __init__(self, name: str):
         self.dir_path.mkdir(parents=True, exist_ok=True)
         self.name = name
+        self.cols_to_get_color = [
+            'image_average_color_r',
+            'image_average_color_g',
+            'image_average_color_b',
+        ]
+        self.cols_to_get_primary = [
+            'image_percentage_green',
+            'image_percentage_red',
+            'image_percentage_bright',
+            'image_percentage_dark',
+            'text_len',
+            'text_sentiment_score',
+            'text_sentiment_score_con',
+            'image_type',
+            'image_roi_area'
+        ]
 
     @classmethod
     def load(cls, name: str) -> 'NArgumentModel_v1':
@@ -177,30 +199,17 @@ class NArgumentModel_v1:
         y_train = np.asarray(df_train['arg_eval'])
         y_test = np.asarray(df_test['arg_eval'])
 
-        cols_to_get_color = [
-            'image_average_color_r',
-            'image_average_color_g',
-            'image_average_color_b',
-        ]
-        color_in_train = get_color_data(df_train, cols_to_get=cols_to_get_color)
-        color_in_test = get_color_data(df_test, cols_to_get=cols_to_get_color)
+        color_in_train = get_color_data(df_train, cols_to_get=self.cols_to_get_color)
+        color_in_test = get_color_data(df_test, cols_to_get=self.cols_to_get_color)
 
-        cols_to_get_primary = [
-            'image_percentage_green',
-            'image_percentage_red',
-            'image_percentage_bright',
-            'image_percentage_dark',
-            'text_len',
-            'text_sentiment_score',
-            'text_sentiment_score_con',
-            'image_type',
-            'image_roi_area'
-        ]
-        primary_in_train = get_primary_arg_data(df_train, cols_to_get=cols_to_get_primary)
-        primary_in_test = get_primary_arg_data(df_test, cols_to_get=cols_to_get_primary)
+        primary_in_train = get_primary_arg_data(df_train, cols_to_get=self.cols_to_get_primary)
+        primary_in_test = get_primary_arg_data(df_test, cols_to_get=self.cols_to_get_primary)
 
-        x_train = color_in_train + primary_in_train
-        x_test = color_in_test + primary_in_test
+        x_train = []
+        x_test = []
+        for i in range(len(primary_in_train)):
+            x_train.append(color_in_train[i] + primary_in_train[i])
+            x_test.append(color_in_test[i] + primary_in_test[i])
 
         model = Sequential()
         model.add(Dense(10, input_dim=len(x_train), activation="relu"))
@@ -218,9 +227,12 @@ class NArgumentModel_v1:
         plot_history(history, self.dir_path.joinpath(self.name))
 
     def predict(self, data: pd.DataFrame) -> List[float]:
-        tp_in = get_text_position_data(data)
-        color_in = get_color_data(data)
-        primary_in = get_primary_arg_data(data)
+        color_in = get_color_data(data, cols_to_get=self.cols_to_get_color)
+        primary_in = get_primary_arg_data(data, cols_to_get=self.cols_to_get_primary)
 
-        predictions = self.model.predict(x=[tp_in, color_in, primary_in])
+        x_in = []
+        for i in range(len(primary_in)):
+            x_in.append(color_in[i] + primary_in[i])
+
+        predictions = self.model.predict(x=x_in)
         return [val[0] for val in predictions]

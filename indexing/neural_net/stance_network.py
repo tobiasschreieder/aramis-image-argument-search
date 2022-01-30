@@ -85,6 +85,20 @@ class NStanceModel_v1:
     def __init__(self, name: str):
         self.dir_path.mkdir(parents=True, exist_ok=True)
         self.name = name
+        self.cols_to_get_primary = [
+            'image_percentage_green',
+            'image_percentage_red',
+            'image_percentage_bright',
+            'image_percentage_dark',
+            'html_sentiment_score',
+            'html_sentiment_score_con',
+            'text_len',
+            'text_sentiment_score',
+            'text_sentiment_score_con',
+            'image_average_color_r',
+            'image_average_color_g',
+            'image_average_color_b',
+        ]
 
     @classmethod
     def load(cls, name: str) -> 'NStanceModel_v1':
@@ -100,22 +114,8 @@ class NStanceModel_v1:
         y_train = eval_to_categorical(df_train['stance_eval'].to_list())
         y_test = eval_to_categorical(df_test['stance_eval'].to_list())
 
-        cols_to_get_primary = [
-            'image_percentage_green',
-            'image_percentage_red',
-            'image_percentage_bright',
-            'image_percentage_dark',
-            'html_sentiment_score',
-            'html_sentiment_score_con',
-            'text_len',
-            'text_sentiment_score',
-            'text_sentiment_score_con',
-            'image_average_color_r',
-            'image_average_color_g',
-            'image_average_color_b',
-        ]
-        primary_in_train = get_primary_stance_data(df_train, cols_to_get=cols_to_get_primary)
-        primary_in_test = get_primary_stance_data(df_test, cols_to_get=cols_to_get_primary)
+        primary_in_train = get_primary_stance_data(df_train, cols_to_get=self.cols_to_get_primary)
+        primary_in_test = get_primary_stance_data(df_test, cols_to_get=self.cols_to_get_primary)
 
         model = Sequential([
             Dense(15, input_dim=primary_in_train.shape[1], activation='relu'),
@@ -135,9 +135,7 @@ class NStanceModel_v1:
         plot_history(history, self.dir_path.joinpath(self.name))
 
     def predict(self, data: pd.DataFrame) -> List[int]:
-        # tp_in = get_text_position_data(data)
-        # color_in = get_color_data(data)
-        primary_in = get_primary_stance_data(data)
+        primary_in = get_primary_stance_data(data, cols_to_get=self.cols_to_get_primary)
 
         predictions = self.model.predict(x=primary_in)
         return categorical_to_eval(predictions)
