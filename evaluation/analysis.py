@@ -38,11 +38,8 @@ plotly_color = qualitative.Plotly
 
 def main(model_name: str, topics_no: list):
 
-    model_name_argument = model_name + "_argument"
-    model_name_stance = model_name + "_stance"
-
     findex = FeatureIndex.load(23158)
 
-    # plot_arg_scoring_eval(NNArgumentModel(findex, model_name_argument), topics_no).show()
+    plot_arg_scoring_eval(NNArgumentModel(findex, model_name), topics_no).show()
     # plot_stance_scoring_eval(NNStanceModel(findex, model_name_stance), topics_no).show()
-    plot_stance_confusion(NNStanceModel(findex, model_name_stance), topics_no).show()
+    plot_stance_confusion(NNStanceModel(findex, model_name), topics_no).show()

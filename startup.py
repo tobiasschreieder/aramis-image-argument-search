@@ -4,11 +4,10 @@ import os
 from logging.handlers import TimedRotatingFileHandler
 
 from config import Config
-from evaluation import get_model_data_arg, get_model_data_stance
 from evaluation.analysis import main as analysis_main
 from frontend import start_server
 from indexing import StandardTermIndex, FeatureIndex, TopicQueryTermIndex, get_all_topic_indexes, \
-    Topic, features_NN_argument, features_NN_stance
+    Topic
 from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel
 
 
@@ -71,26 +70,22 @@ def main():
 
     log.info('do main stuff')
 
-    # start_flask()
     # findex = FeatureIndex.create_index()
-    # findex.calculate_sentiment_score_v2(n_jobs=6)
     # findex.save()
+
     # start_server(None)
 
-    # data = html_preprocessing.html_test()
-    # np.save('data12', data)
-
     findex = FeatureIndex.load(23158)
-    topics_no = [2, 4, 8, 9, 10, 15, 20, 21, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
+    topics_no = [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
     topics = [Topic.get(t) for t in topics_no]
 
-    # df = get_model_data_arg(topics, findex)
-    # features_NN_argument.train_network("test_1", df=df)
+    # data = scale_data(preprocessed_data(findex, topics, train=True))
 
-    df = get_model_data_stance(topics, findex)
-    features_NN_stance.train_network("test_1", df=df)
+    # NArgumentModel('clean_test_1').train(data, test=[27, 31, 33])
+    # NStanceModel('clean_test_1').train(data, test=[27, 31, 33])
 
-    analysis_main(model_name='test_1', topics_no=topics_no)
+    analysis_main(model_name='clean_test_1', topics_no=topics_no)
+    # rs_analysis_main()
 
 
 if __name__ == '__main__':

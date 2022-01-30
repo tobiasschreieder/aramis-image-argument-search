@@ -1,16 +1,12 @@
-import datetime
 import logging
 import math
-from pathlib import Path
 from typing import List, Tuple
-from Bio import pairwise2
 
 import numpy as np
 import pandas as pd
-from keras.models import load_model
-from tensorflow import keras
 
-from indexing import FeatureIndex, ImageType, features_NN_stance
+from indexing import FeatureIndex, ImageType
+from indexing import NStanceModel, preprocess_data, scale_data
 from indexing.feature import sentiment_detection
 
 
@@ -167,7 +163,7 @@ class StandardStanceModel(StanceModel):
 
 
 class NNStanceModel(StanceModel):
-    model: keras.Model
+    model: NStanceModel
 
     def __init__(self, index: FeatureIndex, model_name: str):
         """
@@ -175,70 +171,10 @@ class NNStanceModel(StanceModel):
         :param index: index to get relevance data from
         """
         super().__init__(index)
-        model_path = Path('indexing/models/' + str(model_name) + '/model.hS')
-        if not model_path.exists():
-            raise FileNotFoundError(f'The model {model_name} does not exists.')
-        self.model = load_model(model_path.as_posix(), compile=False)
-
-    @staticmethod
-    def query_frequency(query: List[str], text: List[str]) -> float:
-        rho = 1
-        doc_length = len(text)
-        if doc_length == 0:
-            return 0
-        count = 0
-        for term in query:
-            frequency = text.count(term)
-            if frequency == 0:
-                continue
-            try:
-                rho += math.exp(math.log(frequency / doc_length))
-                count += 1
-            except ValueError:
-                rho += 0
-        if not count == 0:
-            return float(rho/count)
-        else:
-            return 0
-
-    @staticmethod
-    def context_sentiment(query: List[str], text: List[str]) -> float:
-        val = 0
-        scope = 5
-        count = 0
-        for term in query:
-            last = 0
-            try:
-                while last < len(text):
-                    last = text.index(term, last+scope)
-                    context = text[last-scope:last+scope]
-                    val += sentiment_detection.sentiment_nltk(' '.join(context))
-                    count += 1
-            except ValueError:
-                pass
-        if not count == 0:
-            return val/count
-        else:
-            return 0
-
-    @staticmethod
-    def alignment_query(query: List[str], text: List[str]) -> float:
-        # looking for exact alignments of query in text
-        a = pairwise2.align.localxx(text, query, gap_char=["-"])
-        sum_score = 0
-        number_alignments = 0
-        for match in a:
-            number_alignments += 1
-            sum_score += match.score
-        # normalize alignment-score
-        if not number_alignments == 0:
-            avg_score = sum_score / number_alignments
-            return avg_score
-        else:
-            return 0
+        self.model = NStanceModel.load(model_name)
 
     def query(self, query: List[str], argument_relevant: pd.DataFrame,
-              top_k: int = -1) -> Tuple[pd.DataFrame, pd.DataFrame]:
+              top_k: int = -1, **kwargs) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Queries a given preprocessed query against the index using a model scoring function
 
@@ -255,30 +191,11 @@ class NNStanceModel(StanceModel):
         else:
             top_k = min(len(self.index), top_k)
 
-        features_list = []
-
-        stored_df = Path("data/feature_df_stance.csv")
-        if stored_df.is_file():
-            data = pd.read_csv("data/feature_df_stance.csv")
-            for doc_id in argument_relevant.index:
-                features_list.append(data.loc[data['image_id'] == doc_id].squeeze())
-        else:
-            print("no feature_index.csv found. Please check this!")
-            then = datetime.datetime.now()
-            with self.index:
-                for doc_id in argument_relevant.index:
-                    pd_series = self.index.get_all_features(doc_id)
-                    pd_series['query_sentiment'] = sentiment_detection.sentiment_nltk(" ".join(pd_series['query_sentiment']))
-
-                    pd_series['query_html_eq'] = self.query_frequency(query, self.index.get_html_text(doc_id))
-                    pd_series['query_image_eq'] = self.query_frequency(query, self.index.get_image_text(doc_id))
-                    pd_series['query_html_context'] = self.context_sentiment(query, self.index.get_html_text(doc_id))
-                    pd_series['query_image_context'] = self.context_sentiment(query, self.index.get_image_text(doc_id))
-                    pd_series['query_image_align'] = self.alignment_query(" ".join(query), " ".join(self.index.get_image_text(doc_id)))
-                    features_list.append(pd_series)
-            self.log.debug('Feature calculation took %s', then-datetime.datetime.now())
-
-        results = features_NN_stance.make_prediction(model=self.model, input_data=features_list)
+        topic = None
+        if 'topic' in kwargs.keys():
+            topic = kwargs.pop('topic')
+        data = preprocess_data(self.index, argument_relevant.index.unique(0).to_list(), query, topic=topic)
+        results = self.model.predict(scale_data(data))
 
         argument_relevant.loc[:, 'stance'] = np.nan
         pro_scores = argument_relevant.copy()
@@ -292,4 +209,4 @@ class NNStanceModel(StanceModel):
                 con_scores.loc[doc_id, 'stance'] = abs(score)
 
         return pro_scores.dropna(axis=0).nlargest(top_k, 'stance', keep='all'), \
-            con_scores.dropna(axis=0).nlargest(top_k, 'stance', keep='all')
+               con_scores.dropna(axis=0).nlargest(top_k, 'stance', keep='all')

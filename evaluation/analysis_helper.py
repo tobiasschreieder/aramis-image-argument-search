@@ -3,7 +3,7 @@ from typing import Tuple, List
 
 import pandas as pd
 
-from evaluation import get_df
+from .eval_data import get_df
 from indexing import Topic, SpacyPreprocessor
 from retrieval import StanceModel, ArgumentModel
 
@@ -76,7 +76,7 @@ def calc_topic_scores(model, topic: Topic, score_type: str) -> pd.DataFrame:
 
     data = []
     score_df = pd.DataFrame(index=t_df.index.get_level_values(0).unique())
-    model.query(query, score_df)
+    model.query(query, score_df, topic=topic)
 
     for image in score_df.index:
         score = score_df.loc[image, score_name]

@@ -1,16 +1,12 @@
 import logging
 import math
-from pathlib import Path
 from typing import List
 
-import keras
 import numpy as np
 import pandas as pd
 
-from indexing import FeatureIndex, features_NN_argument
-from tensorflow.keras.models import load_model
-
-from indexing.feature import sentiment_detection
+from indexing import FeatureIndex
+from indexing import NArgumentModel, preprocess_data, scale_data
 
 
 class ArgumentModel:
@@ -79,8 +75,8 @@ class StandardArgumentModel(ArgumentModel):
         # use cazy function to get a score between 0 and 1 with optimum near 0.8
         diagramm_factor = self.log_normal_density_function(image_roi_area)
 
-        image_text_sentiment_score = self.index.get_image_text_sentiment_score(doc_id)
-        image_text_len = self.index.get_image_text_len(doc_id)
+        image_text_sentiment_score = self.index.get_text_sentiment_score(doc_id)
+        image_text_len = self.index.get_text_len(doc_id)
         # between 1 and 3 (above 80 ~3)
         len_words_value = 3 + (((-1) / (math.exp(0.04 * image_text_len))) * 2)
         text_sentiment_factor = len_words_value * abs(image_text_sentiment_score)
@@ -96,10 +92,10 @@ class StandardArgumentModel(ArgumentModel):
         image_type = self.index.get_image_type(doc_id)
         if image_type == 1:
             # max-value is 3
-            color_score = (percentage_red/100)*3 + (percentage_green/100)*3
+            color_score = (percentage_red / 100) * 3 + (percentage_green / 100) * 3
         else:
             # max-value is 1
-            color_score = (percentage_red/100) + (percentage_green/100)
+            color_score = (percentage_red / 100) + (percentage_green / 100)
 
         # every value min-value: 0 , max-value: 3
         return diagramm_factor, text_sentiment_factor, text_factor, html_sentiment_score, color_score
@@ -154,8 +150,7 @@ class StandardArgumentModel(ArgumentModel):
 
 
 class NNArgumentModel(ArgumentModel):
-
-    model: keras.Model
+    model: NArgumentModel
 
     def __init__(self, index: FeatureIndex, model_name: str):
         """
@@ -163,10 +158,7 @@ class NNArgumentModel(ArgumentModel):
         :param index: index to get relevance data from
         """
         super().__init__(index)
-        model_path = Path('indexing/models/' + str(model_name) + '/model.hS')
-        if not model_path.exists():
-            raise FileNotFoundError(f'The model {model_name} does not exists.')
-        self.model = load_model(model_path.as_posix(), compile=False)
+        self.model = NArgumentModel.load(model_name)
 
     def query(self, query: List[str], topic_relevant: pd.DataFrame,
               top_k: int = -1, **kwargs) -> pd.DataFrame:
@@ -186,32 +178,11 @@ class NNArgumentModel(ArgumentModel):
         else:
             top_k = min(len(self.index), top_k)
 
-        if top_k < 0:
-            top_k = len(self.index)
-        else:
-            top_k = min(len(self.index), top_k)
-
-        features_list = []
-
-        stored_df = Path("data/feature_df_arg.csv")
-
-        if stored_df.is_file():
-            data = pd.read_csv("data/feature_df_arg.csv")
-            for doc_id in topic_relevant.index:
-                features_list.append(data.loc[data['image_id'] == doc_id].squeeze())
-        else:
-            print("no feature_index.csv found. Please check this!")
-
-            with self.index:
-                for doc_id in topic_relevant.index:
-                    pd_series = self.index.get_all_features(doc_id)
-                    pd_series['query_sentiment'] = sentiment_detection.sentiment_nltk(" ".join(query))
-                    pd_series['query_image_eq'] = self.query_frequency(query, self.index.get_image_text(doc_id))
-                    pd_series['query_image_context'] = self.context_sentiment(query, self.index.get_image_text(doc_id))
-                    pd_series['query_image_align'] = self.alignment_query(" ".join(query), " ".join(self.index.get_image_text(doc_id)))
-                    features_list.append(pd_series)
-
-        results = features_NN_argument.make_prediction(model=self.model, input_data=features_list)
+        topic = None
+        if 'topic' in kwargs.keys():
+            topic = kwargs.pop('topic')
+        data = preprocess_data(self.index, topic_relevant.index.unique(0).to_list(), query, topic=topic)
+        results = self.model.predict(scale_data(data))
 
         for i, doc_id in enumerate(topic_relevant.index):
             topic_relevant.loc[doc_id, 'argument'] = results[i]
