@@ -58,15 +58,18 @@ def plot_scoring_eval(model, topics: List[int],
     elif len(topics) <= 12:
         rows = 3
         cols = 4
+    elif len(topics) <= 20:
+        rows = 4
+        cols = 5
     else:
-        rows = 3
-        cols = 4
+        rows = 4
+        cols = 5
 
         for el in [36, 45, 37, 43]:
             topics.remove(el)
         if len(topics) > 12:
-            topics = topics[:12]
-        print('Cant plot more than 12 topics in one plot, tried %s', len(topics))
+            topics = topics[:20]
+        print('Cant plot more than 20 topics in one plot, tried %s', len(topics))
 
     k = 50
     round_int = 4
@@ -109,7 +112,7 @@ def plot_scoring_eval(model, topics: List[int],
                                   legendgroup=infos[i][0], marker={'color': infos[i][1]})
 
             if infos[0] == 'argument':
-                df_20 = df.nlargest(k, 'score', keep='all')
+                df_20 = df.nlargest(k, 'score', keep='first')
                 precision_20 = df_20.loc[df_20['value'] == 'STRONG', 'value'].count() / k
                 precision_20_both = df_20.loc[(df_20['value'] == 'STRONG') | (df_20['value'] == 'WEAK'),
                                               'value'].count() / k
