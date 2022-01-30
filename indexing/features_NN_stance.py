@@ -2,7 +2,8 @@ import math
 import os
 
 # to get no console-print from tensorflow
-from keras.layers import BatchNormalization
+from keras.layers import BatchNormalization, Dropout
+from keras.optimizer_v2.adam import Adam
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -50,11 +51,13 @@ def train_network(model_name: str, df: pd.DataFrame):
 
     model_html = Sequential()
     model_html.add(embedding_model_html)
+    model_html.add(Dropout(0.1))
     model_html.add(Dense(128, activation='relu'))
     model_html.add(BatchNormalization())
     model_html.add(Dense(30, activation='relu'))
+    model_html.add(Dropout(0.1))
     model_html.add(BatchNormalization())
-    model_html.add(Dense(8, activation='relu'))
+    model_html.add(Dense(3, activation='relu'))
 
     # ---
 
@@ -109,11 +112,11 @@ def train_network(model_name: str, df: pd.DataFrame):
 
     model = Model(inputs=[model_html.input, primary_inputs], outputs=x)
 
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=["accuracy"])
+    optimizer = Adam(lr=0.00003)
+    model_html.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=["accuracy"])
 
-    history = model.fit(x=[x_train_html, x_train], y=y_train,
-                        epochs=10, batch_size=50,
-                        validation_data=([x_test_html, x_test], y_test))
+    history = model_html.fit(x=x_train_html, y=y_train,
+                        epochs=3, batch_size=32, validation_data=(x_test_html, y_test))
     # callbacks=[overfitCallback])
 
     Path("indexing/models/" + str(model_name)).mkdir(parents=True, exist_ok=True)
@@ -146,16 +149,16 @@ def split_train_test_data(df: pd.DataFrame, column_list: list):
     df.sample(frac=1)
 
     df_eval = df.loc[df['topic'].isin([27])].drop('topic', 1)
-    # df = df.loc[df['topic'].isin([2, 8, 33, 40, 27])]
+    df = df.loc[~df['topic'].isin([27, 33])]
 
     df_len = len(df.index)
     split_index = round(df_len * 0.8)
 
-    # df_train = df.iloc[:split_index, :]
-    # df_test = df.iloc[split_index:, :]
+    df_train = df.iloc[:split_index, :]
+    df_test = df.iloc[split_index:, :]
 
-    df_test = df.loc[df['topic'].isin([33, 27, 31])]
-    df_train = df.loc[~df['topic'].isin([33, 27, 31])]
+    # df_test = df.loc[df['topic'].isin([33, 27, 31])]
+    # df_train = df.loc[~df['topic'].isin([33, 27, 31])]
 
     y_train = df_train['stance_eval']
     y_train = eval_to_categorial(y_train)
@@ -279,18 +282,23 @@ def make_prediction(model: keras.Model, input_data: list):
                    'query_image_align']
 
     input_data_network = []
+    input_html_text = []
     for i in range(len(input_data)):
         input_data[i]['html_sentiment_score_con'] = 0
         input_data[i]['text_sentiment_score_con'] = 0
         input_data[i]['query_sentiment_con'] = 0
         input_data[i]['query_html_context_con'] = 0
         input_data[i]['query_image_context_con'] = 0
+        input_html_text.append(input_data[i]['html_string'])
         scaled_row = preprocess_data(input_data[i])
         row_input = scaled_row[column_list]
         input_data_network.append(row_input)
 
+    input_html_text = pd.DataFrame(input_html_text, columns=['html_string'])
+
     input_data_network = np.asarray(input_data_network).astype('float32')
-    predictions = model.predict(x=input_data_network)
+    print(input_data_network.shape)
+    predictions = model.predict(x=[input_html_text['html_string'], input_data_network])
 
     predictions = categorial_to_eval(predictions)
 

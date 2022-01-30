@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from indexing import FeatureIndex
-from indexing import NArgumentModel, preprocess_data, scale_data
+from indexing import NArgumentModel_v3, preprocess_data, scale_data
 
 
 class ArgumentModel:
@@ -150,7 +150,7 @@ class StandardArgumentModel(ArgumentModel):
 
 
 class NNArgumentModel(ArgumentModel):
-    model: NArgumentModel
+    model: NArgumentModel_v3
 
     def __init__(self, index: FeatureIndex, model_name: str):
         """
@@ -158,7 +158,7 @@ class NNArgumentModel(ArgumentModel):
         :param index: index to get relevance data from
         """
         super().__init__(index)
-        self.model = NArgumentModel.load(model_name)
+        self.model = NArgumentModel_v3.load(model_name)
 
     def query(self, query: List[str], topic_relevant: pd.DataFrame,
               top_k: int = -1, **kwargs) -> pd.DataFrame:
@@ -188,3 +188,4 @@ class NNArgumentModel(ArgumentModel):
             topic_relevant.loc[doc_id, 'argument'] = results[i]
 
         return topic_relevant.nlargest(top_k, 'argument', keep='all')
+

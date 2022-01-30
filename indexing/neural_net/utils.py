@@ -32,32 +32,40 @@ def get_text_position_data(data: pd.DataFrame) -> np.ndarray:
     return np.expand_dims(tp_list, axis=3)
 
 
-def get_color_data(data: pd.DataFrame) -> np.ndarray:
-    cols = [
-        'image_average_color_r',
-        'image_average_color_g',
-        'image_average_color_b',
-        'image_dominant_color_r',
-        'image_dominant_color_g',
-        'image_dominant_color_b'
-    ]
+def get_color_data(data: pd.DataFrame, cols_to_get=[]) -> np.ndarray:
+    if not cols_to_get:
+        cols = [
+            'image_average_color_r',
+            'image_average_color_g',
+            'image_average_color_b',
+            'image_dominant_color_r',
+            'image_dominant_color_g',
+            'image_dominant_color_b'
+        ]
+    else:
+        cols = cols_to_get
+
     return np.asarray(data[cols])
 
 
-def get_primary_arg_data(data: pd.DataFrame) -> np.ndarray:
-    cols = [
-        'image_percentage_green',
-        'image_percentage_red',
-        'image_percentage_blue',
-        'image_percentage_yellow',
-        'image_percentage_bright',
-        'image_percentage_dark',
-        'text_len',
-        'text_sentiment_score',
-        'text_sentiment_score_con',
-        'image_type',
-        'image_roi_area'
-    ]
+def get_primary_arg_data(data: pd.DataFrame, cols_to_get=[]) -> np.ndarray:
+    if not cols_to_get:
+        cols = [
+            'image_percentage_green',
+            'image_percentage_red',
+            'image_percentage_blue',
+            'image_percentage_yellow',
+            'image_percentage_bright',
+            'image_percentage_dark',
+            'text_len',
+            'text_sentiment_score',
+            'text_sentiment_score_con',
+            'image_type',
+            'image_roi_area'
+        ]
+    else:
+        cols = cols_to_get
+
     return np.asarray(data[cols])
 
 

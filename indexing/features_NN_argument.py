@@ -229,9 +229,7 @@ def log_normal_density_function(x: float) -> float:
 
 
 def scale_data(df_row: pd.Series) -> pd.Series:
-    # df_row['html_sentiment_score'] = (df_row['html_sentiment_score'] + 1) / 2
     df_row['text_len'] = (1 - (1 / (math.exp(0.01 * df_row['text_len'])))) * 3
-    df_row['text_sentiment_score'] = (df_row['text_sentiment_score'] + 1) / 2
     df_row['image_percentage_green'] = df_row['image_percentage_green'] / 100
     df_row['image_percentage_red'] = df_row['image_percentage_red'] / 100
     df_row['image_percentage_blue'] = df_row['image_percentage_blue'] / 100
