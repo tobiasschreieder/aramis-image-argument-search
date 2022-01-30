@@ -90,7 +90,8 @@ class NArgumentModelV3(NArgumentModel):
         primary_inputs = Input(shape=len(primary_in_train[0]))
 
         combined_in = concatenate([tp_model.output, color_model.output, primary_inputs])
-        x = Dense(10, activation="relu")(combined_in)
+        x = Dense(20, activation="relu")(combined_in)
+        x = Dense(10, activation="relu")(x)
         x = Dense(5, activation="relu")(x)
         x = Dense(1, activation="sigmoid")(x)
 
@@ -98,7 +99,7 @@ class NArgumentModelV3(NArgumentModel):
         model.compile(loss="mse", optimizer="Adam", metrics=["accuracy"])
 
         history = model.fit(x=[tp_in_train, color_in_train, primary_in_train], y=y_train,
-                            epochs=200, batch_size=36,
+                            epochs=100, batch_size=36,
                             validation_data=([tp_in_test, color_in_test, primary_in_test], y_test))
 
         self.model = model
@@ -117,6 +118,7 @@ class NArgumentModelV3(NArgumentModel):
 class NArgumentModelV2(NArgumentModel):
     """
     - Just one fully connected Network with all features
+    - smaller Network due to lower number of features
     """
 
     def __init__(self, name: str):
@@ -138,18 +140,22 @@ class NArgumentModelV2(NArgumentModel):
         x_train = []
         x_test = []
         for i in range(len(primary_in_train)):
-            x_train.append(color_in_train[i] + primary_in_train[i])
-            x_test.append(color_in_test[i] + primary_in_test[i])
+            x_train.append(np.concatenate([color_in_train[i], primary_in_train[i]]))
+
+        for i in range(len(primary_in_test)):
+            x_test.append(np.concatenate([color_in_test[i], primary_in_test[i]]))
+
+        x_train = np.asarray(x_train)
+        x_test = np.asarray(x_test)
 
         model = Sequential()
-        model.add(Dense(10, input_dim=len(x_train), activation="relu"))
-        model.add(Dense(5, activation="relu"))
+        model.add(Dense(5, input_dim=len(x_train[0]), activation="relu"))
         model.add(Dense(1, activation="sigmoid"))
 
         model.compile(loss="mse", optimizer="Adam", metrics=["accuracy"])
 
         history = model.fit(x=x_train, y=y_train,
-                            epochs=300, batch_size=50,
+                            epochs=100, batch_size=36,
                             validation_data=(x_test, y_test))
 
         self.model = model
@@ -162,7 +168,9 @@ class NArgumentModelV2(NArgumentModel):
 
         x_in = []
         for i in range(len(primary_in)):
-            x_in.append(color_in[i] + primary_in[i])
+            x_in.append(np.concatenate([color_in[i], primary_in[i]]))
+
+        x_in = np.asarray(x_in)
 
         predictions = self.model.predict(x=x_in)
         return [val[0] for val in predictions]
@@ -206,18 +214,22 @@ class NArgumentModelV1(NArgumentModel):
         x_train = []
         x_test = []
         for i in range(len(primary_in_train)):
-            x_train.append(self.cols_to_get_color[i] + primary_in_train[i])
-            x_test.append(self.cols_to_get_color[i] + primary_in_test[i])
+            x_train.append(primary_in_train[i])
+
+        for i in range(len(primary_in_test)):
+            x_test.append(primary_in_test[i])
+
+        x_train = np.asarray(x_train)
+        x_test = np.asarray(x_test)
 
         model = Sequential()
-        model.add(Dense(10, input_dim=len(x_train), activation="relu"))
-        model.add(Dense(5, activation="relu"))
-        model.add(Dense(1, activation="sigmoid"))
+        model.add(Dense(10, input_dim=len(x_train[0]), activation="relu"))
+        model.add(Dense(1, activation="relu"))
 
         model.compile(loss="mse", optimizer="Adam", metrics=["accuracy"])
 
         history = model.fit(x=x_train, y=y_train,
-                            epochs=300, batch_size=50,
+                            epochs=100, batch_size=36,
                             validation_data=(x_test, y_test))
 
         self.model = model
@@ -225,12 +237,13 @@ class NArgumentModelV1(NArgumentModel):
         plot_history(history, self.dir_path.joinpath(self.name))
 
     def predict(self, data: pd.DataFrame) -> List[float]:
-        color_in = get_color_data(data, cols_to_get=self.cols_to_get_color)
         primary_in = get_primary_arg_data(data, cols_to_get=self.cols_to_get_primary)
 
         x_in = []
         for i in range(len(primary_in)):
-            x_in.append(color_in[i] + primary_in[i])
+            x_in.append(primary_in[i])
+
+        x_in = np.asarray(x_in)
 
         predictions = self.model.predict(x=x_in)
         return [val[0] for val in predictions]

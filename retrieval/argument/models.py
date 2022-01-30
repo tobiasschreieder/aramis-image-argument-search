@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from indexing import FeatureIndex
-from indexing import NArgumentModel_v3, preprocess_data, scale_data
+from indexing import preprocess_data, scale_data
 from indexing.neural_net.arg_network import NArgumentModel
 
 

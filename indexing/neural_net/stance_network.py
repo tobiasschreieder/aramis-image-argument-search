@@ -19,7 +19,6 @@ overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=15
 
 
 class NStanceModel(abc.ABC):
-
     model: keras.Model
     name: str
     dir_path: Path = Path('index/models/stance/')
@@ -50,6 +49,55 @@ class NStanceModel(abc.ABC):
 
     def predict(self, data: pd.DataFrame) -> List[float]:
         pass
+
+
+class NStanceModelV3(NStanceModel):
+    """
+    Using Class-Weights
+    """
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.dir_path = self.dir_path.joinpath('version_2')
+        self.dir_path.mkdir(parents=True, exist_ok=True)
+
+    def train(self, data: pd.DataFrame, test: List[int]) -> None:
+        df_train, df_test = split_data(data, test)
+        y_train = eval_to_categorical(df_train['stance_eval'].to_list())
+        y_test = eval_to_categorical(df_test['stance_eval'].to_list())
+
+        primary_in_train = get_primary_stance_data(df_train)
+        primary_in_test = get_primary_stance_data(df_test)
+
+        model = Sequential([
+            Dense(15, input_dim=primary_in_train.shape[1], activation='relu'),
+            Dense(8, activation='relu'),
+            Dense(3, activation='softmax')
+        ])
+
+        class_weight = {0: 1.,   # con
+                        1: 50.,  # neutral
+                        2: 2.}   # pro
+
+        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=["accuracy"])
+
+        history = model.fit(x=primary_in_train, y=y_train,
+                            epochs=200, batch_size=5,
+                            validation_data=(primary_in_test, y_test),
+                            class_weight=class_weight,
+                            callbacks=[overfitCallback])
+
+        self.model = model
+        model.save(self.dir_path.joinpath(self.name).joinpath('model.hS').as_posix())
+        plot_history(history, self.dir_path.joinpath(self.name))
+
+    def predict(self, data: pd.DataFrame) -> List[int]:
+        # tp_in = get_text_position_data(data)
+        # color_in = get_color_data(data)
+        primary_in = get_primary_stance_data(data)
+
+        predictions = self.model.predict(x=primary_in)
+        return categorical_to_eval(predictions)
 
 
 class NStanceModelV2(NStanceModel):
