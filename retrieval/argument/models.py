@@ -188,4 +188,3 @@ class NNArgumentModel(ArgumentModel):
             topic_relevant.loc[doc_id, 'argument'] = results[i]
 
         return topic_relevant.nlargest(top_k, 'argument', keep='all')
-

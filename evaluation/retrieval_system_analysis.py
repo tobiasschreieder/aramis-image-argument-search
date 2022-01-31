@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from indexing import TopicQueryTermIndex, get_all_topic_indexes, FeatureIndex, TopicTermIndex, Topic
-from retrieval import RetrievalSystem, TopicRankingDirichlet, NNArgumentModel, NNStanceModel
+from retrieval import RetrievalSystem, TopicRankingDirichlet, NNArgumentModel, NNStanceModel, StandardStanceModel, StandardArgumentModel
 from .analysis_helper import get_relevant_eval, calc_precision_recall, get_topic_correct
 from .configuration import Configuration
 
@@ -35,11 +35,9 @@ def get_retrieval_system(cfg: Configuration, arg_model: str, stance_model: str) 
         topic_model=TopicRankingDirichlet(
             t_indexes=topic_indexes, tq_index=tq_index, alpha=cfg.alpha, tq_alpha=cfg.tq_alpha
         ),
-        argument_model=NNArgumentModel(findex, arg_model),
-        stance_model=NNStanceModel(findex, stance_model),
+        argument_model=StandardArgumentModel(findex),
+        stance_model=StandardStanceModel(findex),
         topic_weight=cfg.topic_weight,
-        argument_weight=cfg.argument_weight,
-        prefetch_top_k=cfg.prefetch_top_k,
     )
 
 
@@ -104,14 +102,13 @@ def find_rs_weights(rs: RetrievalSystem, topics: List[Topic], strong: bool = Tru
     for w_top in np.linspace(0, 1, 5):
         w_arg = 1 - w_top
         i -= 1
-        log.info(f'cur w:%s', (w_top, w_arg, 1 - w_top - w_arg))
+        log.info(f'cur w:%s', (w_top, w_arg))
         then = datetime.datetime.now()
         rs.topic_weight = w_top
         rs.arg_weight = w_arg
-        rs.stance_weight = 0
         temp_precision = round(avg_topic_precision(rs, topics, k, strong=strong)[precision_pos], eta)
         if temp_precision > best_precision:
-            best_weights = (w_top, w_arg, 1 - w_top - w_arg)
+            best_weights = (w_top, w_arg)
             best_precision = temp_precision
 
         took = datetime.datetime.now() - then
@@ -129,7 +126,6 @@ def main():
     topics = [Topic.get(t) for t in [2, 4, 8, 21, 27, 33, 36, 37, 40, 43, 45, 48]]
     rs.topic_weight = 0
     rs.arg_weight = 1
-    rs.stance_weight = 0
     log.info('Strong@20: %s', round(avg_topic_precision(rs, topics, 20, strong=True, filter_topic=True)[2], 5))
     log.info('Strong@20: %s', round(avg_topic_precision(rs, topics, 20, strong=True, filter_topic=False)[2], 5))
     log.info('Strong@50: %s', round(avg_topic_precision(rs, topics, 50, strong=True, filter_topic=True)[2], 5))

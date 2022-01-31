@@ -211,8 +211,6 @@ def plot_stance_confusion(model, topics: List[int]) -> go.Figure:
     a.resize((rows, cols), refcheck=False)
 
     avg_error = 0
-    avg_count = 0
-
     for row in range(rows):
         for col in range(cols):
             t = a[row, col]
@@ -229,22 +227,18 @@ def plot_stance_confusion(model, topics: List[int]) -> go.Figure:
 
             df = calc_topic_scores(model, topic, infos[0])
 
-            # show_legend = False
-            # if row == 0 and col == 0:
-            #     show_legend = True
-
             x = ['CON', 'NEUTRAL', 'PRO']
             y = [-1, 0, 1]
             z = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-            topic_error = 0
+            topic_acc = 0
             for j, eval_val in enumerate(x):
                 count = df.loc[(df['value'] == eval_val), 'value'].count()
                 for i, score in enumerate(y):
                     z[i][j] = df.loc[(df['value'] == eval_val) & (df['score'] == score), 'value'].count() / count
-                    print(f'val: {eval_val}, score: {score}, i|j {i}|{j}, val count: {count}, score count {z[i][j]}')
-                    if i != j:
-                        topic_error += z[i][j]
-            avg_error += topic_error / 3
+                    # print(f'val: {eval_val}, score: {score}, i|j {i}|{j}, val count: {count}, score count {z[i][j]}')
+                    if i == j:
+                        topic_acc += z[i][j]
+            avg_error += topic_acc / 3
             z.reverse()
             y = x.copy()
             y.reverse()
@@ -252,6 +246,6 @@ def plot_stance_confusion(model, topics: List[int]) -> go.Figure:
                             row=row + 1, col=col + 1,)
 
     avg_error /= len(topics)
-    fig.update_layout(title=f'{infos[1]} Scoring Confusion matrix<br><sup>Avg Error: {round(avg_error, 4)}</sup>')
+    fig.update_layout(title=f'{infos[1]} Scoring Confusion matrix<br><sup>Avg Accuracy: {round(avg_error, 4)}</sup>')
 
     return fig
