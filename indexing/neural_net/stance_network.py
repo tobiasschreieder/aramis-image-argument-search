@@ -29,11 +29,13 @@ class NStanceModel(abc.ABC):
         self.topics_to_skip = [15, 31, 36, 37, 43, 45, 48]
 
     @staticmethod
-    def get(name: str, version: int = 2) -> 'NStanceModel':
+    def get(name: str, version: int = 3) -> 'NStanceModel':
         if version == 1:
             return NStanceModelV1(name)
-        else:
+        elif version == 2:
             return NStanceModelV2(name)
+        else:
+            return NStanceModelV3(name)
 
     @staticmethod
     def load(name: str, version: int = 2) -> 'NStanceModel':
@@ -58,7 +60,7 @@ class NStanceModelV3(NStanceModel):
 
     def __init__(self, name: str):
         super().__init__(name)
-        self.dir_path = self.dir_path.joinpath('version_2')
+        self.dir_path = self.dir_path.joinpath('version_3')
         self.dir_path.mkdir(parents=True, exist_ok=True)
 
     def train(self, data: pd.DataFrame, test: List[int]) -> None:
