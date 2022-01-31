@@ -80,12 +80,12 @@ def main():
     topics_no = [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
     topics = [Topic.get(t) for t in topics_no]
 
-    data = scale_data(preprocessed_data(findex, topics, train=True))
+    # data = scale_data(preprocessed_data(findex, topics, train=True))
+    #
+    # NArgumentModel.get('test_1', version=3).train(data, test=[27, 31, 33])
+    # NStanceModel.get('test_1', version=2).train(data, test=[27, 31, 33])
 
-    NArgumentModel.get('clean_test_1', version=1).train(data, test=[27, 31, 33])
-    # NStanceModel.get('clean_test_1', version=2).train(data, test=[27, 31, 33])
-
-    analysis_main(model_name='clean_test_1', topics_no=topics_no, version=1)
+    analysis_main(model_name='test_1', topics_no=topics_no)
     # rs_analysis_main()
 
 

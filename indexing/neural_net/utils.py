@@ -150,9 +150,9 @@ def categorical_to_eval(data: List[Tuple[float, float, float]]) -> List[int]:
     output_data = []
     for value in data:
         if value[0] >= value[1] and value[0] > value[2]:
-            output_data.append(1)
-        elif value[2] >= value[0] and value[2] > value[1]:
             output_data.append(-1)
+        elif value[2] >= value[0] and value[2] > value[1]:
+            output_data.append(1)
         else:
             output_data.append(0)
 
@@ -162,7 +162,7 @@ def categorical_to_eval(data: List[Tuple[float, float, float]]) -> List[int]:
 def eval_to_categorical(data: List[int]) -> np.ndarray:
     output_data = []
     for value in data:
-        if value == 0.0:
+        if value == -1.0:
             output_data.append([1, 0, 0])
         elif value == 1.0:
             output_data.append([0, 0, 1])
