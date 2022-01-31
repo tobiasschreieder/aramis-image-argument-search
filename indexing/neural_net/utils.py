@@ -15,8 +15,16 @@ import matplotlib.pyplot as plt
 
 def split_data(data: pd.DataFrame, test: List[int]) -> Tuple[pd.DataFrame, pd.DataFrame]:
     df = data.sample(frac=1)
-    df_test = df.loc[df['topic'].isin(test)]
-    df_train = df.loc[~df['topic'].isin(test)]
+    if not test:
+        split_factor = 0.66
+        df_len = len(data.index)
+        split_index = round(df_len * split_factor)
+
+        df_train = data.iloc[:split_index, :]
+        df_test = data.iloc[split_index:, :]
+    else:
+        df_test = df.loc[df['topic'].isin(test)]
+        df_train = df.loc[~df['topic'].isin(test)]
     return df_train, df_test
 
 
@@ -32,8 +40,8 @@ def get_text_position_data(data: pd.DataFrame) -> np.ndarray:
     return np.expand_dims(tp_list, axis=3)
 
 
-def get_color_data(data: pd.DataFrame, cols_to_get=[]) -> np.ndarray:
-    if not cols_to_get:
+def get_color_data(data: pd.DataFrame, cols_to_use=[]) -> np.ndarray:
+    if not cols_to_use:
         cols = [
             'image_average_color_r',
             'image_average_color_g',
@@ -43,13 +51,13 @@ def get_color_data(data: pd.DataFrame, cols_to_get=[]) -> np.ndarray:
             'image_dominant_color_b'
         ]
     else:
-        cols = cols_to_get
+        cols = cols_to_use
 
     return np.asarray(data[cols])
 
 
-def get_primary_arg_data(data: pd.DataFrame, cols_to_get=[]) -> np.ndarray:
-    if not cols_to_get:
+def get_primary_arg_data(data: pd.DataFrame, cols_to_use=[]) -> np.ndarray:
+    if not cols_to_use:
         cols = [
             'image_percentage_green',
             'image_percentage_red',
@@ -64,7 +72,7 @@ def get_primary_arg_data(data: pd.DataFrame, cols_to_get=[]) -> np.ndarray:
             'image_roi_area'
         ]
     else:
-        cols = cols_to_get
+        cols = cols_to_use
 
     return np.asarray(data[cols])
 
@@ -117,9 +125,9 @@ def create_test_position_model(shape: Tuple[int, int, int]) -> keras.Model:
     return model
 
 
-def create_color_model() -> keras.Model:
+def create_color_model(input_dim=6) -> keras.Model:
     color_model = Sequential()
-    color_model.add(Dense(3, input_dim=6, activation='relu'))
+    color_model.add(Dense(3, input_dim=input_dim, activation='relu'))
     return color_model
 
 

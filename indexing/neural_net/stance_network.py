@@ -68,26 +68,27 @@ class NStanceModelV3(NStanceModel):
         y_train = eval_to_categorical(df_train['stance_eval'].to_list())
         y_test = eval_to_categorical(df_test['stance_eval'].to_list())
 
-        primary_in_train = get_primary_stance_data(df_train)
-        primary_in_test = get_primary_stance_data(df_test)
+        primary_in_train = get_primary_stance_data(df_train, cols_to_get=self.cols_to_get)
+        primary_in_test = get_primary_stance_data(df_test, cols_to_get=self.cols_to_get)
 
         model = Sequential([
-            Dense(15, input_dim=primary_in_train.shape[1], activation='relu'),
-            Dense(8, activation='relu'),
+            Dense(40, input_dim=primary_in_train.shape[1], activation='relu'),
+            Dense(20, activation='relu'),
+            Dense(8, activation='sigmoid'),
             Dense(3, activation='softmax')
         ])
 
-        class_weight = {0: 1.,   # con
-                        1: 50.,  # neutral
-                        2: 2.}   # pro
+        class_weight = {0: 4.7,   # con 4.7
+                        1: 1,     # neutral 1
+                        2: 3.3}   # pro 3.3
 
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=["accuracy"])
 
         history = model.fit(x=primary_in_train, y=y_train,
-                            epochs=200, batch_size=5,
+                            epochs=120, batch_size=36,
                             validation_data=(primary_in_test, y_test),
-                            class_weight=class_weight,
-                            callbacks=[overfitCallback])
+                            class_weight=class_weight)
+                            # callbacks=[overfitCallback])
 
         self.model = model
         model.save(self.dir_path.joinpath(self.name).joinpath('model.hS').as_posix())
@@ -112,6 +113,7 @@ class NStanceModelV2(NStanceModel):
         super().__init__(name)
         self.dir_path = self.dir_path.joinpath('version_2')
         self.dir_path.mkdir(parents=True, exist_ok=True)
+        self.cols_to_get = []
 
     def train(self, data: pd.DataFrame, test: List[int]) -> None:
         df_train, df_test = split_data(data, test)
@@ -122,7 +124,8 @@ class NStanceModelV2(NStanceModel):
         primary_in_test = get_primary_stance_data(df_test)
 
         model = Sequential([
-            Dense(15, input_dim=primary_in_train.shape[1], activation='relu'),
+            Dense(20, input_dim=primary_in_train.shape[1], activation='relu'),
+            Dense(15, activation='relu'),
             Dense(8, activation='relu'),
             Dense(3, activation='softmax')
         ])
@@ -130,9 +133,9 @@ class NStanceModelV2(NStanceModel):
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=["accuracy"])
 
         history = model.fit(x=primary_in_train, y=y_train,
-                            epochs=200, batch_size=5,
-                            validation_data=(primary_in_test, y_test),
-                            callbacks=[overfitCallback])
+                            epochs=100, batch_size=36,
+                            validation_data=(primary_in_test, y_test))
+                            # callbacks=[overfitCallback])
 
         self.model = model
         model.save(self.dir_path.joinpath(self.name).joinpath('model.hS').as_posix())
@@ -188,9 +191,9 @@ class NStanceModelV1(NStanceModel):
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=["accuracy"])
 
         history = model.fit(x=primary_in_train, y=y_train,
-                            epochs=200, batch_size=5,
-                            validation_data=(primary_in_test, y_test),
-                            callbacks=[overfitCallback])
+                            epochs=100, batch_size=36,
+                            validation_data=(primary_in_test, y_test))
+                            # callbacks=[overfitCallback])
 
         self.model = model
         model.save(self.dir_path.joinpath(self.name).joinpath('model.hS').as_posix())

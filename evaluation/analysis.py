@@ -36,10 +36,10 @@ plotly_color = qualitative.Plotly
 # best cfg = all best parameters
 
 
-def main(model_name: str, topics_no: list):
+def main(model_name: str, topics_no: list, version: int):
 
     findex = FeatureIndex.load(23158)
 
-    # plot_arg_scoring_eval(NNArgumentModel(findex, model_name, version=3), topics_no).show()
+    # plot_arg_scoring_eval(NNArgumentModel(findex, model_name, version=version), topics_no).show()
     # plot_stance_scoring_eval(NNStanceModel(findex, model_name_stance), topics_no).show()
-    plot_stance_confusion(NNStanceModel(findex, model_name, version=3), topics_no).show()
+    plot_stance_confusion(NNStanceModel(findex, model_name, version=version), topics_no).show()
