@@ -7,7 +7,7 @@ from indexing.feature import sentiment_detection
 
 
 def query_frequency(query: List[str], text: List[str]) -> float:
-    rho = 1
+    rho = 0
     doc_length = len(text)
     if doc_length == 0:
         return 0
@@ -58,6 +58,6 @@ def alignment_query(query: List[str], text: List[str]) -> float:
     # normalize alignment-score
     if not number_alignments == 0:
         avg_score = sum_score / number_alignments
-        return avg_score
+        return avg_score / len(query)
     else:
         return 0

@@ -23,7 +23,7 @@ def preprocessed_data(fidx: FeatureIndex, topics: List[Topic], train: bool = Fal
 def preprocess_data(fidx: FeatureIndex, ids: List[str], query: List[str], train: bool = False,
                     topic: Topic = None) -> pd.DataFrame:
     if topic is not None:
-        file = Path(f'index/tmp/prep_data_{topic.number}.pkl')
+        file = Path(f'index/prep_data/prep_data_{topic.number}.pkl')
         if file.exists():
             return pd.read_pickle(file)
 
@@ -55,7 +55,7 @@ def preprocess_data(fidx: FeatureIndex, ids: List[str], query: List[str], train:
 
     data.dropna(axis=0, inplace=True)
     if topic is not None:
-        file = Path(f'index/tmp/prep_data_{topic.number}.pkl')
+        file = Path(f'index/prep_data/prep_data_{topic.number}.pkl')
         file.parent.mkdir(parents=True, exist_ok=True)
         data.to_pickle(file)
     return data
@@ -63,22 +63,22 @@ def preprocess_data(fidx: FeatureIndex, ids: List[str], query: List[str], train:
 
 def scale_data(data: pd.DataFrame) -> pd.DataFrame:
     scaled = data.copy()
-    _scale_column(scaled, 'image_percentage_green', 100)
-    _scale_column(scaled, 'image_percentage_red', 100)
-    _scale_column(scaled, 'image_percentage_blue', 100)
-    _scale_column(scaled, 'image_percentage_yellow', 100)
-    _scale_column(scaled, 'image_percentage_bright', 100)
-    _scale_column(scaled, 'image_percentage_dark', 100)
-    _scale_column(scaled, 'image_average_color_r', 360)
-    _scale_column(scaled, 'image_average_color_g', 360)
-    _scale_column(scaled, 'image_average_color_b', 360)
-    _scale_column(scaled, 'image_dominant_color_r', 360)
-    _scale_column(scaled, 'image_dominant_color_g', 360)
-    _scale_column(scaled, 'image_dominant_color_b', 360)
+    scaled = _scale_column(scaled, 'image_percentage_green', 100)
+    scaled = _scale_column(scaled, 'image_percentage_red', 100)
+    scaled = _scale_column(scaled, 'image_percentage_blue', 100)
+    scaled = _scale_column(scaled, 'image_percentage_yellow', 100)
+    scaled = _scale_column(scaled, 'image_percentage_bright', 100)
+    scaled = _scale_column(scaled, 'image_percentage_dark', 100)
+    scaled = _scale_column(scaled, 'image_average_color_r', 360)
+    scaled = _scale_column(scaled, 'image_average_color_g', 360)
+    scaled = _scale_column(scaled, 'image_average_color_b', 360)
+    scaled = _scale_column(scaled, 'image_dominant_color_r', 360)
+    scaled = _scale_column(scaled, 'image_dominant_color_g', 360)
+    scaled = _scale_column(scaled, 'image_dominant_color_b', 360)
 
-    scaled.assign(text_len=scaled['text_len'].map(_text_len_scale),
-                  image_roi_area=scaled['image_roi_area'].map(_log_normal_density_function),
-                  )
+    scaled = scaled.assign(text_len=scaled['text_len'].map(_text_len_scale),
+                           image_roi_area=scaled['image_roi_area'].map(_log_normal_density_function),
+                           )
 
     _split_neg(scaled, 'text_sentiment_score')
     _split_neg(scaled, 'query_sentiment')
@@ -89,9 +89,10 @@ def scale_data(data: pd.DataFrame) -> pd.DataFrame:
     return scaled
 
 
-def _scale_column(data: pd.DataFrame, name: str, factor: float) -> None:
+def _scale_column(data: pd.DataFrame, name: str, factor: float) -> pd.DataFrame:
     if name in data.columns:
-        data.assign(**{name: (data[name]/factor)})
+        return data.assign(**{name: (data[name]/factor)})
+    return data
 
 
 def _split_neg(data: pd.DataFrame, name: str) -> None:
@@ -112,4 +113,4 @@ def _log_normal_density_function(x: float) -> float:
 
 
 def _text_len_scale(x: float) -> float:
-    return (1 - (1 / (math.exp(0.01 * x)))) * 3
+    return 1 - (1 / (math.exp(0.01 * x)))
