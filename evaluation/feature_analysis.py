@@ -127,8 +127,9 @@ def analyse_network_features_stance(data: pd.DataFrame):
     cols_to_exclude = []
 
     feature_to_remove = [
+        [],
         ['image_percentage_green', 'image_percentage_red'],
-        ['image_percentage_yellow', 'image_percentage_bright'],
+        ['image_percentage_yellow', 'image_percentage_blue'],
         ['image_percentage_bright', 'image_percentage_dark'],
         ['html_sentiment_score', 'html_sentiment_score_con'],
         ['text_len'],
@@ -147,7 +148,7 @@ def analyse_network_features_stance(data: pd.DataFrame):
     val_accuracy = []
 
     for i in range(len(feature_to_remove)):
-        print("analyse %s/%s" % (i, len(feature_to_remove) + 1))
+        print("analyse %s/%s" % (i, len(feature_to_remove)))
 
         cols_to_use_temp = cols_to_use.copy()
 

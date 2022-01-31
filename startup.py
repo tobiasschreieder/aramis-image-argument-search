@@ -84,9 +84,9 @@ def main():
     data = scale_data(preprocessed_data(findex, topics, train=True))
 
     # NArgumentModel.get('test_final', version=3).train(data, test=[27, 31, 33])
-    NStanceModel.get('test_1', version=3).train(data, test=[27, 31, 33])
+    # NStanceModel.get('test_final', version=3).train(data, test=[27, 31, 33])
 
-    analysis_main(model_name='test_final', topics_no=topics_no, version=3)
+    # analysis_main(model_name='test_final', topics_no=topics_no, version=3)
     # rs_analysis_main()
 
     # analyse_network_features_arg(data)

@@ -66,6 +66,32 @@ class NStanceModelV3(NStanceModel):
         super().__init__(name)
         self.dir_path = self.dir_path.joinpath('version_3')
         self.dir_path.mkdir(parents=True, exist_ok=True)
+        self.cols_to_use = [
+            'image_percentage_green',
+            'image_percentage_red',
+            'image_percentage_blue',
+            'image_percentage_yellow',
+            'image_percentage_bright',
+            'image_percentage_dark',
+            'html_sentiment_score',
+            'html_sentiment_score_con',
+            'text_len',
+            'text_sentiment_score',
+            'text_sentiment_score_con',
+            'image_average_color_r',
+            'image_average_color_g',
+            'image_average_color_b',
+            'image_dominant_color_r',
+            'image_dominant_color_g',
+            'image_dominant_color_b',
+            'query_html_eq',
+            'query_image_eq',
+            'query_html_context',
+            'query_html_context_con',
+            'query_image_context',
+            'query_image_context_con',
+            'query_image_align'
+        ]
 
     def train(self, data: pd.DataFrame, test: List[int]) -> None:
         df_train, df_test = split_data(data, test)
@@ -95,9 +121,9 @@ class NStanceModelV3(NStanceModel):
             if i[2] == 1:
                 count_pro += 1
 
-        class_weight = {0: count_neutral/count_con,   # con 4.7
-                        1: 1,                         # neutral 1
-                        2: count_neutral/count_pro}   # pro 3.3
+        class_weight = {0: count_neutral / count_con,  # con 4.7
+                        1: 1,  # neutral 1
+                        2: count_neutral / count_pro}  # pro 3.3
 
         print(class_weight)
 
@@ -106,17 +132,19 @@ class NStanceModelV3(NStanceModel):
         history = model.fit(x=primary_in_train, y=y_train,
                             epochs=120, batch_size=18,
                             validation_data=(primary_in_test, y_test),
-                            class_weight=class_weight,
+                            class_weight=class_weight, verbose=0,
                             callbacks=[overfitCallback])
 
         self.model = model
         model.save(self.dir_path.joinpath(self.name).joinpath('model.hS').as_posix())
         plot_history(history, self.dir_path.joinpath(self.name))
 
+        return history.history['val_accuracy']
+
     def predict(self, data: pd.DataFrame) -> List[int]:
         # tp_in = get_text_position_data(data)
         # color_in = get_color_data(data)
-        primary_in = get_primary_stance_data(data)
+        primary_in = get_primary_stance_data(data, cols_to_get=self.cols_to_use)
 
         predictions = self.model.predict(x=primary_in)
         return categorical_to_eval(predictions)
@@ -135,7 +163,6 @@ class NStanceModelV2(NStanceModel):
         self.cols_to_get = []
 
     def train(self, data: pd.DataFrame, test: List[int]) -> None:
-
         df_train, df_test = split_data(data, test)
         y_train = eval_to_categorical(df_train['stance_eval'].to_list())
         y_test = eval_to_categorical(df_test['stance_eval'].to_list())
@@ -155,7 +182,7 @@ class NStanceModelV2(NStanceModel):
         history = model.fit(x=primary_in_train, y=y_train,
                             epochs=100, batch_size=36,
                             validation_data=(primary_in_test, y_test))
-                            # callbacks=[overfitCallback])
+        # callbacks=[overfitCallback])
 
         self.model = model
         model.save(self.dir_path.joinpath(self.name).joinpath('model.hS').as_posix())
@@ -213,7 +240,7 @@ class NStanceModelV1(NStanceModel):
         history = model.fit(x=primary_in_train, y=y_train,
                             epochs=100, batch_size=36,
                             validation_data=(primary_in_test, y_test))
-                            # callbacks=[overfitCallback])
+        # callbacks=[overfitCallback])
 
         self.model = model
         model.save(self.dir_path.joinpath(self.name).joinpath('model.hS').as_posix())
