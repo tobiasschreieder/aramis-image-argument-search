@@ -5,10 +5,11 @@ from logging.handlers import TimedRotatingFileHandler
 
 from config import Config
 from evaluation.analysis import main as analysis_main
-from evaluation.feature_analysis import analyse_network_features_arg
+from evaluation.feature_analysis import analyse_network_features_arg, analyse_network_features_stance
 from frontend import start_server
 from indexing import StandardTermIndex, FeatureIndex, TopicQueryTermIndex, get_all_topic_indexes, \
-    Topic, NStanceModel, preprocessed_data, scale_data, NArgumentModel
+    Topic, NStanceModel, preprocessed_data, scale_data
+from indexing.neural_net.arg_network import NArgumentModel
 from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel
 
 
@@ -82,13 +83,14 @@ def main():
 
     data = scale_data(preprocessed_data(findex, topics, train=True))
 
-    # NArgumentModel.get('clean_test_1', version=1).train(data, test=[27, 31, 33])
-    # NStanceModel.get('clean_test_1', version=3).train(data, test=[27, 31, 33])
+    # NArgumentModel.get('test_final', version=3).train(data, test=[27, 31, 33])
+    NStanceModel.get('test_1', version=3).train(data, test=[27, 31, 33])
 
-    analysis_main(model_name='clean_test_1', topics_no=topics_no, version=3)
+    analysis_main(model_name='test_final', topics_no=topics_no, version=3)
     # rs_analysis_main()
 
-    analyse_network_features_arg(data)
+    # analyse_network_features_arg(data)
+    analyse_network_features_stance(data)
 
 
 if __name__ == '__main__':

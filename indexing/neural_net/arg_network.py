@@ -19,11 +19,10 @@ from .utils import split_data, get_text_position_data, get_color_data, create_te
 
 pd.options.mode.chained_assignment = None
 tf.get_logger().setLevel('ERROR')
-overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=10)
+overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=30)
 
 
 class NArgumentModel(abc.ABC):
-
     model: keras.Model
     name: str
     dir_path: Path = Path('index/models/arg/')
@@ -79,9 +78,21 @@ class NArgumentModelV3(NArgumentModel):
         super().__init__(name)
         self.dir_path = self.dir_path.joinpath('version_3')
         self.dir_path.mkdir(parents=True, exist_ok=True)
+        self.cols_to_use_primary = [
+            'image_percentage_green',
+            'image_percentage_red',
+            'image_percentage_bright',
+            'image_percentage_dark',
+            'text_len',
+            'text_sentiment_score',
+            'text_sentiment_score_con',
+            'image_type',
+            'image_roi_area'
+        ]
         self.use_textposition = True
 
     def train(self, data: pd.DataFrame, test: List[int]) -> None:
+
         data = data.loc[~data['topic'].isin(self.topics_to_skip)]
         df_train, df_test = split_data(data, test)
         y_train = np.asarray(df_train['arg_eval'])
@@ -118,11 +129,13 @@ class NArgumentModelV3(NArgumentModel):
         x = Dense(5, activation="relu")(x)
         x = Dense(1, activation="sigmoid")(x)
 
+        print("train: ", len(inputs_inputs))
+
         model = Model(inputs=inputs_inputs, outputs=x)
         model.compile(loss="mse", optimizer="Adam", metrics=["accuracy"])
 
         history = model.fit(x=inputs, y=y_train,
-                            epochs=200, batch_size=36,
+                            epochs=200, batch_size=18,
                             validation_data=(validation_data, y_test),
                             callbacks=[overfitCallback], verbose=0)
 
@@ -134,10 +147,16 @@ class NArgumentModelV3(NArgumentModel):
 
     def predict(self, data: pd.DataFrame) -> List[float]:
         tp_in = get_text_position_data(data)
-        color_in = get_color_data(data)
-        primary_in = get_primary_arg_data(data)
+        color_in = get_color_data(data, self.cols_to_use_color)
+        primary_in = get_primary_arg_data(data, self.cols_to_use_primary)
 
-        predictions = self.model.predict(x=[tp_in, color_in, primary_in])
+        if self.use_textposition:
+            input = [tp_in, color_in, primary_in]
+        else:
+            input = [color_in, primary_in]
+
+        print("prediction: ", len(input))
+        predictions = self.model.predict(x=input)
         return [val[0] for val in predictions]
 
     def set_use_textposition(self, use_textposition):

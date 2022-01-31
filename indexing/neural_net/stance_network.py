@@ -15,7 +15,7 @@ from .utils import split_data, get_text_position_data, get_color_data, get_prima
 # to get no console-print from tensorflow
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 pd.options.mode.chained_assignment = None
-overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=15)
+overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=8)
 
 
 class NStanceModel(abc.ABC):
@@ -27,6 +27,7 @@ class NStanceModel(abc.ABC):
         self.dir_path.mkdir(parents=True, exist_ok=True)
         self.name = name
         self.topics_to_skip = [15, 31, 36, 37, 43, 45, 48]
+        self.cols_to_use = []
 
     @staticmethod
     def get(name: str, version: int = 3) -> 'NStanceModel':
@@ -52,6 +53,9 @@ class NStanceModel(abc.ABC):
     def predict(self, data: pd.DataFrame) -> List[float]:
         pass
 
+    def set_cols_to_use(self, cols_to_use):
+        self.cols_to_use = cols_to_use
+
 
 class NStanceModelV3(NStanceModel):
     """
@@ -68,27 +72,42 @@ class NStanceModelV3(NStanceModel):
         y_train = eval_to_categorical(df_train['stance_eval'].to_list())
         y_test = eval_to_categorical(df_test['stance_eval'].to_list())
 
-        primary_in_train = get_primary_stance_data(df_train, cols_to_get=self.cols_to_get)
-        primary_in_test = get_primary_stance_data(df_test, cols_to_get=self.cols_to_get)
+        primary_in_train = get_primary_stance_data(df_train, cols_to_get=self.cols_to_use)
+        primary_in_test = get_primary_stance_data(df_test, cols_to_get=self.cols_to_use)
 
         model = Sequential([
             Dense(40, input_dim=primary_in_train.shape[1], activation='relu'),
             Dense(20, activation='relu'),
-            Dense(8, activation='sigmoid'),
+            Dense(8, activation='relu'),
             Dense(3, activation='softmax')
         ])
 
-        class_weight = {0: 4.7,   # con 4.7
-                        1: 1,     # neutral 1
-                        2: 3.3}   # pro 3.3
+        count_pro = 0
+        count_neutral = 0
+        count_con = 0
+        count = 0
+        for i in y_train:
+            count += 1
+            if i[0] == 1:
+                count_con += 1
+            if i[1] == 1:
+                count_neutral += 1
+            if i[2] == 1:
+                count_pro += 1
+
+        class_weight = {0: count_neutral/count_con,   # con 4.7
+                        1: 1,                         # neutral 1
+                        2: count_neutral/count_pro}   # pro 3.3
+
+        print(class_weight)
 
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=["accuracy"])
 
         history = model.fit(x=primary_in_train, y=y_train,
-                            epochs=120, batch_size=36,
+                            epochs=120, batch_size=18,
                             validation_data=(primary_in_test, y_test),
-                            class_weight=class_weight)
-                            # callbacks=[overfitCallback])
+                            class_weight=class_weight,
+                            callbacks=[overfitCallback])
 
         self.model = model
         model.save(self.dir_path.joinpath(self.name).joinpath('model.hS').as_posix())
@@ -116,6 +135,7 @@ class NStanceModelV2(NStanceModel):
         self.cols_to_get = []
 
     def train(self, data: pd.DataFrame, test: List[int]) -> None:
+
         df_train, df_test = split_data(data, test)
         y_train = eval_to_categorical(df_train['stance_eval'].to_list())
         y_test = eval_to_categorical(df_test['stance_eval'].to_list())

@@ -125,7 +125,9 @@ def create_test_position_model(shape: Tuple[int, int, int]) -> keras.Model:
     return model
 
 
-def create_color_model(input_dim=6) -> keras.Model:
+def create_color_model(input_dim: int) -> keras.Model:
+    if input_dim == 0:
+        input_dim = 6
     color_model = Sequential()
     color_model.add(Dense(3, input_dim=input_dim, activation='relu'))
     return color_model
