@@ -19,7 +19,7 @@ from .utils import split_data, get_text_position_data, get_color_data, create_te
 
 pd.options.mode.chained_assignment = None
 tf.get_logger().setLevel('ERROR')
-overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=30)
+overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=8)
 
 
 class NArgumentModel(abc.ABC):

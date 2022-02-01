@@ -163,7 +163,7 @@ class StandardStanceModel(StanceModel):
 class NNStanceModel(StanceModel):
     model: NStanceModel
 
-    def __init__(self, index: FeatureIndex, model_name: str, version: int = 2):
+    def __init__(self, index: FeatureIndex, model_name: str, version: int = 3):
         """
         Constructor for model base class,
         :param index: index to get relevance data from

@@ -17,8 +17,9 @@ At least please run the ``run_once.py`` just once. After that everything is set 
 
 ## Evaluation
 
-| Models used      | topic_weight | arg_weight | stance_weight | Topic filtered | strong@20 | strong@50 | both@20 | both@50 | topics     |
-|------------------|--------------|------------|---------------|----------------|-----------|-----------|---------|---------|------------|
-| NNArg & NNStance | 0            | 1          | 0             | False          | 0.0923    | ?         | 0.158   | ?       | all evaled |
-| NNArg & NNStance | 0            | 1          | 0             | True           | 0.1337    | 0.1316    | 0.2324  | 0.2309  | all evaled |
-| NNArg & NNStance | 1            | 0          | 0             | False          | 0.0736    | ?         | 0.131   | ?       | all evaled |
+| Models used      | topic_weight | arg_weight | Topic filtered | Pstrong@20 | strong@50 | both@20 | both@50 | topics        |
+|------------------|--------------|------------|----------------|------------|-----------|---------|---------|---------------|
+| NNArg & NNStance | 0            | 1          | False          | 0.0923     | ?         | 0.158   | ?       | all evaled    |
+| NNArg & NNStance | 0            | 1          | True           | 0.1337     | 0.1316    | 0.2324  | 0.2309  | all evaled    |
+| NNArg & NNStance | 1            | 0          | False          | 0.0736     | ?         | 0.131   | ?       | all evaled    |
+| StandardModels   | 0.454        | 0.546      | True           | 0.1625     | ?         | ?       | ?       | 9, 27, 33, 36 |

@@ -111,7 +111,7 @@ class StandardArgumentModel(ArgumentModel):
                 ((math.log((-x + 1), 10) + 0.49) ** 2) / -0.0512) * 0.12)
 
     def query(self, query: List[str], topic_relevant: pd.DataFrame,
-              top_k: int = -1) -> pd.DataFrame:
+              top_k: int = -1, **kwargs) -> pd.DataFrame:
         """
         Queries a given preprocessed query against the index using a model scoring function
 
@@ -137,7 +137,7 @@ class StandardArgumentModel(ArgumentModel):
         df_norm = df / df.abs().max()
 
         if self.weights is None:
-            np_weights = np.array([0, 1, 1, 1, 1])
+            np_weights = np.array([1, 1, 1, 1, 1])
         else:
             np_weights = np.array(self.weights)
 

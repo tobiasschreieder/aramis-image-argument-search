@@ -43,6 +43,8 @@ def plot_stance_scoring_eval(model: StanceModel, topics: List[int]) -> go.Figure
 
 def plot_scoring_eval(model, topics: List[int],
                       infos: Tuple[str, str, Tuple[str, str], Tuple[str, str], Tuple[str, str], str]) -> go.Figure:
+    short_title = False
+
     if len(topics) <= 2:
         rows = 2
         cols = 1
@@ -59,6 +61,7 @@ def plot_scoring_eval(model, topics: List[int],
         rows = 3
         cols = 4
     elif len(topics) <= 20:
+        short_title = True
         rows = 4
         cols = 5
     else:
@@ -74,13 +77,14 @@ def plot_scoring_eval(model, topics: List[int],
             topics = topics[:20]
         print('Cant plot more than 20 topics in one plot, tried %s', len(topics))
 
-    k = 50
+    k = 20
     round_int = 4
 
     sub_titel = []
     for t in topics:
         topic_title = Topic.get(t).title
-        topic_title = (topic_title[:27] + '..') if len(topic_title) > 30 else topic_title
+        if short_title:
+            topic_title = (topic_title[:27] + '..') if len(topic_title) > 30 else topic_title
         sub_titel.append(f'Topic {Topic.get(t).number} - {topic_title}')
     fig = make_subplots(rows=rows, cols=cols, shared_xaxes=True, x_title='Score', y_title='Count',
                         vertical_spacing=0.05, horizontal_spacing=0.01, subplot_titles=sub_titel)
@@ -162,6 +166,7 @@ def plot_scoring_eval(model, topics: List[int],
 
 
 def plot_stance_confusion(model, topics: List[int]) -> go.Figure:
+    short_title = False
     if len(topics) <= 1:
         rows = 1
         cols = 1
@@ -181,6 +186,7 @@ def plot_stance_confusion(model, topics: List[int]) -> go.Figure:
         rows = 3
         cols = 4
     elif len(topics) <= 20:
+        short_title = True
         rows = 4
         cols = 5
     else:
@@ -202,7 +208,8 @@ def plot_stance_confusion(model, topics: List[int]) -> go.Figure:
     sub_titel = []
     for t in topics:
         topic_title = Topic.get(t).title
-        topic_title = (topic_title[:30] + '..') if len(topic_title) > 32 else topic_title
+        if short_title:
+            topic_title = (topic_title[:30] + '..') if len(topic_title) > 32 else topic_title
         sub_titel.append(f'Topic {Topic.get(t).number} - {topic_title}')
     fig = make_subplots(rows=rows, cols=cols, shared_yaxes=True, shared_xaxes=True, x_title='True Eval',
                         y_title='Predicted Eval',

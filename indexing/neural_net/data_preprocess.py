@@ -22,8 +22,13 @@ def preprocessed_data(fidx: FeatureIndex, topics: List[Topic], train: bool = Fal
 
 def preprocess_data(fidx: FeatureIndex, ids: List[str], query: List[str], train: bool = False,
                     topic: Topic = None) -> pd.DataFrame:
-    if topic is not None:
+    if topic is not None and not train:
         file = Path(f'index/prep_data/prep_data_{topic.number}.pkl')
+        if file.exists():
+            return pd.read_pickle(file)
+
+    if topic is not None and train:
+        file = Path(f'index/prep_data/prep_data_train_{topic.number}.pkl')
         if file.exists():
             return pd.read_pickle(file)
 
@@ -38,6 +43,11 @@ def preprocess_data(fidx: FeatureIndex, ids: List[str], query: List[str], train:
             data.loc[image_id, 'query_image_context'] = context_sentiment(query, fidx.get_image_text(image_id))
             data.loc[image_id, 'query_image_align'] = alignment_query(query, fidx.get_image_text(image_id))
 
+    if topic is not None:
+        file = Path(f'index/prep_data/prep_data_{topic.number}.pkl')
+        file.parent.mkdir(parents=True, exist_ok=True)
+        data.to_pickle(file)
+
     if train:
         if topic is None:
             raise ValueError('No topic defined for trained data preprocess')
@@ -50,14 +60,14 @@ def preprocess_data(fidx: FeatureIndex, ids: List[str], query: List[str], train:
         data.loc[t_df.loc[(t_df['Argumentative'] == 'NONE'), :].index.unique(0), 'arg_eval'] = 0
 
         data.loc[t_df.loc[(t_df['Stance'] == 'PRO'), :].index.unique(0), 'stance_eval'] = 1
-        data.loc[t_df.loc[(t_df['Stance'] == 'NEUTRAL'), :].index.unique(0), 'stance_eval'] = 0.5
-        data.loc[t_df.loc[(t_df['Stance'] == 'CON'), :].index.unique(0), 'stance_eval'] = 0
+        data.loc[t_df.loc[(t_df['Stance'] == 'NEUTRAL'), :].index.unique(0), 'stance_eval'] = 0
+        data.loc[t_df.loc[(t_df['Stance'] == 'CON'), :].index.unique(0), 'stance_eval'] = -1
 
-    data.dropna(axis=0, inplace=True)
-    if topic is not None:
-        file = Path(f'index/prep_data/prep_data_{topic.number}.pkl')
-        file.parent.mkdir(parents=True, exist_ok=True)
-        data.to_pickle(file)
+        data.dropna(axis=0, inplace=True)
+        if topic is not None:
+            file = Path(f'index/prep_data/prep_data_train_{topic.number}.pkl')
+            file.parent.mkdir(parents=True, exist_ok=True)
+            data.to_pickle(file)
     return data
 
 

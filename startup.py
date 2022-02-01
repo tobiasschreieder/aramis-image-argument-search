@@ -8,9 +8,9 @@ from evaluation.analysis import main as analysis_main
 from evaluation.feature_analysis import analyse_network_features_arg, analyse_network_features_stance
 from frontend import start_server
 from indexing import StandardTermIndex, FeatureIndex, TopicQueryTermIndex, get_all_topic_indexes, \
-    Topic, NStanceModel, preprocessed_data, scale_data
-from indexing.neural_net.arg_network import NArgumentModel
+    Topic, NStanceModel, preprocessed_data, scale_data, NArgumentModel
 from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel
+from evaluation import retrieval_system_analysis
 
 
 def init_logging():
@@ -77,20 +77,28 @@ def main():
 
     # start_server(None)
 
-    findex = FeatureIndex.load(23158)
-    topics_no = [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
-    topics = [Topic.get(t) for t in topics_no]
+    # eval_topics = [9, 27, 31, 33]
+    # skip_topics = [15, 31, 36, 37, 43, 45, 48]
+    # rest_topics = [1, 2, 4, 8, 10, 20, 21, 22, 40, 47]
 
-    data = scale_data(preprocessed_data(findex, topics, train=True))
+    # findex = FeatureIndex.load(23158)
+    # topics_no = [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
+    # topics = [Topic.get(t) for t in topics_no]
 
-    # NArgumentModel.get('test_final', version=3).train(data, test=[27, 31, 33])
-    # NStanceModel.get('test_final', version=3).train(data, test=[27, 31, 33])
+    # prep_data = preprocessed_data(findex, topics, train=True)
+    # data = scale_data(prep_data)
 
-    # analysis_main(model_name='test_final', topics_no=topics_no, version=3)
-    # rs_analysis_main()
+    # NArgumentModel.get('test_final_2', version=3).train(data, test=eval_topics)
+    # NStanceModel.get('test_final_2', version=3).train(data, test=eval_topics)
+
+    # analysis_main(model_name='test_final_2', topics_no=topics_no, version=3)
+    # analysis_main(model_name='test_final_2', topics_no=eval_topics, version=3)
+    # retrieval_system_analysis.eval_nn_model()
+    # retrieval_system_analysis.eval_standard_model()
+    retrieval_system_analysis.eval_baseline()
 
     # analyse_network_features_arg(data)
-    analyse_network_features_stance(data)
+    # analyse_network_features_stance(data)
 
 
 if __name__ == '__main__':

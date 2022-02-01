@@ -27,7 +27,7 @@ class RetrievalSystem:
         self.topic_weight = topic_weight
         self.arg_weight = 1 - topic_weight
 
-    def query(self, text: str, top_k: int = -1) -> Tuple[List[Tuple[str, float]], List[Tuple[str, float]]]:
+    def query(self, text: str, top_k: int = -1, **kwargs) -> Tuple[List[Tuple[str, float]], List[Tuple[str, float]]]:
         """
         Queries a given text against the index
         :param text: query text
@@ -39,8 +39,8 @@ class RetrievalSystem:
         query = self.prep.preprocess(text)
 
         topic_scores = self.topic_model.query(query)
-        argument_scores = self.argument_model.query(query, topic_scores)
-        pro_scores, con_scores = self.stance_model.query(query, argument_scores)
+        argument_scores = self.argument_model.query(query, topic_scores, **kwargs)
+        pro_scores, con_scores = self.stance_model.query(query, argument_scores, **kwargs)
 
         if top_k < 0:
             top_k = len(topic_scores)
