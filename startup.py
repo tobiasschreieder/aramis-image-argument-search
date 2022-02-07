@@ -95,10 +95,10 @@ def handle_args():
     if args['test_indexing']:
         log.info('Start term index creation for %s images', 5)
         then = datetime.datetime.now()
-        TopicQueryTermIndex.create_index(5, n_jobs=args['n_jobs']).save()
+        TopicQueryTermIndex.create_index(max_images=5, n_jobs=args['n_jobs']).save()
         get_all_topic_indexes(n_jobs=args['n_jobs'])
         log.info('Start feature index creation for %s images', 5)
-        fidx = FeatureIndex.create_index(5, n_jobs=args['n_jobs'])
+        fidx = FeatureIndex.create_index(max_images=5, n_jobs=args['n_jobs'])
         fidx.save()
         log.info('Precalculate data for retrieval process')
         preprocessed_data(fidx, Topic.load_all())

@@ -178,13 +178,13 @@ class TopicTermIndex(TermIndex):
         return loaded
 
 
-def get_all_topic_indexes(n_jobs: int = -2) -> Dict[int, TopicTermIndex]:
+def get_all_topic_indexes(n_jobs: int = -2, max_images: int = -1) -> Dict[int, TopicTermIndex]:
     indexes = {}
     for i in range(1, 51):
         try:
             indexes[i] = TopicTermIndex.load(i)
         except ValueError:
             # 7h
-            indexes[i] = TopicTermIndex.create_index(i, n_jobs=n_jobs)
+            indexes[i] = TopicTermIndex.create_index(i, n_jobs=n_jobs, max_images=max_images)
             indexes[i].save()
     return indexes
