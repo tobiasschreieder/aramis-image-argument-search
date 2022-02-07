@@ -1,5 +1,6 @@
 import dataclasses
 import json
+import logging
 from pathlib import Path
 from typing import List
 
@@ -202,6 +203,7 @@ class Topic:
     narrative: str
 
     topic_image_file = cfg.working_dir.joinpath('image_topic.csv')
+    log = logging.getLogger('Topic')
 
     @classmethod
     def load_all(cls) -> List['Topic']:
@@ -229,14 +231,17 @@ class Topic:
     @staticmethod
     def __create_topic_image_df() -> pd.DataFrame:
         data = set()
-        for image in DataEntry.get_image_ids():
+        ids = DataEntry.get_image_ids()
+        for i, image in enumerate(ids):
             entry = DataEntry.load(image)
             for page in entry.pages:
                 for rank in page.rankings:
                     data.add((rank.topic, image))
+            if i % 1000 == 0:
+                Topic.log.debug('Done with %s/%s', i, len(ids))
 
         df = pd.DataFrame(data, columns=['topic', 'image_id'])
-        df.to_csv(Topic.topic_image_file, index=False)
+        df.to_csv(Topic.topic_image_file.as_posix(), index=False)
         return df
 
     @staticmethod
@@ -244,7 +249,7 @@ class Topic:
         if not Topic.topic_image_file.exists():
             return Topic.__create_topic_image_df()
         else:
-            return pd.read_csv(Topic.topic_image_file)
+            return pd.read_csv(Topic.topic_image_file.as_posix())
 
     def get_image_ids(self):
         df = self.__get_topic_image_df()
