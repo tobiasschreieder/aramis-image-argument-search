@@ -96,7 +96,7 @@ def handle_args():
         log.info('Start term index creation for %s images', 5)
         then = datetime.datetime.now()
         TopicQueryTermIndex.create_index(max_images=5, n_jobs=args['n_jobs']).save()
-        get_all_topic_indexes(n_jobs=args['n_jobs'])
+        get_all_topic_indexes(n_jobs=args['n_jobs'], max_images=5)
         log.info('Start feature index creation for %s images', 5)
         fidx = FeatureIndex.create_index(max_images=5, n_jobs=args['n_jobs'])
         fidx.save()

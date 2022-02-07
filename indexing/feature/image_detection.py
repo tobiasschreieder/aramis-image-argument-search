@@ -11,8 +11,11 @@ from pytesseract import Output
 from skimage.transform import rotate
 
 import indexing.feature.sentiment_detection as sentiment_detection
+from config import Config
 
-pytesseract.pytesseract.tesseract_cmd = 'properties/tesseract/tesseract.exe'
+cfg = Config.get()
+if cfg.on_win:
+    pytesseract.pytesseract.tesseract_cmd = 'properties/tesseract/tesseract.exe'
 
 
 def read_image(path):
