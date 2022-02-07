@@ -4,10 +4,13 @@ from typing import List
 
 import pandas as pd
 
+from config import Config
 from evaluation.eval_data import get_df
 from indexing import Topic, FeatureIndex, SpacyPreprocessor
 from .similarity_funcs import alignment_query, context_sentiment, query_frequency
 from ..feature import sentiment_detection
+
+cfg = Config.get()
 
 
 def preprocessed_data(fidx: FeatureIndex, topics: List[Topic], train: bool = False) -> pd.DataFrame:
@@ -23,12 +26,12 @@ def preprocessed_data(fidx: FeatureIndex, topics: List[Topic], train: bool = Fal
 def preprocess_data(fidx: FeatureIndex, ids: List[str], query: List[str], train: bool = False,
                     topic: Topic = None) -> pd.DataFrame:
     if topic is not None and not train:
-        file = Path(f'index/prep_data/prep_data_{topic.number}.pkl')
+        file = cfg.working_dir.joinpath(Path(f'prep_data/prep_data_{topic.number}.pkl'))
         if file.exists():
             return pd.read_pickle(file)
 
     if topic is not None and train:
-        file = Path(f'index/prep_data/prep_data_train_{topic.number}.pkl')
+        file = cfg.working_dir.joinpath(Path(f'prep_data/prep_data_train_{topic.number}.pkl'))
         if file.exists():
             return pd.read_pickle(file)
 
@@ -44,7 +47,7 @@ def preprocess_data(fidx: FeatureIndex, ids: List[str], query: List[str], train:
             data.loc[image_id, 'query_image_align'] = alignment_query(query, fidx.get_image_text(image_id))
 
     if topic is not None:
-        file = Path(f'index/prep_data/prep_data_{topic.number}.pkl')
+        file = cfg.working_dir.joinpath(Path(f'prep_data/prep_data_{topic.number}.pkl'))
         file.parent.mkdir(parents=True, exist_ok=True)
         data.to_pickle(file)
 
@@ -65,7 +68,7 @@ def preprocess_data(fidx: FeatureIndex, ids: List[str], query: List[str], train:
 
         data.dropna(axis=0, inplace=True)
         if topic is not None:
-            file = Path(f'index/prep_data/prep_data_train_{topic.number}.pkl')
+            file = cfg.working_dir.joinpath(Path(f'prep_data/prep_data_train_{topic.number}.pkl'))
             file.parent.mkdir(parents=True, exist_ok=True)
             data.to_pickle(file)
     return data

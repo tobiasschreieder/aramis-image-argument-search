@@ -10,7 +10,7 @@ cfg = Config.get()
 log = logging.getLogger('Evaluation')
 
 
-eval_file = cfg.data_dir.joinpath(Path('image_eval.txt'))
+eval_file = cfg.working_dir.joinpath(Path('image_eval.txt'))
 if eval_file.exists():
     df = pd.read_csv(eval_file, sep=' ')
 else:

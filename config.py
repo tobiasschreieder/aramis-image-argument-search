@@ -1,6 +1,5 @@
 import json
 import logging
-import sys
 from pathlib import Path
 
 log = logging.getLogger('Config')

@@ -5,16 +5,15 @@ import os
 import pathlib
 import sys
 from logging.handlers import TimedRotatingFileHandler
+from typing import Any, Dict
 
 from config import Config
-from evaluation.analysis import main as analysis_main
-from evaluation.feature_analysis import analyse_network_features_arg, analyse_network_features_stance
 from frontend import start_server
-from indexing import StandardTermIndex, FeatureIndex, TopicQueryTermIndex, get_all_topic_indexes, \
-    Topic, NStanceModel, preprocessed_data, scale_data, NArgumentModel, DataEntry
+from indexing import FeatureIndex, TopicQueryTermIndex, get_all_topic_indexes, \
+    Topic, preprocessed_data, scale_data, DataEntry
 from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel
-from evaluation import retrieval_system_analysis
-from evaluation import plot_eval
+
+args: Dict[str, Any] = None
 
 
 def init_logging():
@@ -28,8 +27,9 @@ def init_logging():
 
     root = logging.getLogger()
     console = logging.StreamHandler()
+    file_path = Config.get().working_dir.joinpath("logs/aramis_imarg_search.log")
     file_handler = TimedRotatingFileHandler(
-        filename="logs/aramis_imarg_search.log",
+        filename=str(file_path),
         utc=True,
         when='midnight'
     )
@@ -57,7 +57,15 @@ def parse_args():
     parser.add_argument("-f", "--image_format", action='store_true', dest='image_format')
 
     parser.add_argument('-c', '--count_images', action='store_true', dest='count_ids')
+    parser.add_argument('-idx', '--indexing', action='store_true', dest='indexing')
+    parser.add_argument('-nidx', '--number-indexing', type=int, dest='n_indexing')
+    parser.add_argument('-qrel', '--qrel', action='store_true', dest='qrel')
 
+    parser.add_argument('-web', '--web-frontend', action='store_true', dest='frontend')
+    parser.add_argument('-p', '--port', type=int, dest='port', default=5000)
+    parser.add_argument('-h', '--host', type=str, dest='host', default='0.0.0.0')
+
+    global args
     args = parser.parse_args()
     args = vars(args)
 
@@ -78,15 +86,41 @@ def parse_args():
     cfg.working_dir.mkdir(parents=True, exist_ok=True)
     cfg.save()
 
+
+def handle_args():
     if 'count_ids' in args.keys():
         log.info('Found %s images in data.', len(DataEntry.get_image_ids()))
         sys.exit(0)
 
+    if 'indexing' in args.keys():
+        max_id = len(DataEntry.get_image_ids())
+        if 'n_indexing' in args.keys():
+            max_id = max(min(args['n_indexing'], max_id), 1)
+        index_creation(max_id)
+        sys.exit(0)
+
+    if 'qrel' in args.keys():
+        # TODO
+        log.info('Found %s images in data.', len(DataEntry.get_image_ids()))
+        sys.exit(0)
+
+    if 'frontend' in args.keys():
+        # TODO
+        log.info('Found %s images in data.', len(DataEntry.get_image_ids()))
+        sys.exit(0)
+
+    main()
+
 
 def index_creation(max_images: int) -> None:
-    log.info('Start index creation')
+    log.info('Start term index creation for %s images', max_images)
     then = datetime.datetime.now()
-    StandardTermIndex.create_index(max_images).save()
+    TopicQueryTermIndex.create_index(max_images).save()
+    log.info('Start feature index creation for %s images', max_images)
+    fidx = FeatureIndex.create_index(max_images)
+    fidx.save()
+    log.info('Precalculate data for retrieval process')
+    preprocessed_data(fidx, Topic.load_all())
     dur = datetime.datetime.now() - then
     log.info('Time for index creation %s', dur)
 
@@ -142,11 +176,11 @@ def main():
 
 
 if __name__ == '__main__':
+    parse_args()
     init_logging()
     log = logging.getLogger('startup')
     try:
-        parse_args()
-        main()
+        handle_args()
     except Exception as e:
         log.error(e, exc_info=True)
         raise e

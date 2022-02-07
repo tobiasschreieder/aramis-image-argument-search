@@ -9,6 +9,7 @@ from keras.callbacks import EarlyStopping
 from keras.models import load_model, Sequential
 from tensorflow.keras.layers import Dense
 
+from config import Config
 from .utils import split_data, get_primary_stance_data, \
     plot_history, categorical_to_eval, eval_to_categorical
 
@@ -16,12 +17,13 @@ from .utils import split_data, get_primary_stance_data, \
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 pd.options.mode.chained_assignment = None
 overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=8)
+cfg = Config.get()
 
 
 class NStanceModel(abc.ABC):
     model: keras.Model
     name: str
-    dir_path: Path = Path('index/models/stance/')
+    dir_path: Path = cfg.working_dir.joinpath(Path('models/stance/'))
 
     def __init__(self, name: str):
         self.dir_path.mkdir(parents=True, exist_ok=True)

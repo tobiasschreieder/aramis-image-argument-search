@@ -8,12 +8,13 @@ import plotly.graph_objects as go
 from plotly.express.colors import qualitative
 from plotly.subplots import make_subplots
 
+from config import Config
 from indexing import Topic
 from retrieval import ArgumentModel, StanceModel
 from .analysis_helper import calc_topic_scores
 
 log = logging.getLogger('plot_eval')
-
+cfg = Config.get()
 
 plotly_color = qualitative.Plotly
 
@@ -22,7 +23,7 @@ def plot_arg_scoring_eval(model: ArgumentModel, topics: List[int]) -> go.Figure:
     infos = ('argument', 'Argumentative', ('NONE', plotly_color[5]), ('WEAK', plotly_color[6]),
              ('STRONG', plotly_color[7]), 'diagramm, text_sentiment, text, html_sentiment')
     fig = plot_scoring_eval(model, topics, infos)
-    path = Path('plots')
+    path = cfg.working_dir.joinpath('plots')
     path.mkdir(exist_ok=True)
     now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     fig.write_image(path.joinpath(f'arg_scoring_{now}.png'), width=1600, height=900)
@@ -33,7 +34,7 @@ def plot_stance_scoring_eval(model: StanceModel, topics: List[int]) -> go.Figure
     infos = ('stance', 'Stance', ('PRO', plotly_color[2]), ('NEUTRAL', plotly_color[0]),
              ('CON', plotly_color[1]), 'color_mood, image_text_sentiment, html_sentiment')
     fig = plot_scoring_eval(model, topics, infos)
-    path = Path('plots')
+    path = cfg.working_dir.joinpath('plots')
     path.mkdir(exist_ok=True)
     now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     fig.write_image(path.joinpath(f'stance_scoring_{now}.png'), width=1600, height=900)

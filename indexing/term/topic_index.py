@@ -5,9 +5,12 @@ from typing import Dict
 import numpy as np
 from joblib import Parallel, delayed
 
+from config import Config
 from indexing.data_entry import DataEntry
 from indexing.preprocessing import Preprocessor, SpacyPreprocessor
 from .term_index import TermIndex
+
+cfg = Config.get()
 
 
 class TopicQueryTermIndex(TermIndex):
@@ -66,7 +69,7 @@ class TopicQueryTermIndex(TermIndex):
 
         :return: None
         """
-        self._save(Path('index/topic_query_index_{}.npz'.format(self.prep.get_name())))
+        self._save(cfg.working_dir.joinpath(Path('topic_query_index_{}.npz'.format(self.prep.get_name()))))
 
     @classmethod
     def load(cls, prep_name: str = SpacyPreprocessor.get_name(), **prep_kwargs) -> 'TermIndex':
@@ -77,7 +80,7 @@ class TopicQueryTermIndex(TermIndex):
         :return: Index object loaded from file
         :raise ValueError: if file for index with number of indexed images doesn't exists
         """
-        file = Path('index/topic_query_index_{}.npz'.format(prep_name))
+        file = cfg.working_dir.joinpath(Path('topic_query_index_{}.npz'.format(prep_name)))
 
         if not file.exists():
             raise ValueError('No saved topic query index with {} preprocessor'
@@ -140,7 +143,8 @@ class TopicTermIndex(TermIndex):
 
         :return: None
         """
-        self._save(Path('index/topic_index/t_index_{}_{}.npz'.format(self.topic_id, self.prep.get_name())))
+        self._save(cfg.working_dir.joinpath(
+            Path('topic_index/t_index_{}_{}.npz'.format(self.topic_id, self.prep.get_name()))))
 
     @classmethod
     def load(cls, topic_id: int = 1, prep_name: str = SpacyPreprocessor.get_name(), **prep_kwargs) -> 'TermIndex':
@@ -152,7 +156,7 @@ class TopicTermIndex(TermIndex):
         :return: Index object loaded from file
         :raise ValueError: if file for index with number of indexed images doesn't exists
         """
-        file = Path('index/topic_index/t_index_{}_{}.npz'.format(topic_id, prep_name))
+        file = cfg.working_dir.joinpath(Path('topic_index/t_index_{}_{}.npz'.format(topic_id, prep_name)))
 
         if not file.exists():
             raise ValueError('No saved topic query index for topic {} with {} preprocessor'

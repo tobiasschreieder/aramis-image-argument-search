@@ -14,18 +14,20 @@ from keras.layers import concatenate
 from keras.models import load_model, Sequential
 from tensorflow.keras.layers import Dense
 
+from config import Config
 from .utils import split_data, get_text_position_data, get_color_data, create_test_position_model, create_color_model, \
     plot_history, get_primary_arg_data
 
 pd.options.mode.chained_assignment = None
 tf.get_logger().setLevel('ERROR')
 overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=8)
+cfg = Config.get()
 
 
 class NArgumentModel(abc.ABC):
     model: keras.Model
     name: str
-    dir_path: Path = Path('index/models/arg/')
+    dir_path: Path = cfg.working_dir.joinpath(Path('models/arg/'))
 
     def __init__(self, name: str):
         self.dir_path.mkdir(parents=True, exist_ok=True)

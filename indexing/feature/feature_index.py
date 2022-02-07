@@ -8,9 +8,12 @@ import pandas as pd
 from joblib import Parallel, delayed
 from sqlitedict import SqliteDict
 
+from config import Config
 from . import html_preprocessing, sentiment_detection, image_detection
 from ..data_entry import DataEntry
 from ..preprocessing import SpacyPreprocessor
+
+cfg = Config.get()
 
 
 class FeatureIndex:
@@ -21,7 +24,7 @@ class FeatureIndex:
     _sql_file: Path
 
     def __init__(self, max_images: int):
-        self._sql_file = Path('index/feature_index_{}.sqlite'.format(max_images))
+        self._sql_file = cfg.working_dir.joinpath(Path('feature_index_{}.sqlite'.format(max_images)))
 
     def __enter__(self):
         self.text_sql = SqliteDict(filename=self._sql_file, tablename='text', autocommit=False)
@@ -193,7 +196,7 @@ class FeatureIndex:
 
         :return: None
         """
-        return self._save(Path('index/feature_index_{}.pkl'.format(len(self.dataframe))))
+        return self._save(cfg.working_dir.joinpath(Path('feature_index_{}.pkl'.format(len(self.dataframe)))))
 
     def _save(self, file: Path) -> None:
         """
@@ -214,7 +217,7 @@ class FeatureIndex:
         :indexed_images: number of indexed images in saved index
         :return: Index object loaded from file
         """
-        return cls._load(Path('index/feature_index_{}.pkl'.format(indexed_images)), indexed_images)
+        return cls._load(cfg.working_dir.joinpath(Path('feature_index_{}.pkl'.format(indexed_images))), indexed_images)
 
     @classmethod
     def _load(cls, file: Path, indexed_images: int) -> 'FeatureIndex':

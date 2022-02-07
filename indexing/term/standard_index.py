@@ -1,12 +1,14 @@
 import logging
-from abc import ABC
 from pathlib import Path
 
 import numpy as np
 
+from config import Config
 from indexing.data_entry import DataEntry
 from indexing.preprocessing import Preprocessor, SpacyPreprocessor
 from .term_index import TermIndex
+
+cfg = Config.get()
 
 
 class StandardTermIndex(TermIndex):
@@ -46,7 +48,7 @@ class StandardTermIndex(TermIndex):
 
         :return: None
         """
-        super()._save(Path('index/index_{}_{}.npz'.format(self.prep.get_name(), self.inverted.shape[1])))
+        super()._save(cfg.working_dir.joinpath(Path('index_{}_{}.npz'.format(self.prep.get_name(), self.inverted.shape[1]))))
 
     @classmethod
     def load(cls, indexed_images: int, prep_name: str = SpacyPreprocessor.get_name(), **prep_kwargs) -> 'TermIndex':
@@ -58,7 +60,7 @@ class StandardTermIndex(TermIndex):
         :return: Index object loaded from file
         :raise ValueError: if file for index with number of indexed images doesn't exists
         """
-        file = Path('index/index_{}_{}.npz'.format(prep_name, indexed_images))
+        file = cfg.working_dir.joinpath(Path('index_{}_{}.npz'.format(prep_name, indexed_images)))
 
         if not file.exists():
             raise ValueError('No saved index with {} indexed images and {} preprocessor'
