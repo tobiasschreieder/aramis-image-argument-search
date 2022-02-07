@@ -43,6 +43,7 @@ def init_logging():
     root.setLevel(logging.DEBUG)
 
     root.info('Logging initialised')
+    root.debug('Set to debug level')
 
 
 def parse_args():
@@ -56,7 +57,8 @@ def parse_args():
 
     parser.add_argument('-c', '--count_images', action='store_true', dest='count_ids')
     parser.add_argument('-idx', '--indexing', action='store_true', dest='indexing')
-    parser.add_argument('-nidx', '--number-indexing', type=int, dest='n_indexing')
+    parser.add_argument('-tidx', '--test-indexing', action='store_true', dest='test_indexing')
+    parser.add_argument('-njobs', '--number-jobs', type=int, dest='n_jobs', default=-2)
     parser.add_argument('-qrel', '--qrel', action='store_true', dest='qrel')
 
     parser.add_argument('-web', '--web-frontend', action='store_true', dest='frontend')
@@ -90,11 +92,25 @@ def handle_args():
         log.info('Found %s images in data.', len(DataEntry.get_image_ids()))
         sys.exit(0)
 
+    if args['test_indexing']:
+        log.info('Start term index creation for %s images', 5)
+        then = datetime.datetime.now()
+        TopicQueryTermIndex.create_index(5, n_jobs=args['n_jobs']).save()
+        get_all_topic_indexes(n_jobs=args['n_jobs'])
+        log.info('Start feature index creation for %s images', 5)
+        fidx = FeatureIndex.create_index(5, n_jobs=args['n_jobs'])
+        fidx.save()
+        log.info('Precalculate data for retrieval process')
+        preprocessed_data(fidx, Topic.load_all())
+        dur = datetime.datetime.now() - then
+        log.info('Time for index creation %s', dur)
+        sys.exit(0)
+
     if args['indexing']:
         max_id = len(DataEntry.get_image_ids())
-        if 'n_indexing' in args.keys():
-            max_id = max(min(args['n_indexing'], max_id), 1)
-        index_creation(max_id)
+        if args['n_indexing'] > 0:
+            max_id = min(args['n_indexing'], max_id)
+        index_creation(max_id, n_jobs=args['n_jobs'])
         sys.exit(0)
 
     if args['qrel']:
@@ -110,12 +126,13 @@ def handle_args():
     main()
 
 
-def index_creation(max_images: int) -> None:
+def index_creation(max_images: int, n_jobs: int = -2) -> None:
     log.info('Start term index creation for %s images', max_images)
     then = datetime.datetime.now()
-    TopicQueryTermIndex.create_index(max_images).save()
+    TopicQueryTermIndex.create_index(max_images, n_jobs=n_jobs).save()
+    get_all_topic_indexes(n_jobs=n_jobs)
     log.info('Start feature index creation for %s images', max_images)
-    fidx = FeatureIndex.create_index(max_images)
+    fidx = FeatureIndex.create_index(max_images, n_jobs=n_jobs)
     fidx.save()
     log.info('Precalculate data for retrieval process')
     preprocessed_data(fidx, Topic.load_all())

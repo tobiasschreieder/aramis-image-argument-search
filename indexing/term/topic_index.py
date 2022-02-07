@@ -17,20 +17,23 @@ class TopicQueryTermIndex(TermIndex):
     log = logging.getLogger('TopicQueryIndex')
 
     @classmethod
-    def create_index(cls, prep: Preprocessor = SpacyPreprocessor(), **kwargs) -> 'TermIndex':
+    def create_index(cls, prep: Preprocessor = SpacyPreprocessor(), n_jobs: int = -2,
+                     max_images: int = -1, **kwargs) -> 'TermIndex':
         """
         Create in index object from the stored data.
         If max_images is < 1 use all images found else stop after max_images.
 
+        :param max_images: TODO
+        :param n_jobs: TODO
         :param prep: Preprocessor to use, default SpacyPreprocessor
         :return: An index object
         """
         index = cls()
         index.prep = prep
 
-        ids = DataEntry.get_image_ids()
+        ids = DataEntry.get_image_ids(max_images)
         topic_queries = {}
-        for image in ids:
+        for i, image in enumerate(ids):
             entry = DataEntry.load(image)
             for page in entry.pages:
                 for rank in page.rankings:
@@ -38,6 +41,8 @@ class TopicQueryTermIndex(TermIndex):
                         topic_queries[rank.topic].add(rank.query)
                     else:
                         topic_queries[rank.topic] = {rank.query}
+            if i % 100 == 0:
+                cls.log.debug('Done with %s/%s', i, len(ids))
 
         cls.log.debug('create index')
         index.document_ids = np.array(sorted(topic_queries.keys()))
@@ -49,7 +54,7 @@ class TopicQueryTermIndex(TermIndex):
                 query_str += ' ' + q
             topic_queries[topic_id] = query_str
 
-        with Parallel(n_jobs=-2, verbose=2) as parallel:
+        with Parallel(n_jobs=n_jobs, verbose=2) as parallel:
             doc_terms = parallel(delayed(prep.preprocess)(topic_queries[doc_id]) for doc_id in index.document_ids)
 
         index.index_terms = np.array(list({term for terms in doc_terms for term in terms}))
@@ -95,10 +100,13 @@ class TopicTermIndex(TermIndex):
     topic_id: int
 
     @classmethod
-    def create_index(cls, topic_id: int = 1, prep: Preprocessor = SpacyPreprocessor(), **kwargs) -> 'TermIndex':
+    def create_index(cls, topic_id: int = 1, prep: Preprocessor = SpacyPreprocessor(),
+                     n_jobs: int = -2, max_images: int = -1, **kwargs) -> 'TermIndex':
         """
         Create in index object from the stored data.
 
+        :param max_images: TODO
+        :param n_jobs: TODO
         :param topic_id: The topic id for this index
         :param prep: Preprocessor to use, default SpacyPreprocessor
         :return: An index object
@@ -109,9 +117,9 @@ class TopicTermIndex(TermIndex):
         index.topic_id = topic_id
         index.log = logging.getLogger('TopicIndex {}'.format(topic_id))
 
-        ids = DataEntry.get_image_ids()
+        ids = DataEntry.get_image_ids(max_images)
         topic_queries = {}
-        for image in ids:
+        for i, image in enumerate(ids):
             entry = DataEntry.load(image)
             for page in entry.pages:
                 for rank in page.rankings:
@@ -120,11 +128,13 @@ class TopicTermIndex(TermIndex):
                             topic_queries[image].append(rank)
                         else:
                             topic_queries[image] = [rank]
+            if i % 100 == 0:
+                cls.log.debug('Done with %s/%s', i, len(ids))
 
         cls.log.debug('create index')
         index.document_ids = np.array(sorted(topic_queries.keys()))
 
-        doc_terms = index._gen_doc_terms_parallel()
+        doc_terms = index._gen_doc_terms_parallel(n_jobs=n_jobs)
 
         index.index_terms = np.array(list({term for terms in doc_terms for term in terms}))
         index.num_docs = index.document_ids.shape[0]
@@ -133,7 +143,7 @@ class TopicTermIndex(TermIndex):
         # Build the document-term matrix
         cls.log.debug('build doc-term matrix')
 
-        index.inverted = index._build_matrix_parallel(doc_terms).transpose()
+        index.inverted = index._build_matrix_parallel(doc_terms, n_jobs=n_jobs).transpose()
 
         return index
 
@@ -168,13 +178,13 @@ class TopicTermIndex(TermIndex):
         return loaded
 
 
-def get_all_topic_indexes() -> Dict[int, TopicTermIndex]:
+def get_all_topic_indexes(n_jobs: int = -2) -> Dict[int, TopicTermIndex]:
     indexes = {}
     for i in range(1, 51):
         try:
             indexes[i] = TopicTermIndex.load(i)
         except ValueError:
             # 7h
-            indexes[i] = TopicTermIndex.create_index(i)
+            indexes[i] = TopicTermIndex.create_index(i, n_jobs=n_jobs)
             indexes[i].save()
     return indexes
