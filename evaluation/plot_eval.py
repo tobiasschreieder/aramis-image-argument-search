@@ -9,8 +9,7 @@ from plotly.express.colors import qualitative
 from plotly.subplots import make_subplots
 
 from indexing import Topic
-from retrieval import ArgumentModel, StanceModel, NNStanceModel
-
+from retrieval import ArgumentModel, StanceModel
 from .analysis_helper import calc_topic_scores
 
 log = logging.getLogger('plot_eval')

@@ -9,7 +9,7 @@ from keras.callbacks import EarlyStopping
 from keras.models import load_model, Sequential
 from tensorflow.keras.layers import Dense
 
-from .utils import split_data, get_text_position_data, get_color_data, get_primary_stance_data, \
+from .utils import split_data, get_primary_stance_data, \
     plot_history, categorical_to_eval, eval_to_categorical
 
 # to get no console-print from tensorflow

@@ -11,6 +11,7 @@ from indexing import StandardTermIndex, FeatureIndex, TopicQueryTermIndex, get_a
     Topic, NStanceModel, preprocessed_data, scale_data, NArgumentModel
 from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel
 from evaluation import retrieval_system_analysis
+from evaluation import plot_eval
 
 
 def init_logging():
@@ -81,12 +82,12 @@ def main():
     # skip_topics = [15, 31, 36, 37, 43, 45, 48]
     # rest_topics = [1, 2, 4, 8, 10, 20, 21, 22, 40, 47]
 
-    # findex = FeatureIndex.load(23158)
-    # topics_no = [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
-    # topics = [Topic.get(t) for t in topics_no]
+    findex = FeatureIndex.load(23158)
+    topics_no = [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
+    topics = [Topic.get(t) for t in topics_no]
 
-    # prep_data = preprocessed_data(findex, topics, train=True)
-    # data = scale_data(prep_data)
+    prep_data = preprocessed_data(findex, [Topic.get(31)], train=True)
+    data = scale_data(prep_data)
 
     # NArgumentModel.get('test_final_2', version=3).train(data, test=eval_topics)
     # NStanceModel.get('test_final_2', version=3).train(data, test=eval_topics)
@@ -95,7 +96,7 @@ def main():
     # analysis_main(model_name='test_final_2', topics_no=eval_topics, version=3)
     # retrieval_system_analysis.eval_nn_model()
     # retrieval_system_analysis.eval_standard_model()
-    retrieval_system_analysis.eval_baseline()
+    # retrieval_system_analysis.eval_baseline()
 
     # analyse_network_features_arg(data)
     # analyse_network_features_stance(data)
