@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 from pathlib import Path
+from typing import List
 
 from flask import Flask, render_template, request, send_file, abort, jsonify, make_response
 
@@ -13,15 +14,16 @@ log = logging.getLogger('frontend.flask')
 app = Flask(__name__, static_url_path='', static_folder='static')
 
 retrieval_system: RetrievalSystem = None
-image_ids = DataEntry.get_image_ids()
+image_ids: List[str] = []
 
 
 def start_server(system: RetrievalSystem, debug: bool = True, host: str = '0.0.0.0', port: int = 5000):
     log.debug('starting Flask')
     app.secret_key = '977e39540e424831d8731b8bf17f2484'
     app.debug = debug
-    global retrieval_system
+    global retrieval_system, image_ids
     retrieval_system = system
+    image_ids = DataEntry.get_image_ids()
     app.run(host=host, port=port, use_reloader=False)
 
 

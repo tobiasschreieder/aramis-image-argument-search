@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 from pathlib import Path
 
 log = logging.getLogger('Config')
@@ -7,23 +8,34 @@ log = logging.getLogger('Config')
 
 class Config:
 
-    data_location: Path = Path('data/')
+    data_dir: Path = Path('data/')
+    output_dir: Path = Path('out/')
+    working_dir: Path = Path('working/')
+    data_image_format: bool = False
 
     _save_path = Path('config.json')
+
+    _cfg = None
 
     @classmethod
     def get(cls) -> 'Config':
         cfg = cls()
+        if Config._cfg is not None:
+            return Config._cfg
         if Config._save_path.exists():
             try:
                 with open(Config._save_path, 'r') as f:
                     cfg_json = json.load(f)
-                cfg.data_location = Path(cfg_json.get('data_location', cfg.data_location))
+                cfg.data_dir = Path(cfg_json.get('data_dir', cfg.data_dir))
+                cfg.output_dir = Path(cfg_json.get('output_dir', cfg.output_dir))
+                cfg.working_dir = Path(cfg_json.get('working_dir', cfg.working_dir))
+                cfg.data_image_format = bool(cfg_json.get('image_format', cfg.data_image_format))
             except json.JSONDecodeError:
                 pass
         log.debug('Config loaded')
 
         cfg.save()
+        Config._cfg = cfg
         return cfg
 
     def save(self) -> None:
@@ -33,5 +45,8 @@ class Config:
 
     def to_dict(self) -> dict:
         return {
-            'data_location': str(self.data_location),
+            'data_dir': str(self.data_dir),
+            'output_dir': str(self.output_dir),
+            'working_dir': str(self.working_dir),
+            'image_format': self.data_image_format,
         }

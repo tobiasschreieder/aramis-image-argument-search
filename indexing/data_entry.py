@@ -74,25 +74,42 @@ class WebPage:
         if not (page_path.exists() and page_path.is_dir()):
             raise ValueError('{} is not a valid directory'.format(page_path))
 
-        path_main = cfg.data_location.joinpath(Path('touche22-images-main'))
-        path_from_image = Path('images/' + image_id[0:3] + '/' + image_id + '/pages').joinpath(page_path.name)
+        if cfg.data_image_format:
+            path_main = cfg.data_dir
+            path_from_image = Path('images/' + image_id[0:3] + '/' + image_id + '/pages').joinpath(page_path.name)
 
-        with page_path.joinpath('page-url.txt').open(encoding='utf8') as file:
-            url = file.readline()
+            with page_path.joinpath('page-url.txt').open(encoding='utf8') as file:
+                url = file.readline()
 
-        snp_dom = path_main.joinpath(path_from_image).joinpath('snapshot/dom.html')
-        snp_image_xpath = path_main.joinpath(path_from_image).joinpath('snapshot/image-xpath.txt')
-        snp_nodes = cfg.data_location.joinpath(Path('touche22-images-nodes/').joinpath(path_from_image)
-                                               .joinpath('snapshot/nodes.jsonl'))
-        snp_screenshot = cfg.data_location.joinpath(Path('touche22-images-screenshots/').joinpath(path_from_image)) \
-            .joinpath('snapshot/screenshot.png')
-        snp_text = path_main.joinpath(path_from_image).joinpath('snapshot/text.txt')
-        snp_archive = cfg.data_location.joinpath(Path('touche22-images-archives/').joinpath(path_from_image)) \
-            .joinpath('snapshot/web-archive.warc.gz')
+            snp_dom = path_main.joinpath(path_from_image).joinpath('snapshot/dom.html')
+            snp_image_xpath = path_main.joinpath(path_from_image).joinpath('snapshot/image-xpath.txt')
+            snp_nodes = cfg.data_dir.joinpath(path_from_image).joinpath('snapshot/nodes.jsonl')
+            snp_screenshot = cfg.data_dir.joinpath(path_from_image).joinpath('snapshot/screenshot.png')
+            snp_text = path_main.joinpath(path_from_image).joinpath('snapshot/text.txt')
+            snp_archive = cfg.data_dir.joinpath(path_from_image).joinpath('snapshot/web-archive.warc.gz')
 
-        with cfg.data_location.joinpath(Path('touche22-images-rankings/')).joinpath(path_from_image) \
-                .joinpath('rankings.jsonl').open() as file:
-            rankings = [Ranking.load(line) for line in file]
+            with cfg.data_dir.joinpath(path_from_image).joinpath('rankings.jsonl').open() as file:
+                rankings = [Ranking.load(line) for line in file]
+        else:
+            path_main = cfg.data_dir.joinpath(Path('touche22-images-main'))
+            path_from_image = Path('images/' + image_id[0:3] + '/' + image_id + '/pages').joinpath(page_path.name)
+
+            with page_path.joinpath('page-url.txt').open(encoding='utf8') as file:
+                url = file.readline()
+
+            snp_dom = path_main.joinpath(path_from_image).joinpath('snapshot/dom.html')
+            snp_image_xpath = path_main.joinpath(path_from_image).joinpath('snapshot/image-xpath.txt')
+            snp_nodes = cfg.data_dir.joinpath(Path('touche22-images-nodes/').joinpath(path_from_image)
+                                              .joinpath('snapshot/nodes.jsonl'))
+            snp_screenshot = cfg.data_dir.joinpath(Path('touche22-images-screenshots/').joinpath(path_from_image)) \
+                .joinpath('snapshot/screenshot.png')
+            snp_text = path_main.joinpath(path_from_image).joinpath('snapshot/text.txt')
+            snp_archive = cfg.data_dir.joinpath(Path('touche22-images-archives/').joinpath(path_from_image)) \
+                .joinpath('snapshot/web-archive.warc.gz')
+
+            with cfg.data_dir.joinpath(Path('touche22-images-rankings/')).joinpath(path_from_image) \
+                    .joinpath('rankings.jsonl').open() as file:
+                rankings = [Ranking.load(line) for line in file]
 
         return cls(
             url_hash=page_path.name,
@@ -121,20 +138,27 @@ class DataEntry:
         :raises ValueError: if image_id doesn't exists
         """
         im_path = 'images/{}/{}/'.format(image_id[0:3], image_id)
-        if not cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path).exists():
+        if cfg.data_image_format:
+            path_main = cfg.data_dir
+        else:
+            path_main = cfg.data_dir.joinpath(Path('touche22-images-main'))
+        if not path_main.joinpath(im_path).exists():
             raise ValueError('{} is not a valid image hash'.format(image_id))
 
-        with cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path) \
+        with path_main.joinpath(im_path) \
                 .joinpath('image-url.txt').open() as file:
             url = file.readline()
 
         pages = []
-        for page in cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path) \
+        for page in path_main.joinpath(im_path) \
                 .joinpath('pages').iterdir():
             pages.append(WebPage.load(page, image_id))
 
-        png = cfg.data_location.joinpath(Path('touche22-images-png-images/')).joinpath(im_path).joinpath('image.png')
-        webp = cfg.data_location.joinpath(Path('touche22-images-main/')).joinpath(im_path).joinpath('image.webp')
+        if cfg.data_image_format:
+            png = cfg.data_dir.joinpath(im_path).joinpath('image.png')
+        else:
+            png = cfg.data_dir.joinpath(Path('touche22-images-png-images/')).joinpath(im_path).joinpath('image.png')
+        webp = path_main.joinpath(im_path).joinpath('image.webp')
 
         return cls(
             url_hash=image_id,
@@ -153,7 +177,10 @@ class DataEntry:
         :return: List of image ids as strings
         """
         id_list = []
-        main_path = cfg.data_location.joinpath(Path('touche22-images-main/images'))
+        if cfg.data_image_format:
+            main_path = cfg.data_dir.joinpath(Path('images'))
+        else:
+            main_path = cfg.data_dir.joinpath(Path('touche22-images-main/images'))
         count = 0
         check_length = max_size > 0
         for idir in main_path.iterdir():
@@ -174,11 +201,11 @@ class Topic:
     description: str
     narrative: str
 
-    topic_image_file = cfg.data_location.joinpath('image_topic.csv')
+    topic_image_file = cfg.working_dir.joinpath('image_topic.csv')
 
     @classmethod
     def load_all(cls) -> List['Topic']:
-        with cfg.data_location.joinpath(Path('topics.xml')).open() as file:
+        with cfg.data_dir.joinpath(Path('topics.xml')).open() as file:
             soup = BeautifulSoup(file, features="lxml")
 
         topics = []

@@ -1,6 +1,9 @@
+import argparse
 import datetime
 import logging
 import os
+import pathlib
+import sys
 from logging.handlers import TimedRotatingFileHandler
 
 from config import Config
@@ -8,7 +11,7 @@ from evaluation.analysis import main as analysis_main
 from evaluation.feature_analysis import analyse_network_features_arg, analyse_network_features_stance
 from frontend import start_server
 from indexing import StandardTermIndex, FeatureIndex, TopicQueryTermIndex, get_all_topic_indexes, \
-    Topic, NStanceModel, preprocessed_data, scale_data, NArgumentModel
+    Topic, NStanceModel, preprocessed_data, scale_data, NArgumentModel, DataEntry
 from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel
 from evaluation import retrieval_system_analysis
 from evaluation import plot_eval
@@ -42,6 +45,42 @@ def init_logging():
     root.setLevel(logging.DEBUG)
 
     root.info('Logging initialised')
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input-dir", default=pathlib.Path('data'), type=pathlib.Path, dest='data_dir')
+    parser.add_argument("-o", "--output-dir", default=pathlib.Path('out'), type=pathlib.Path, dest='out_dir')
+
+    parser.add_argument("-w", "--working-dir", default=pathlib.Path('working'), type=pathlib.Path, dest='work_dir')
+    parser.add_argument("-cfg", "--config", default=pathlib.Path('config.json'), type=pathlib.Path, dest='config')
+    parser.add_argument("-f", "--image_format", action='store_true', dest='image_format')
+
+    parser.add_argument('-c', '--count_images', action='store_true', dest='count_ids')
+
+    args = parser.parse_args()
+    args = vars(args)
+
+    if 'config' in args.keys():
+        Config._save_path = args['config']
+
+    cfg = Config.get()
+    if 'data_dir' in args.keys():
+        cfg.data_dir = args['data_dir']
+    if 'out_dir' in args.keys():
+        cfg.output_dir = args['out_dir']
+    if 'work_dir' in args.keys():
+        cfg.working_dir = args['work_dir']
+    if 'image_format' in args.keys():
+        cfg.data_image_format = args['image_format']
+
+    cfg.output_dir.mkdir(parents=True, exist_ok=True)
+    cfg.working_dir.mkdir(parents=True, exist_ok=True)
+    cfg.save()
+
+    if 'count_ids' in args.keys():
+        log.info('Found %s images in data.', len(DataEntry.get_image_ids()))
+        sys.exit(0)
 
 
 def index_creation(max_images: int) -> None:
@@ -106,7 +145,7 @@ if __name__ == '__main__':
     init_logging()
     log = logging.getLogger('startup')
     try:
-        Config.get()
+        parse_args()
         main()
     except Exception as e:
         log.error(e, exc_info=True)
