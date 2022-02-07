@@ -20,14 +20,12 @@ def init_logging():
     """
     Method where the root logger is setup
     """
-    try:
-        os.mkdir('logs')
-    except FileExistsError:
-        pass
 
     root = logging.getLogger()
     console = logging.StreamHandler()
-    file_path = Config.get().working_dir.joinpath("logs/aramis_imarg_search.log")
+    path = Config.get().working_dir.joinpath("logs")
+    path.mkdir(parents=True, exist_ok=True)
+    file_path = path.joinpath('aramis_imarg_search.log')
     file_handler = TimedRotatingFileHandler(
         filename=str(file_path),
         utc=True,
