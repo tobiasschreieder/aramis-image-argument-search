@@ -86,23 +86,23 @@ def parse_args():
 
 
 def handle_args():
-    if 'count_ids' in args.keys():
+    if args['count_ids']:
         log.info('Found %s images in data.', len(DataEntry.get_image_ids()))
         sys.exit(0)
 
-    if 'indexing' in args.keys():
+    if args['indexing']:
         max_id = len(DataEntry.get_image_ids())
         if 'n_indexing' in args.keys():
             max_id = max(min(args['n_indexing'], max_id), 1)
         index_creation(max_id)
         sys.exit(0)
 
-    if 'qrel' in args.keys():
+    if args['qrel']:
         # TODO
         log.info('Found %s images in data.', len(DataEntry.get_image_ids()))
         sys.exit(0)
 
-    if 'frontend' in args.keys():
+    if args['frontend']:
         # TODO
         log.info('Found %s images in data.', len(DataEntry.get_image_ids()))
         sys.exit(0)
