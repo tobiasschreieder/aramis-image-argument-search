@@ -63,7 +63,7 @@ def parse_args():
 
     parser.add_argument('-web', '--web-frontend', action='store_true', dest='frontend')
     parser.add_argument('-p', '--port', type=int, dest='port', default=5000)
-    parser.add_argument('-h', '--host', type=str, dest='host', default='0.0.0.0')
+    parser.add_argument('-host', '--host', type=str, dest='host', default='0.0.0.0')
 
     global args
     args = parser.parse_args()
