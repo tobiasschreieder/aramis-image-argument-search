@@ -115,33 +115,46 @@ def handle_args():
         sys.exit(0)
 
     if args['qrel']:
-        # TODO
-        log.info('Found %s images in data.', len(DataEntry.get_image_ids()))
+        log.info('Start qrel scoring')
+        qrel_scoring()
         sys.exit(0)
 
     if args['frontend']:
-        # TODO
-        log.info('Found %s images in data.', len(DataEntry.get_image_ids()))
+        log.info('Start flask frontend')
+        start_server(get_rs(1, 'model_1', 'model_1'), host=args['host'], port=args['port'])
         sys.exit(0)
 
     main()
 
 
-def qrel_scoring():
+def get_rs(tw: float, model_arg: str = None, model_stance: str = None) -> RetrievalSystem:
     tq_index = TopicQueryTermIndex.load()
     topic_indexes = get_all_topic_indexes()
     fidx = FeatureIndex.load(-1)
-    rs = RetrievalSystem(
+    if model_arg is None:
+        arg_m = StandardArgumentModel(fidx)
+    else:
+        arg_m = NNArgumentModel(fidx, model_arg)
+    if model_stance is None:
+        stance_m = StandardStanceModel(fidx)
+    else:
+        stance_m = NNStanceModel(fidx, model_stance)
+    return RetrievalSystem(
         tq_index.prep,
         topic_model=TopicRankingDirichlet(
             t_indexes=topic_indexes, tq_index=tq_index, alpha=1000, tq_alpha=1000
         ),
-        argument_model=NNArgumentModel(fidx, 'model_1'),
-        stance_model=NNStanceModel(fidx, 'model_1'),
-        topic_weight=1,
+        argument_model=arg_m,
+        stance_model=stance_m,
+        topic_weight=tw,
     )
-    data = []
 
+
+def qrel_scoring():
+    log.info('Load indices')
+    rs = get_rs(1, 'model_1', 'model_1')
+    data = []
+    log.info('loading done, start scoring')
     for topic in Topic.load_all():
         result_p, result_c = rs.query(topic.title, top_k=10, topic=topic)
         for i, r in enumerate(result_p):
@@ -149,7 +162,9 @@ def qrel_scoring():
         for i, r in enumerate(result_c):
             data.append([topic.number, 'CON', r[0], i, r[1], 'NN_model1-w1'])
     df = pd.DataFrame(data, columns=['topic', 'stance', 'image_id', 'rank', 'score', 'method'])
-    df.to_csv(Config.get().output_dir, sep=' ', header=False, index=False)
+    file_path = Config.get().output_dir.joinpath('run.txt')
+    df.to_csv(file_path, sep=' ', header=False, index=False)
+    log.info('scoring saved under %s', file_path)
 
 
 def index_creation(max_images: int, n_jobs: int = -2) -> None:
@@ -164,19 +179,6 @@ def index_creation(max_images: int, n_jobs: int = -2) -> None:
     preprocessed_data(fidx, Topic.load_all())
     dur = datetime.datetime.now() - then
     log.info('Time for index creation %s', dur)
-
-
-def start_flask() -> None:
-    tq_index = TopicQueryTermIndex.load()
-    topic_indexes = get_all_topic_indexes()
-    findex = FeatureIndex.load(23158)
-
-    system = RetrievalSystem(tq_index.prep,
-                             topic_model=TopicRankingDirichlet(t_indexes=topic_indexes, tq_index=tq_index),
-                             argument_model=StandardArgumentModel(findex),
-                             stance_model=StandardStanceModel(findex))
-
-    start_server(system)
 
 
 def main():
