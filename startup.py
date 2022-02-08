@@ -1,17 +1,19 @@
 import argparse
 import datetime
 import logging
-import os
 import pathlib
 import sys
 from logging.handlers import TimedRotatingFileHandler
 from typing import Any, Dict
 
+import pandas as pd
+
 from config import Config
 from frontend import start_server
 from indexing import FeatureIndex, TopicQueryTermIndex, get_all_topic_indexes, \
     Topic, preprocessed_data, scale_data, DataEntry
-from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel
+from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel, \
+    NNArgumentModel, NNStanceModel
 
 args: Dict[str, Any] = None
 
@@ -109,8 +111,6 @@ def handle_args():
 
     if args['indexing']:
         max_id = len(DataEntry.get_image_ids())
-        if args['n_indexing'] > 0:
-            max_id = min(args['n_indexing'], max_id)
         index_creation(max_id, n_jobs=args['n_jobs'])
         sys.exit(0)
 
@@ -127,13 +127,38 @@ def handle_args():
     main()
 
 
+def qrel_scoring():
+    tq_index = TopicQueryTermIndex.load()
+    topic_indexes = get_all_topic_indexes()
+    fidx = FeatureIndex.load(-1)
+    rs = RetrievalSystem(
+        tq_index.prep,
+        topic_model=TopicRankingDirichlet(
+            t_indexes=topic_indexes, tq_index=tq_index, alpha=1000, tq_alpha=1000
+        ),
+        argument_model=NNArgumentModel(fidx, 'model_1'),
+        stance_model=NNStanceModel(fidx, 'model_1'),
+        topic_weight=1,
+    )
+    data = []
+
+    for topic in Topic.load_all():
+        result_p, result_c = rs.query(topic.title, top_k=10, topic=topic)
+        for i, r in enumerate(result_p):
+            data.append([topic.number, 'PRO', r[0], i, r[1], 'NN_model1-w1'])
+        for i, r in enumerate(result_c):
+            data.append([topic.number, 'CON', r[0], i, r[1], 'NN_model1-w1'])
+    df = pd.DataFrame(data, columns=['topic', 'stance', 'image_id', 'rank', 'score', 'method'])
+    df.to_csv(Config.get().output_dir, sep=' ', header=False, index=False)
+
+
 def index_creation(max_images: int, n_jobs: int = -2) -> None:
     log.info('Start term index creation for %s images', max_images)
     then = datetime.datetime.now()
-    TopicQueryTermIndex.create_index(max_images, n_jobs=n_jobs).save()
+    TopicQueryTermIndex.create_index(max_images=max_images, n_jobs=n_jobs).save()
     get_all_topic_indexes(n_jobs=n_jobs)
     log.info('Start feature index creation for %s images', max_images)
-    fidx = FeatureIndex.create_index(max_images, n_jobs=n_jobs)
+    fidx = FeatureIndex.create_index(max_images=max_images, n_jobs=n_jobs)
     fidx.save()
     log.info('Precalculate data for retrieval process')
     preprocessed_data(fidx, Topic.load_all())
@@ -171,12 +196,12 @@ def main():
     # skip_topics = [15, 31, 36, 37, 43, 45, 48]
     # rest_topics = [1, 2, 4, 8, 10, 20, 21, 22, 40, 47]
 
-    findex = FeatureIndex.load(23158)
-    topics_no = [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
-    topics = [Topic.get(t) for t in topics_no]
-
-    prep_data = preprocessed_data(findex, [Topic.get(31)], train=True)
-    data = scale_data(prep_data)
+    # findex = FeatureIndex.load(23158)
+    # topics_no = [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
+    # topics = [Topic.get(t) for t in topics_no]
+    #
+    # prep_data = preprocessed_data(findex, [Topic.get(31)], train=True)
+    # data = scale_data(prep_data)
 
     # NArgumentModel.get('test_final_2', version=3).train(data, test=eval_topics)
     # NStanceModel.get('test_final_2', version=3).train(data, test=eval_topics)

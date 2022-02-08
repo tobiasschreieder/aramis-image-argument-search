@@ -217,6 +217,8 @@ class FeatureIndex:
         :indexed_images: number of indexed images in saved index
         :return: Index object loaded from file
         """
+        if indexed_images < 1:
+            indexed_images = len(DataEntry.get_image_ids())
         return cls._load(cfg.working_dir.joinpath(Path('feature_index_{}.pkl'.format(indexed_images))), indexed_images)
 
     @classmethod
