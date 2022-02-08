@@ -202,7 +202,7 @@ class Topic:
     description: str
     narrative: str
 
-    topic_image_file = cfg.working_dir.joinpath('image_topic.csv')
+    topic_image_file = cfg.working_dir.joinpath(Path('image_topic.csv'))
     log = logging.getLogger('Topic')
 
     @classmethod
@@ -231,12 +231,6 @@ class Topic:
     @staticmethod
     def __create_topic_image_df() -> pd.DataFrame:
         Topic.log.debug('Create topic image dataframe')
-        Topic.log.debug(Topic.topic_image_file)
-        Topic.log.debug(str(Topic.topic_image_file))
-        Topic.log.debug(Topic.topic_image_file.as_posix())
-        Topic.log.debug(Topic.topic_image_file.as_uri())
-        Topic.log.debug(Topic.topic_image_file.absolute())
-        Topic.log.debug(Topic.topic_image_file.absolute().resolve())
         data = set()
         ids = DataEntry.get_image_ids()
         for i, image in enumerate(ids):
@@ -254,6 +248,8 @@ class Topic:
 
     @staticmethod
     def __get_topic_image_df() -> pd.DataFrame:
+        # needs to be set here again, if not path becomes relative to workdir and doesn't stay absolute
+        Topic.topic_image_file = cfg.working_dir.joinpath(Path('image_topic.csv'))
         if not Topic.topic_image_file.exists():
             return Topic.__create_topic_image_df()
         else:
