@@ -230,6 +230,13 @@ class Topic:
 
     @staticmethod
     def __create_topic_image_df() -> pd.DataFrame:
+        Topic.log.debug('Create topic image dataframe')
+        Topic.log.debug(Topic.topic_image_file)
+        Topic.log.debug(str(Topic.topic_image_file))
+        Topic.log.debug(Topic.topic_image_file.as_posix())
+        Topic.log.debug(Topic.topic_image_file.as_uri())
+        Topic.log.debug(Topic.topic_image_file.absolute())
+        Topic.log.debug(Topic.topic_image_file.absolute().resolve())
         data = set()
         ids = DataEntry.get_image_ids()
         for i, image in enumerate(ids):
@@ -242,6 +249,7 @@ class Topic:
 
         df = pd.DataFrame(data, columns=['topic', 'image_id'])
         df.to_csv(Topic.topic_image_file.as_posix(), index=False)
+        Topic.log.debug('saved topic image dataframe')
         return df
 
     @staticmethod

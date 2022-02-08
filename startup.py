@@ -94,7 +94,7 @@ def handle_args():
 
     if args['test_indexing']:
         log.info('Start term index creation for %s images', 5)
-        Topic.load_all()
+        Topic.load_all()[0].get_image_ids()
         then = datetime.datetime.now()
         TopicQueryTermIndex.create_index(max_images=5, n_jobs=args['n_jobs']).save()
         get_all_topic_indexes(n_jobs=args['n_jobs'], max_images=5)
