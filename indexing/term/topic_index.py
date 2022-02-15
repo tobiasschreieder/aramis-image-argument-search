@@ -6,7 +6,7 @@ import numpy as np
 from joblib import Parallel, delayed
 
 from config import Config
-from indexing.data_entry import DataEntry
+from indexing.data_entry import DataEntry, Topic
 from indexing.preprocessing import Preprocessor, SpacyPreprocessor
 from .term_index import TermIndex
 
@@ -178,13 +178,20 @@ class TopicTermIndex(TermIndex):
         return loaded
 
 
-def get_all_topic_indexes(n_jobs: int = -2, max_images: int = -1) -> Dict[int, TopicTermIndex]:
+def get_all_topic_indexes(n_jobs: int = -2, max_images: int = -1,
+                          force_create: bool = False) -> Dict[int, TopicTermIndex]:
     indexes = {}
-    for i in range(1, 51):
-        try:
-            indexes[i] = TopicTermIndex.load(i)
-        except ValueError:
+    for topic in Topic.load_all():
+        create = force_create
+        if not create:
+            try:
+                indexes[topic.number] = TopicTermIndex.load(topic.number)
+            except ValueError:
+                create = True
+
+        if create:
             # 7h
-            indexes[i] = TopicTermIndex.create_index(i, n_jobs=n_jobs, max_images=max_images)
-            indexes[i].save()
+            indexes[topic.number] = TopicTermIndex.create_index(topic.number, n_jobs=n_jobs, max_images=max_images)
+            indexes[topic.number].save()
+
     return indexes

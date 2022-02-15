@@ -4,6 +4,7 @@ logs/
 index/
 config.json
 properties/
+working/
 
 # standart gitignore template for python
 

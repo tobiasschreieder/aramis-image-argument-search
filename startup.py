@@ -60,7 +60,7 @@ def parse_args():
     parser.add_argument('-c', '--count_images', action='store_true', dest='count_ids')
     parser.add_argument('-idx', '--indexing', action='store_true', dest='indexing')
     parser.add_argument('-tidx', '--test-indexing', action='store_true', dest='test_indexing')
-    parser.add_argument('-njobs', '--number-jobs', type=int, dest='n_jobs', default=-2)
+    parser.add_argument('-njobs', '--number-jobs', type=int, dest='n_jobs', default=-1)
     parser.add_argument('-qrel', '--qrel', action='store_true', dest='qrel')
 
     parser.add_argument('-web', '--web-frontend', action='store_true', dest='frontend')
@@ -150,17 +150,17 @@ def get_rs(tw: float, model_arg: str = None, model_stance: str = None) -> Retrie
     )
 
 
-def qrel_scoring():
+def qrel_scoring(model_name: str = 'model_1'):
     log.info('Load indices')
-    rs = get_rs(1, 'model_1', 'model_1')
+    rs = get_rs(1, model_name, model_name)
     data = []
     log.info('loading done, start scoring')
     for topic in Topic.load_all():
         result_p, result_c = rs.query(topic.title, top_k=10, topic=topic)
         for i, r in enumerate(result_p):
-            data.append([topic.number, 'PRO', r[0], i, r[1], 'NN_model1-w1'])
+            data.append([topic.number, 'PRO', r[0], i+1, round(r[1], 6), 'NN_model1-w1'])
         for i, r in enumerate(result_c):
-            data.append([topic.number, 'CON', r[0], i, r[1], 'NN_model1-w1'])
+            data.append([topic.number, 'CON', r[0], i+1, round(r[1], 6), 'NN_model1-w1'])
     df = pd.DataFrame(data, columns=['topic', 'stance', 'image_id', 'rank', 'score', 'method'])
     file_path = Config.get().output_dir.joinpath('run.txt')
     df.to_csv(file_path, sep=' ', header=False, index=False)
@@ -171,7 +171,7 @@ def index_creation(max_images: int, n_jobs: int = -2) -> None:
     log.info('Start term index creation for %s images', max_images)
     then = datetime.datetime.now()
     TopicQueryTermIndex.create_index(max_images=max_images, n_jobs=n_jobs).save()
-    get_all_topic_indexes(n_jobs=n_jobs)
+    get_all_topic_indexes(n_jobs=n_jobs, force_create=True)
     log.info('Start feature index creation for %s images', max_images)
     fidx = FeatureIndex.create_index(max_images=max_images, n_jobs=n_jobs)
     fidx.save()
