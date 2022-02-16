@@ -30,6 +30,15 @@ def plot_arg_scoring_eval(model: ArgumentModel, topics: List[int]) -> go.Figure:
     return fig
 
 
+def plot_stance_confusion_eval(model: StanceModel, topics: List[int]) -> go.Figure:
+    fig = plot_stance_confusion(model, topics)
+    path = cfg.working_dir.joinpath('plots')
+    path.mkdir(exist_ok=True)
+    now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    fig.write_image(path.joinpath(f'stance_confusion_{now}.png'), width=1600, height=900)
+    return fig
+
+
 def plot_stance_scoring_eval(model: StanceModel, topics: List[int]) -> go.Figure:
     infos = ('stance', 'Stance', ('PRO', plotly_color[2]), ('NEUTRAL', plotly_color[0]),
              ('CON', plotly_color[1]), 'color_mood, image_text_sentiment, html_sentiment')
@@ -44,6 +53,12 @@ def plot_stance_scoring_eval(model: StanceModel, topics: List[int]) -> go.Figure
 def plot_scoring_eval(model, topics: List[int],
                       infos: Tuple[str, str, Tuple[str, str], Tuple[str, str], Tuple[str, str], str]) -> go.Figure:
     short_title = False
+    max_title_len = 100
+
+    # Print Settings
+    font_size = 20
+    k = 20
+    round_int = 4
 
     if len(topics) <= 2:
         rows = 2
@@ -55,13 +70,18 @@ def plot_scoring_eval(model, topics: List[int],
         rows = 3
         cols = 2
     elif len(topics) <= 9:
+        short_title = True
+        max_title_len = 37
         rows = 3
         cols = 3
     elif len(topics) <= 12:
+        short_title = True
+        max_title_len = 31
         rows = 3
         cols = 4
     elif len(topics) <= 20:
         short_title = True
+        max_title_len = 27
         rows = 4
         cols = 5
     else:
@@ -77,14 +97,11 @@ def plot_scoring_eval(model, topics: List[int],
             topics = topics[:20]
         print('Cant plot more than 20 topics in one plot, tried %s', len(topics))
 
-    k = 20
-    round_int = 4
-
     sub_titel = []
     for t in topics:
         topic_title = Topic.get(t).title
         if short_title:
-            topic_title = (topic_title[:27] + '..') if len(topic_title) > 30 else topic_title
+            topic_title = (topic_title[:max_title_len] + '..') if len(topic_title) > max_title_len + 3 else topic_title
         sub_titel.append(f'Topic {Topic.get(t).number} - {topic_title}')
     fig = make_subplots(rows=rows, cols=cols, shared_xaxes=True, x_title='Score', y_title='Count',
                         vertical_spacing=0.05, horizontal_spacing=0.01, subplot_titles=sub_titel)
@@ -130,9 +147,9 @@ def plot_scoring_eval(model, topics: List[int],
                                       f'Relevant: {count_both}'
                 avg_precision[0] += precision_20
                 avg_precision[1] += precision_20_both
-                fig.add_annotation(row=row + 1, col=col + 1, text=precision_text,
+                fig.add_annotation(row=row + 1, col=col + 1, text=precision_text, font_size=font_size,
                                    xref='x domain', yref='y domain', showarrow=False, x=0.95, y=0.95)
-                fig.add_annotation(row=row + 1, col=col + 1, text=precision_text_both,
+                fig.add_annotation(row=row + 1, col=col + 1, text=precision_text_both, font_size=font_size,
                                    xref='x domain', yref='y domain', showarrow=False, x=0.05, y=0.95)
             elif infos[0] == 'stance':
                 pro_scores = df.nlargest(k, 'score', keep='first')
@@ -145,10 +162,11 @@ def plot_scoring_eval(model, topics: List[int],
                 avg_precision[1] += p_con
                 rel_pro = df.loc[df["value"] == "PRO", "value"].count()
                 rel_con = df.loc[df["value"] == "CON", "value"].count()
-                fig.add_annotation(row=row + 1, col=col + 1, text=precision_text,
+                fig.add_annotation(row=row + 1, col=col + 1, text=precision_text, font_size=font_size,
                                    xref='x domain', yref='y domain', showarrow=False, x=0.95, y=0.95)
                 fig.add_annotation(row=row + 1, col=col + 1, text=f'Relevant:<br>Pro: {rel_pro}<br>Con: {rel_con}',
-                                   xref='x domain', yref='y domain', showarrow=False, x=0.05, y=0.95)
+                                   xref='x domain', yref='y domain', showarrow=False, x=0.05, y=0.95,
+                                   font_size=font_size)
 
     if infos[0] == 'argument':
         precision_title = f'<br><sup>Strong@{k}: {round((avg_precision[0])/len(topics), round_int)}, ' \
@@ -160,7 +178,7 @@ def plot_scoring_eval(model, topics: List[int],
         precision_title = f'<br><sup>Precision@{k}: Pro {round(pro, round_int)}, Con {round(con, round_int)}, ' \
                           f'Avg {round(avg, round_int)}</sup>'
 
-    fig.update_layout(title=f'{infos[1]} Scoring {precision_title}')
+    fig.update_layout(title=f'{infos[1]} Scoring {precision_title}', title_font_size=font_size)
 
     return fig
 

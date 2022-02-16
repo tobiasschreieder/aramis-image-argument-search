@@ -11,9 +11,10 @@ import pandas as pd
 from config import Config
 from frontend import start_server
 from indexing import FeatureIndex, TopicQueryTermIndex, get_all_topic_indexes, \
-    Topic, preprocessed_data, scale_data, DataEntry
+    Topic, preprocessed_data, scale_data, DataEntry, TopicTermIndex, NArgumentModel, NStanceModel
 from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel, \
     NNArgumentModel, NNStanceModel
+from evaluation.analysis import main as analysis_main
 
 args: Dict[str, Any] = None
 
@@ -188,28 +189,29 @@ def main():
     """
 
     log.info('do main stuff')
+    # qrel_scoring('test_final_2')
 
     # findex = FeatureIndex.create_index()
     # findex.save()
 
     # start_server(None)
 
-    # eval_topics = [9, 27, 31, 33]
-    # skip_topics = [15, 31, 36, 37, 43, 45, 48]
-    # rest_topics = [1, 2, 4, 8, 10, 20, 21, 22, 40, 47]
+    eval_topics = [9, 27, 33]
+    skip_topics = [15, 31, 36, 37, 43, 45, 48]
+    rest_topics = [1, 2, 4, 8, 10, 20, 21, 22, 40, 47]
 
-    # findex = FeatureIndex.load(23158)
-    # topics_no = [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
-    # topics = [Topic.get(t) for t in topics_no]
-    #
-    # prep_data = preprocessed_data(findex, [Topic.get(31)], train=True)
-    # data = scale_data(prep_data)
+    findex = FeatureIndex.load(23158)
+    topics_no = [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
+    topics = [Topic.get(t) for t in topics_no]
 
-    # NArgumentModel.get('test_final_2', version=3).train(data, test=eval_topics)
-    # NStanceModel.get('test_final_2', version=3).train(data, test=eval_topics)
+    prep_data = preprocessed_data(findex, topics, train=True)
+    data = scale_data(prep_data)
 
-    # analysis_main(model_name='test_final_2', topics_no=topics_no, version=3)
-    # analysis_main(model_name='test_final_2', topics_no=eval_topics, version=3)
+    NArgumentModel.get('test_final_2', version=3).train(data, test=eval_topics)
+    NStanceModel.get('test_final_2', version=3).train(data, test=eval_topics)
+
+    analysis_main(model_name='test_final_2', topics_no=rest_topics, version=3)
+    analysis_main(model_name='test_final_2', topics_no=eval_topics, version=3)
     # retrieval_system_analysis.eval_nn_model()
     # retrieval_system_analysis.eval_standard_model()
     # retrieval_system_analysis.eval_baseline()

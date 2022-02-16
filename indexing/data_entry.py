@@ -129,6 +129,8 @@ class DataEntry:
     webp_path: Path
     pages: List[WebPage]
 
+    log = logging.getLogger('DataEntry')
+
     @classmethod
     def load(cls, image_id) -> 'DataEntry':
         """
@@ -144,6 +146,8 @@ class DataEntry:
         else:
             path_main = cfg.data_dir.joinpath(Path('touche22-images-main'))
         if not path_main.joinpath(im_path).exists():
+            cls.log.debug('Path to load: %s exists %s', path_main.joinpath(im_path),
+                          path_main.joinpath(im_path).exists())
             raise ValueError('{} is not a valid image hash'.format(image_id))
 
         with path_main.joinpath(im_path) \

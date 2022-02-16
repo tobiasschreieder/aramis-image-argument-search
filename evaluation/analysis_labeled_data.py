@@ -114,7 +114,6 @@ def exploratory_data_analysis() -> Tuple[Dict, Dict]:
         average_percentage_stance_neutral += analysis[topic]["count_stance_neutral"]
         average_percentage_relevant_images += analysis[topic]["count_relevant_images"]
         average_percentage_relevant_images_strong += analysis[topic]["count_relevant_images_strong"]
-    print(average_percentage_topic_relevance, counter)
 
     average_percentage_topic_relevance = round(average_percentage_topic_relevance / counter, 2)
     average_percentage_argumentative = round(average_percentage_argumentative / counter, 2)
