@@ -128,14 +128,16 @@ class TopicTermIndex(TermIndex):
                             topic_queries[image].append(rank)
                         else:
                             topic_queries[image] = [rank]
-            if i % 100 == 0:
+            if i % 1000 == 0:
                 cls.log.debug('Done with %s/%s', i, len(ids))
 
+        cls.log.debug('Done with all ids, found %s id for Topic %s', len(topic_queries.keys()), topic_id)
         cls.log.debug('create index')
         index.document_ids = np.array(sorted(topic_queries.keys()))
 
         doc_terms = index._gen_doc_terms_parallel(n_jobs=n_jobs)
 
+        cls.log.debug('Done with doc term generation')
         index.index_terms = np.array(list({term for terms in doc_terms for term in terms}))
         index.num_docs = index.document_ids.shape[0]
         index.num_terms = index.index_terms.shape[0]

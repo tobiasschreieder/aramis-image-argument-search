@@ -7,6 +7,7 @@ from typing import List, Type
 import spacy
 
 from indexing import DataEntry
+from utils import get_threading_logger
 
 log = logging.getLogger('index preprocessing')
 
@@ -70,6 +71,8 @@ class Preprocessor:
 
 class SpacyPreprocessor(Preprocessor):
 
+    log = get_threading_logger('SpaCyPreprocessor')
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.nlp = spacy.load("en_core_web_sm")
@@ -88,6 +91,7 @@ class SpacyPreprocessor(Preprocessor):
         """
         data = DataEntry.load(doc_id)
         tokens = []
+        self.log.debug('Preprocess doc %s', doc_id)
         for page in data.pages:
             tokens += self.preprocess_file(page.snp_text)
         return tokens
@@ -99,7 +103,7 @@ class SpacyPreprocessor(Preprocessor):
         :param file: The file to preprocess
         :return: List of stemmed tokens
         """
-        log.debug('Preprocess file %s', file)
+        self.log.debug('Preprocess file %s', file)
         with file.open(encoding='UTF8') as html_text:
             return self.preprocess(html_text.read())
 
@@ -111,6 +115,7 @@ class SpacyPreprocessor(Preprocessor):
         :return: List of stemmed tokens
         """
         if len(text) > self.nlp.max_length:
+            self.log.warning('Doc with more chars than SpaCy recommends found. Length %s', len(text))
             p = re.compile('\n')
             middle = math.floor(len(text)/2)
             i = p.search(text, middle)
