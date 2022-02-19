@@ -26,7 +26,7 @@ def plot_arg_scoring_eval(model: ArgumentModel, topics: List[int]) -> go.Figure:
     path = cfg.working_dir.joinpath('plots')
     path.mkdir(exist_ok=True)
     now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    fig.write_image(path.joinpath(f'arg_scoring_{now}.png'), width=1600, height=900)
+    fig.write_image(path.joinpath(f'arg_scoring_{now}.png'), width=1920, height=1080)
     return fig
 
 
@@ -35,7 +35,7 @@ def plot_stance_confusion_eval(model: StanceModel, topics: List[int]) -> go.Figu
     path = cfg.working_dir.joinpath('plots')
     path.mkdir(exist_ok=True)
     now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    fig.write_image(path.joinpath(f'stance_confusion_{now}.png'), width=1600, height=900)
+    fig.write_image(path.joinpath(f'stance_confusion_{now}.png'), width=1920, height=1080)
     return fig
 
 
@@ -46,7 +46,7 @@ def plot_stance_scoring_eval(model: StanceModel, topics: List[int]) -> go.Figure
     path = cfg.working_dir.joinpath('plots')
     path.mkdir(exist_ok=True)
     now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    fig.write_image(path.joinpath(f'stance_scoring_{now}.png'), width=1600, height=900)
+    fig.write_image(path.joinpath(f'stance_scoring_{now}.png'), width=1920, height=1080)
     return fig
 
 
@@ -56,7 +56,7 @@ def plot_scoring_eval(model, topics: List[int],
     max_title_len = 100
 
     # Print Settings
-    font_size = 20
+    font_size = 15
     font_size_title = 25
     k = 20
     round_int = 4
