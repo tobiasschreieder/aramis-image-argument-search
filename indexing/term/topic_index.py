@@ -117,23 +117,26 @@ class TopicTermIndex(TermIndex):
         index.topic_id = topic_id
         index.log = logging.getLogger('TopicIndex {}'.format(topic_id))
 
-        ids = DataEntry.get_image_ids(max_images)
-        topic_queries = {}
-        for i, image in enumerate(ids):
-            entry = DataEntry.load(image)
-            for page in entry.pages:
-                for rank in page.rankings:
-                    if rank.topic == topic_id:
-                        if image in topic_queries.keys():
-                            topic_queries[image].append(rank)
-                        else:
-                            topic_queries[image] = [rank]
-            if i % 1000 == 0:
-                cls.log.debug('Done with %s/%s', i, len(ids))
+        # ids = DataEntry.get_image_ids(max_images)
+        # topic_queries = {}
+        # for i, image in enumerate(ids):
+        #     entry = DataEntry.load(image)
+        #     for page in entry.pages:
+        #         for rank in page.rankings:
+        #             if rank.topic == topic_id:
+        #                 if image in topic_queries.keys():
+        #                     topic_queries[image].append(rank)
+        #                 else:
+        #                     topic_queries[image] = [rank]
+        #     if i % 1000 == 0:
+        #         cls.log.debug('Done with %s/%s', i, len(ids))
 
-        cls.log.debug('Done with all ids, found %s id for Topic %s', len(topic_queries.keys()), topic_id)
+        # doc_ids = np.array(sorted(topic_queries.keys()))
+        doc_ids = np.array(sorted(Topic.get(topic_id).get_image_ids()))
+
+        cls.log.debug('Done with all ids, found %s id for Topic %s', len(doc_ids), topic_id)
         cls.log.debug('create index')
-        index.document_ids = np.array(sorted(topic_queries.keys()))
+        index.document_ids = doc_ids
 
         doc_terms = index._gen_doc_terms_parallel(n_jobs=n_jobs)
 
