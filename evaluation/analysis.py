@@ -17,4 +17,4 @@ def main(model_name: str, topics_no: list, version: int):
     # plot_stance_confusion_eval(StandardStanceModel(findex), topics_no).show()
 
     plot_arg_scoring_eval(NNArgumentModel(findex, model_name, version=version), topics_no).show()
-    plot_stance_confusion_eval(NNStanceModel(findex, model_name, version=version), topics_no).show()
+    # plot_stance_confusion_eval(NNStanceModel(findex, model_name, version=version), topics_no).show()

@@ -137,7 +137,7 @@ class StandardArgumentModel(ArgumentModel):
         df_norm = df / df.abs().max()
 
         if self.weights is None:
-            np_weights = np.array([1, 1, 1, 1, 1])
+            np_weights = np.array([0, 0, 0, 6.6858, -5.6859])
         else:
             np_weights = np.array(self.weights)
 

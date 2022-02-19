@@ -3,7 +3,6 @@ import datetime
 import logging
 import pathlib
 import sys
-from logging.handlers import TimedRotatingFileHandler
 from typing import Any, Dict
 
 import pandas as pd
@@ -15,6 +14,7 @@ from indexing import FeatureIndex, TopicQueryTermIndex, get_all_topic_indexes, \
 from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel, \
     NNArgumentModel, NNStanceModel
 from evaluation.analysis import main as analysis_main
+from utils import setup_logger_handler
 
 args: Dict[str, Any] = None
 
@@ -25,24 +25,7 @@ def init_logging():
     """
 
     root = logging.getLogger()
-    console = logging.StreamHandler()
-    path = Config.get().working_dir.joinpath("logs")
-    path.mkdir(parents=True, exist_ok=True)
-    file_path = path.joinpath('aramis_imarg_search.log')
-    file_handler = TimedRotatingFileHandler(
-        filename=str(file_path),
-        utc=True,
-        when='midnight'
-    )
-    formatter = logging.Formatter(
-        fmt='%(asctime)s %(name)-20s %(funcName)-16.16s %(levelname)-6s %(message)s',
-        datefmt='%H:%M:%S'
-    )
-    console.setFormatter(formatter)
-    file_handler.setFormatter(formatter)
-    root.addHandler(console)
-    root.addHandler(file_handler)
-
+    setup_logger_handler(root)
     root.setLevel(logging.DEBUG)
 
     root.info('Logging initialised')
@@ -196,22 +179,23 @@ def main():
 
     # start_server(None)
 
-    eval_topics = [9, 27, 33]
+    eval_topics = [9, 27, 31, 33]
     skip_topics = [15, 31, 36, 37, 43, 45, 48]
     rest_topics = [1, 2, 4, 8, 10, 20, 21, 22, 40, 47]
 
-    findex = FeatureIndex.load(23158)
+    # findex = FeatureIndex.load(23158)
     topics_no = [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
-    topics = [Topic.get(t) for t in topics_no]
-
-    prep_data = preprocessed_data(findex, topics, train=True)
-    data = scale_data(prep_data)
-
-    NArgumentModel.get('test_final_2', version=3).train(data, test=eval_topics)
-    NStanceModel.get('test_final_2', version=3).train(data, test=eval_topics)
-
+    # topics = [Topic.get(t) for t in topics_no]
+    #
+    # prep_data = preprocessed_data(findex, topics, train=True)
+    # data = scale_data(prep_data)
+    #
+    # NArgumentModel.get('test_final_2', version=3).train(data, test=eval_topics)
+    # NStanceModel.get('test_final_2', version=3).train(data, test=eval_topics)
+    #
     analysis_main(model_name='test_final_2', topics_no=rest_topics, version=3)
     analysis_main(model_name='test_final_2', topics_no=eval_topics, version=3)
+    analysis_main(model_name='test_final_2', topics_no=topics_no, version=3)
     # retrieval_system_analysis.eval_nn_model()
     # retrieval_system_analysis.eval_standard_model()
     # retrieval_system_analysis.eval_baseline()
