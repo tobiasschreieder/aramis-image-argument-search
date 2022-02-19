@@ -1,8 +1,12 @@
+import logging
 import os
 import shutil
 import tempfile
+from logging.handlers import TimedRotatingFileHandler
 
 from joblib import dump, load
+
+from config import Config
 
 
 class MemmappStore:
@@ -22,3 +26,23 @@ class MemmappStore:
             shutil.rmtree(self.temp_folder)
         except OSError:
             pass  # this can sometimes fail under Windows
+
+
+def setup_logger_handler(logger):
+    console = logging.StreamHandler()
+    path = Config.get().working_dir.joinpath("logs")
+    path.mkdir(parents=True, exist_ok=True)
+    file_path = path.joinpath('aramis_imarg_search.log')
+    file_handler = TimedRotatingFileHandler(
+        filename=str(file_path),
+        utc=True,
+        when='midnight'
+    )
+    formatter = logging.Formatter(
+        fmt='%(asctime)s %(name)-20s %(funcName)-16.16s %(levelname)-6s %(message)s',
+        datefmt='%H:%M:%S'
+    )
+    console.setFormatter(formatter)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(console)
+    logger.addHandler(file_handler)
