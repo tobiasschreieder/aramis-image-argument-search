@@ -57,6 +57,7 @@ def plot_scoring_eval(model, topics: List[int],
 
     # Print Settings
     font_size = 20
+    font_size_title = 25
     k = 20
     round_int = 4
 
@@ -178,7 +179,7 @@ def plot_scoring_eval(model, topics: List[int],
         precision_title = f'<br><sup>Precision@{k}: Pro {round(pro, round_int)}, Con {round(con, round_int)}, ' \
                           f'Avg {round(avg, round_int)}</sup>'
 
-    fig.update_layout(title=f'{infos[1]} Scoring {precision_title}', title_font_size=font_size)
+    fig.update_layout(title=f'{infos[1]} Scoring {precision_title}', title_font_size=font_size_title)
 
     return fig
 
