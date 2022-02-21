@@ -46,6 +46,7 @@ def parse_args():
     parser.add_argument('-tidx', '--test-indexing', action='store_true', dest='test_indexing')
     parser.add_argument('-njobs', '--number-jobs', type=int, dest='n_jobs', default=-1)
     parser.add_argument('-qrel', '--qrel', action='store_true', dest='qrel')
+    parser.add_argument('-mtag', '--method_tag', type=str, dest='method_tag', default='aramis|standard|standard|w0.5')
 
     parser.add_argument('-web', '--web-frontend', action='store_true', dest='frontend')
     parser.add_argument('-p', '--port', type=int, dest='port', default=5000)
@@ -99,13 +100,13 @@ def handle_args():
         sys.exit(0)
 
     if args['qrel']:
-        log.info('Start qrel scoring')
-        qrel_scoring()
+        log.info('Start qrel scoring with method tag %s', args['method_tag'])
+        qrel_scoring(args['method_tag'])
         sys.exit(0)
 
     if args['frontend']:
-        log.info('Start flask frontend')
-        start_server(get_rs(1, 'model_1', 'model_1'), host=args['host'], port=args['port'])
+        log.info('Start flask frontend with method tag %s', args['method_tag'])
+        start_server(parse_method_tag(args['method_tag']), host=args['host'], port=args['port'])
         sys.exit(0)
 
     main()
@@ -134,17 +135,59 @@ def get_rs(tw: float, model_arg: str = None, model_stance: str = None) -> Retrie
     )
 
 
-def qrel_scoring(model_name: str = 'model_1'):
+def parse_method_tag(method_tag: str) -> RetrievalSystem:
+    """
+    Create RetrievalSystem for given method tag.
+    Method tag should have format 'aramis|{ArgumentModel}|{StanceModel}|w{topic_weight}' where
+     - ArgumentModel is 'standard' or 'NN-{model_name}'
+     - StanceModel is 'standard' or 'NN-{model_name}'
+     - topic_weight is float in [0,1]
+    :param method_tag: string to parse
+    :return: RetrievalSystem for parsed method tag
+    :raise ValueError: if method tag is faulty
+    """
+    split = method_tag.split('|')
+    if len(split) == 4 and split[0] == 'aramis':
+        # ArgumentModel
+        if split[1] == 'standard':
+            arg_model = None
+        elif split[1][:3] == 'NN_':
+            arg_model = split[1][3:]
+        else:
+            raise ValueError('ArgumentModel %s not found', split[1])
+
+        # StanceModel
+        if split[2] == 'standard':
+            stance_model = None
+        elif split[2][:3] == 'NN_':
+            stance_model = split[2][3:]
+        else:
+            raise ValueError('StanceModel %s not found', split[1])
+
+        # TopicWeight
+        try:
+            t_w = float(split[3].strip()[1:])
+            if not (0 <= t_w <= 1):
+                raise ValueError
+        except ValueError:
+            raise ValueError('Topic weight %s is not a number in [0,1]', split[3])
+
+        return get_rs(t_w, arg_model, stance_model)
+    raise ValueError('Method tag "%s" is not correctly formatted. '
+                     'Correct format: "aramis|{ArgumentModel}|{StanceModel}|w{topic_weight}"')
+
+
+def qrel_scoring(method_tag: str):
     log.info('Load indices')
-    rs = get_rs(1, model_name, model_name)
+    rs = parse_method_tag(method_tag)
     data = []
     log.info('loading done, start scoring')
     for topic in Topic.load_all():
         result_p, result_c = rs.query(topic.title, top_k=10, topic=topic)
         for i, r in enumerate(result_p):
-            data.append([topic.number, 'PRO', r[0], i+1, round(r[1], 6), 'NN_model1-w1'])
+            data.append([topic.number, 'PRO', r[0], i+1, round(r[1], 6), method_tag])
         for i, r in enumerate(result_c):
-            data.append([topic.number, 'CON', r[0], i+1, round(r[1], 6), 'NN_model1-w1'])
+            data.append([topic.number, 'CON', r[0], i+1, round(r[1], 6), method_tag])
     df = pd.DataFrame(data, columns=['topic', 'stance', 'image_id', 'rank', 'score', 'method'])
     file_path = Config.get().output_dir.joinpath('run.txt')
     df.to_csv(file_path, sep=' ', header=False, index=False)
