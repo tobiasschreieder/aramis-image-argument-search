@@ -1,6 +1,5 @@
 import datetime
 import logging
-from pathlib import Path
 from typing import Tuple, List
 
 import numpy as np
@@ -19,46 +18,66 @@ cfg = Config.get()
 plotly_color = qualitative.Plotly
 
 
-def plot_arg_scoring_eval(model: ArgumentModel, topics: List[int]) -> go.Figure:
+def plot_arg_scoring_eval(model: ArgumentModel, topics: List[int], k: int = 20) -> Tuple[go.Figure, float, float]:
+    """
+    Plot a histogram with the argument score and evaluation data for all given topics
+    :param k: the number for witch hte precision should be calculated
+    :param model: ArgumentModel to calculate the argument score
+    :param topics: list of topic ids to plot
+    :return: Tuple with figure, precision@k strong, precision@k both
+    """
     infos = ('argument', 'Argumentative', ('NONE', plotly_color[5]), ('WEAK', plotly_color[6]),
              ('STRONG', plotly_color[7]), 'diagramm, text_sentiment, text, html_sentiment')
-    fig = plot_scoring_eval(model, topics, infos)
+    fig, p_strong, p_both = plot_scoring_eval(model, topics, infos, k=k)
     path = cfg.working_dir.joinpath('plots')
     path.mkdir(exist_ok=True)
     now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     fig.write_image(path.joinpath(f'arg_scoring_{now}.png'), width=1920, height=1080)
-    return fig
+    return fig, p_strong, p_both
 
 
-def plot_stance_confusion_eval(model: StanceModel, topics: List[int]) -> go.Figure:
-    fig = plot_stance_confusion(model, topics)
+def plot_stance_confusion_eval(model: StanceModel, topics: List[int]) -> Tuple[go.Figure, float]:
+    """
+    Plot a confusion matrix with the stance score and evaluation data for all given topics
+    :param model: StanceModel to calculate the argument score
+    :param topics: list of topic ids to plot
+    :return: Tuple with figure, accuracy
+    """
+    fig, accuracy = plot_stance_confusion(model, topics)
     path = cfg.working_dir.joinpath('plots')
     path.mkdir(exist_ok=True)
     now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     fig.write_image(path.joinpath(f'stance_confusion_{now}.png'), width=1920, height=1080)
-    return fig
+    return fig, accuracy
 
 
-def plot_stance_scoring_eval(model: StanceModel, topics: List[int]) -> go.Figure:
+def plot_stance_scoring_eval(model: StanceModel, topics: List[int], k: int = 20) -> Tuple[go.Figure, float, float]:
+    """
+    Plot a histogram with the stance score and evaluation data for all given topics
+    :param k: the number for witch hte precision should be calculated
+    :param model: StanceModel to calculate the argument score
+    :param topics: list of topic ids to plot
+    :return: Tuple with figure, precision@k strong, precision@k both
+    """
     infos = ('stance', 'Stance', ('PRO', plotly_color[2]), ('NEUTRAL', plotly_color[0]),
              ('CON', plotly_color[1]), 'color_mood, image_text_sentiment, html_sentiment')
-    fig = plot_scoring_eval(model, topics, infos)
+    fig, p_strong, p_both = plot_scoring_eval(model, topics, infos, k=k)
     path = cfg.working_dir.joinpath('plots')
     path.mkdir(exist_ok=True)
     now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     fig.write_image(path.joinpath(f'stance_scoring_{now}.png'), width=1920, height=1080)
-    return fig
+    return fig, p_strong, p_both
 
 
 def plot_scoring_eval(model, topics: List[int],
-                      infos: Tuple[str, str, Tuple[str, str], Tuple[str, str], Tuple[str, str], str]) -> go.Figure:
+                      infos: Tuple[str, str, Tuple[str, str], Tuple[str, str],
+                                   Tuple[str, str], str], k: int = 20) -> Tuple[go.Figure, float, float]:
     short_title = False
     max_title_len = 100
 
     # Print Settings
     font_size = 15
     font_size_title = 25
-    k = 20
     round_int = 4
 
     if len(topics) <= 2:
@@ -172,6 +191,8 @@ def plot_scoring_eval(model, topics: List[int],
     if infos[0] == 'argument':
         precision_title = f'<br><sup>Strong@{k}: {round((avg_precision[0])/len(topics), round_int)}, ' \
                           f'Both@{k}: {round((avg_precision[1])/len(topics), round_int)}</sup>'
+        fig.update_layout(title=f'{infos[1]} Scoring {precision_title}', title_font_size=font_size_title)
+        return fig, round((avg_precision[0])/len(topics), round_int), round((avg_precision[1])/len(topics), round_int)
     else:
         pro = (avg_precision[0]+1)/len(topics)
         con = (avg_precision[1]+1)/len(topics)
@@ -179,12 +200,11 @@ def plot_scoring_eval(model, topics: List[int],
         precision_title = f'<br><sup>Precision@{k}: Pro {round(pro, round_int)}, Con {round(con, round_int)}, ' \
                           f'Avg {round(avg, round_int)}</sup>'
 
-    fig.update_layout(title=f'{infos[1]} Scoring {precision_title}', title_font_size=font_size_title)
+        fig.update_layout(title=f'{infos[1]} Scoring {precision_title}', title_font_size=font_size_title)
+        return fig, round(pro, round_int), round(con, round_int)
 
-    return fig
 
-
-def plot_stance_confusion(model, topics: List[int]) -> go.Figure:
+def plot_stance_confusion(model, topics: List[int]) -> Tuple[go.Figure, float]:
     short_title = False
     if len(topics) <= 1:
         rows = 1
@@ -274,4 +294,4 @@ def plot_stance_confusion(model, topics: List[int]) -> go.Figure:
     avg_error /= len(topics)
     fig.update_layout(title=f'{infos[1]} Scoring Confusion matrix<br><sup>Avg Accuracy: {round(avg_error, 4)}</sup>')
 
-    return fig
+    return fig, round(avg_error, 4)
