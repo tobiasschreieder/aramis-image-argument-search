@@ -217,39 +217,19 @@ def main():
 
     log.info('do main stuff')
 
-    eval_topics = [9, 27, 31, 33]
-    skip_topics = [15, 31, 36, 37, 43, 45, 48]
-    rest_topics = [1, 2, 4, 8, 10, 20, 21, 22, 40, 47]
+    # eval_topics = [9, 27, 31, 33]
+    # skip_topics = [15, 31, 36, 37, 43, 45, 48]
+    # rest_topics = [1, 2, 4, 8, 10, 20, 21, 22, 40, 47]
 
     findex = FeatureIndex.load(23158)
     topics_no = [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
     topics = [Topic.get(t) for t in topics_no]
 
-    prep_data = preprocessed_data(findex, topics, train=True)
-    data = scale_data(prep_data)
+    # prep_data = preprocessed_data(findex, topics, train=True)
+    # data = scale_data(prep_data)
 
-    best_arg_model_name = 'none'
-    best_stance_model_name = 'none'
-    best_p = [0, 0]
-    best_acc = 0
-    best_arg = 0
-    best_stance = 0
-    for i in range(50):
-        NArgumentModel.get(f'find_{best_arg}', version=3).train(data, test=[])
-        NStanceModel.get(f'find_{best_stance}', version=3).train(data, test=[])
-
-        _, pstrong, pboth = plot_arg_scoring_eval(NNArgumentModel(findex, f'find_{best_arg}', version=3), topics_no)
-        if pboth > best_p[1]:
-            best_model_name = f'find_{best_arg}'
-            best_arg += 1
-            best_p = [pstrong, pboth]
-
-        _, acc = plot_stance_confusion_eval(NNStanceModel(findex, f'find_{best_stance}', version=3), topics_no)
-        if acc > best_acc:
-            best_stance_model_name = f'find_{best_stance}'
-            best_stance += 1
-            best_acc = acc
-    print()
+    # NArgumentModel.get('model_2', version=3).train(data, test=[])
+    # NStanceModel.get('model_2', version=3).train(data, test=[])
 
     analysis_main(model_name='model_1', topics_no=topics_no, version=3)
 

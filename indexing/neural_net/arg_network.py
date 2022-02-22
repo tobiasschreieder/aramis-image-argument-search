@@ -160,7 +160,6 @@ class NArgumentModelV3(NArgumentModel):
         else:
             model_input = [color_in, primary_in]
 
-        log.debug("prediction: %s", len(model_input))
         predictions = self.model.predict(x=model_input)
         return [val[0] for val in predictions]
 
