@@ -20,9 +20,9 @@ splited in six different directories with different parts of each image id. You 
 But you can also merge these six directories into one where only the image subdirectory is left. Then you have to pass the ``-f`` parameter to the program.   
 
 ### Image-detection
-If you use Docker, all the requirements (including tesseract) are included in the docker-image and the folling part is 
+If you use Docker, all the requirements (including tesseract) are included in the docker-image and the following part is 
 not important to get the system started. But we would like to mention the used technologies and the possibility to use
-image-detection as stand-alone, without the retrievl-system.
+image-detection as stand-alone, without the retrieval-system.
 
 The image-detection is only needed during indexing. 
 To run the image-detection without docker you have can download the tesseract5-installer 
@@ -40,6 +40,7 @@ The programm has different functions:
  - Retrieval run ``-qrel`` + ``-mtag {method tag}``
  - Web application with search/evaluation interface ``-web``
 
+An Example run can be seen in [scripts/tira-run.sh](scripts/tira-run.sh).
 For a complete view of the possible parameter use ``-help``. We provide our final models in ``working/models/``.
 
 ### Method tag
@@ -55,7 +56,7 @@ Our program offers an evaluation website (located under ``0.0.0.0/evaluation``).
 If you don't see images, please check if you set a username in the top right corner.
 
 We evaluated ~9500 images from the [Touché22 Task3 data](https://files.webis.de/corpora/corpora-webis/corpus-touche-image-search-22/). 
-These evaluation can be found in ``working/image_eval.txt``. 
+These evaluation can be found in [working/image_eval.txt](working/image_eval.txt). 
 The users where anonymized. A description of the labels can be found in out paper.
 
 In the [analysis_labeled_data.md](analysis_labeled_data_table.md) file is the result of our analysis of the Touché dataset.

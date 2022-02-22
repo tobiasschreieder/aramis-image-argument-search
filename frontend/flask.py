@@ -4,11 +4,11 @@ import os
 from pathlib import Path
 from typing import List
 
-from flask import Flask, render_template, request, send_file, abort, jsonify, make_response
+from flask import Flask, render_template, request, send_file, abort, make_response
 
+from evaluation import save_eval, Stance, Argumentative, get_image_to_eval, has_eval
 from indexing import DataEntry, Topic
 from retrieval import RetrievalSystem
-from evaluation import save_eval, Stance, Argumentative, get_image_to_eval, has_eval
 
 log = logging.getLogger('frontend.flask')
 app = Flask(__name__, static_url_path='', static_folder='static')

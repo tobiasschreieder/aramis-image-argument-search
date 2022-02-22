@@ -48,7 +48,9 @@ class StandardTermIndex(TermIndex):
 
         :return: None
         """
-        super()._save(cfg.working_dir.joinpath(Path('index_{}_{}.npz'.format(self.prep.get_name(), self.inverted.shape[1]))))
+        super()._save(cfg.working_dir.joinpath(
+            Path('index_{}_{}.npz'.format(self.prep.get_name(), self.inverted.shape[1]))
+        ))
 
     @classmethod
     def load(cls, indexed_images: int, prep_name: str = SpacyPreprocessor.get_name(), **prep_kwargs) -> 'TermIndex':

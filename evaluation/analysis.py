@@ -1,8 +1,7 @@
 import logging
 
 from indexing import FeatureIndex
-from retrieval import StandardArgumentModel, \
-    StandardStanceModel, NNArgumentModel, NNStanceModel
+from retrieval import NNArgumentModel, NNStanceModel
 from .plot_eval import plot_arg_scoring_eval, plot_stance_confusion_eval
 
 log = logging.getLogger('analysis')

@@ -94,17 +94,16 @@ def shapes_from_image(image, plot=False):
                 continue
 
             # cv2.approxPloyDP() function to approximate the shape
-            approx = cv2.approxPolyDP(
-                contour, 0.01 * cv2.arcLength(contour, True), True)
+            approx = cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True)
 
             if plot:
                 cv2.drawContours(image, [contour], 0, (0, 0, 255), 5)
 
             # finding center point of shape
-            M = cv2.moments(contour)
-            if M['m00'] != 0.0:
-                x = int(M['m10'] / M['m00'])
-                y = int(M['m01'] / M['m00'])
+            moments = cv2.moments(contour)
+            if moments['m00'] != 0.0:
+                x = int(moments['m10'] / moments['m00'])
+                y = int(moments['m01'] / moments['m00'])
 
             if len(approx) == 3:
                 shapes.append(('Triangle', x, y))
@@ -169,13 +168,13 @@ def diagramms_from_image(image, plot=False):
         # use dichtefunktion in future
         if not roi_area < 0.8:
             roi_area = 0
-    except:
-        roi_area = 0
 
-    if plot:
-        ROI = image[y:y + h, x:x + w]
-        cv2.imshow('ROI', ROI)
-        cv2.waitKey()
+        if plot:
+            roi = image[y:y + h, x:x + w]
+            cv2.imshow('ROI', roi)
+            cv2.waitKey()
+    except Exception:
+        roi_area = 0
 
     return roi_area
 
@@ -230,7 +229,7 @@ def color_mood(image):
     percentage_bright = (cv2.countNonZero(mask_bright) / number_pixels) * 100
     percentage_dark = (cv2.countNonZero(mask_dark) / number_pixels) * 100
 
-    color_mood = {
+    return {
         "percentage_green": percentage_green,
         "percentage_red": percentage_red,
         "percentage_blue": percentage_blue,
@@ -239,7 +238,6 @@ def color_mood(image):
         "percentage_dark": percentage_dark,
         "average_color": average
     }
-    return color_mood
 
 
 def text_analysis(image):
@@ -284,7 +282,8 @@ def text_analysis(image):
     top_main_text = height
     bottom_main_text = 0
 
-    for box, area in {k: v for k, v in sorted(text_position_dict.items(), key=lambda item: item[1], reverse=True)}.items():
+    for box, area in {k: v for k, v in
+                      sorted(text_position_dict.items(), key=lambda item: item[1], reverse=True)}.items():
         if current_area > (0.5 * text_area):
             break
         current_left = (box % n_cols) * cols_interval
@@ -312,7 +311,7 @@ def text_analysis(image):
     text_len = len(text.split(" "))
     text_sentiment_score = sentiment_detection.sentiment_nltk(text)
 
-    text_analysis = {
+    return {
         "text_len": text_len,
         "text_area_percentage": text_area_precentage,
         "text_sentiment_score": text_sentiment_score,
@@ -323,15 +322,13 @@ def text_analysis(image):
         "text_position": text_position_dict,
         "text": text
     }
-    return text_analysis
 
 
 def dominant_color(image):
-    a2D = image.reshape(-1, image.shape[-1])
-    col_range = (256, 256, 256)  # generically : a2D.max(0)+1
-    a1D = np.ravel_multi_index(a2D.T, col_range)
-    dominant_color = np.unravel_index(np.bincount(a1D).argmax(), col_range)
-    return dominant_color
+    a2d = image.reshape(-1, image.shape[-1])
+    col_range = (256, 256, 256)  # generically : a2d.max(0)+1
+    a1d = np.ravel_multi_index(a2d.T, col_range)
+    return np.unravel_index(np.bincount(a1d).argmax(), col_range)
 
 
 def color_to_decimal(color):

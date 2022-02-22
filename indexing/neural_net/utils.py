@@ -3,14 +3,14 @@ from pathlib import Path
 from typing import List, Tuple
 
 import keras
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
-from indexing import Topic, FeatureIndex
+from keras.layers import Conv2D, MaxPooling2D, Flatten
 from tensorflow.keras.layers import Dense
-from tensorflow.keras.models import Sequential, load_model
-from keras.layers import Conv2D, MaxPooling2D, Flatten, concatenate
-import matplotlib.pyplot as plt
+from tensorflow.keras.models import Sequential
+
+from indexing import FeatureIndex
 
 
 def split_data(data: pd.DataFrame, test: List[int]) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -40,8 +40,8 @@ def get_text_position_data(data: pd.DataFrame) -> np.ndarray:
     return np.expand_dims(tp_list, axis=3)
 
 
-def get_color_data(data: pd.DataFrame, cols_to_use=[]) -> np.ndarray:
-    if not cols_to_use:
+def get_color_data(data: pd.DataFrame, cols_to_use: List[str] = None) -> np.ndarray:
+    if cols_to_use is None:
         cols = [
             'image_average_color_r',
             'image_average_color_g',
@@ -56,8 +56,8 @@ def get_color_data(data: pd.DataFrame, cols_to_use=[]) -> np.ndarray:
     return np.asarray(data[cols])
 
 
-def get_primary_arg_data(data: pd.DataFrame, cols_to_use=[]) -> np.ndarray:
-    if not cols_to_use:
+def get_primary_arg_data(data: pd.DataFrame, cols_to_use: List[str] = None) -> np.ndarray:
+    if cols_to_use is None:
         cols = [
             'image_percentage_green',
             'image_percentage_red',
@@ -77,8 +77,8 @@ def get_primary_arg_data(data: pd.DataFrame, cols_to_use=[]) -> np.ndarray:
     return np.asarray(data[cols])
 
 
-def get_primary_stance_data(data: pd.DataFrame, cols_to_get=[]) -> np.ndarray:
-    if not cols_to_get:
+def get_primary_stance_data(data: pd.DataFrame, cols_to_use: List[str] = None) -> np.ndarray:
+    if cols_to_use is None:
         cols = [
             'image_percentage_green',
             'image_percentage_red',
@@ -108,7 +108,7 @@ def get_primary_stance_data(data: pd.DataFrame, cols_to_get=[]) -> np.ndarray:
             'query_image_align'
         ]
     else:
-        cols = cols_to_get
+        cols = cols_to_use
 
     return np.asarray(data[cols])
 

@@ -459,4 +459,3 @@ def run_evaluation(runs: int):
                             stance_topic_overall=results_stance_topics_text_overall,
                             stance_topic_valid=results_stance_topics_text_valid,
                             stance_topic_test=results_stance_topics_text_test)
-

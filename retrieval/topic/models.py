@@ -1,5 +1,5 @@
 import logging
-from typing import List, Tuple, Dict
+from typing import List, Dict
 
 import numpy as np
 import pandas as pd
@@ -121,7 +121,7 @@ class TopicRankingDirichlet(TopicModel):
         super().__init__(None)
         self.t_indexes = t_indexes
         self.alpha = alpha
-        self.tq_dirichlet = DirichletLM(tq_index, alpha)
+        self.tq_dirichlet = DirichletLM(tq_index, tq_alpha)
 
     def _score_topic(self, query: List[str]) -> int:
         """

@@ -6,7 +6,8 @@ import numpy as np
 import pandas as pd
 
 from indexing import TopicQueryTermIndex, get_all_topic_indexes, FeatureIndex, TopicTermIndex, Topic, SpacyPreprocessor
-from retrieval import RetrievalSystem, TopicRankingDirichlet, NNArgumentModel, NNStanceModel, StandardStanceModel, StandardArgumentModel
+from retrieval import RetrievalSystem, TopicRankingDirichlet, NNArgumentModel, NNStanceModel, \
+    StandardStanceModel, StandardArgumentModel
 from .analysis_helper import get_relevant_eval, calc_precision_recall, get_topic_correct
 from .configuration import Configuration
 

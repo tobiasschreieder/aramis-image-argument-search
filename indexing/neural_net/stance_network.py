@@ -1,7 +1,7 @@
 import abc
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 import keras
 import pandas as pd
@@ -100,8 +100,8 @@ class NStanceModelV3(NStanceModel):
         y_train = eval_to_categorical(df_train['stance_eval'].to_list())
         y_test = eval_to_categorical(df_test['stance_eval'].to_list())
 
-        primary_in_train = get_primary_stance_data(df_train, cols_to_get=self.cols_to_use)
-        primary_in_test = get_primary_stance_data(df_test, cols_to_get=self.cols_to_use)
+        primary_in_train = get_primary_stance_data(df_train, cols_to_use=self.cols_to_use)
+        primary_in_test = get_primary_stance_data(df_test, cols_to_use=self.cols_to_use)
 
         model = Sequential([
             Dense(40, input_dim=primary_in_train.shape[1], activation='relu'),
@@ -146,7 +146,7 @@ class NStanceModelV3(NStanceModel):
     def predict(self, data: pd.DataFrame) -> List[int]:
         # tp_in = get_text_position_data(data)
         # color_in = get_color_data(data)
-        primary_in = get_primary_stance_data(data, cols_to_get=self.cols_to_use)
+        primary_in = get_primary_stance_data(data, cols_to_use=self.cols_to_use)
 
         predictions = self.model.predict(x=primary_in)
         return categorical_to_eval(predictions)
@@ -164,7 +164,7 @@ class NStanceModelV2(NStanceModel):
         self.dir_path.mkdir(parents=True, exist_ok=True)
         self.cols_to_get = []
 
-    def train(self, data: pd.DataFrame, test: List[int]) -> None:
+    def train(self, data: pd.DataFrame, test: List[int]) -> None or Dict:
         df_train, df_test = split_data(data, test)
         y_train = eval_to_categorical(df_train['stance_eval'].to_list())
         y_test = eval_to_categorical(df_test['stance_eval'].to_list())
@@ -223,13 +223,13 @@ class NStanceModelV1(NStanceModel):
             'image_average_color_b',
         ]
 
-    def train(self, data: pd.DataFrame, test: List[int]) -> None:
+    def train(self, data: pd.DataFrame, test: List[int]) -> Dict:
         df_train, df_test = split_data(data, test)
         y_train = eval_to_categorical(df_train['stance_eval'].to_list())
         y_test = eval_to_categorical(df_test['stance_eval'].to_list())
 
-        primary_in_train = get_primary_stance_data(df_train, cols_to_get=self.cols_to_get_primary)
-        primary_in_test = get_primary_stance_data(df_test, cols_to_get=self.cols_to_get_primary)
+        primary_in_train = get_primary_stance_data(df_train, cols_to_use=self.cols_to_get_primary)
+        primary_in_test = get_primary_stance_data(df_test, cols_to_use=self.cols_to_get_primary)
 
         model = Sequential([
             Dense(15, input_dim=primary_in_train.shape[1], activation='relu'),
@@ -249,7 +249,7 @@ class NStanceModelV1(NStanceModel):
         plot_history(history, self.dir_path.joinpath(self.name))
 
     def predict(self, data: pd.DataFrame) -> List[int]:
-        primary_in = get_primary_stance_data(data, cols_to_get=self.cols_to_get_primary)
+        primary_in = get_primary_stance_data(data, cols_to_use=self.cols_to_get_primary)
 
         predictions = self.model.predict(x=primary_in)
         return categorical_to_eval(predictions)

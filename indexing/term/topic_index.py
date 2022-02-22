@@ -23,8 +23,10 @@ class TopicQueryTermIndex(TermIndex):
         Create in index object from the stored data.
         If max_images is < 1 use all images found else stop after max_images.
 
-        :param max_images: TODO
-        :param n_jobs: TODO
+        :param max_images: Number to determine the maximal number of images to index
+        :param n_jobs: the number of processes to use, if -1 use all,
+            if < -1 use max_processes+1+n_jobs, example n_jobs = -2 -> use all processors except 1.
+            see joblib.parallel.Parallel
         :param prep: Preprocessor to use, default SpacyPreprocessor
         :return: An index object
         """
@@ -105,8 +107,10 @@ class TopicTermIndex(TermIndex):
         """
         Create in index object from the stored data.
 
-        :param max_images: TODO
-        :param n_jobs: TODO
+        :param max_images: Number to determine the maximal number of images to index
+        :param n_jobs: the number of processes to use, if -1 use all,
+            if < -1 use max_processes+1+n_jobs, example n_jobs = -2 -> use all processors except 1.
+            see joblib.parallel.Parallel
         :param topic_id: The topic id for this index
         :param prep: Preprocessor to use, default SpacyPreprocessor
         :return: An index object

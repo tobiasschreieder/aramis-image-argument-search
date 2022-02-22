@@ -102,9 +102,8 @@ def get_image_soup(xpath: str, html_soup: BeautifulSoup):
     for s in xpath.split('/'):
         if len(s) != 0 and a_soup is not True:
             inner = s.split('[')
-            number = int(inner[1][:-1].replace(']', ''))
-            tag = inner[0]
-            a_soup = get_soup(a_soup, tag, number)
+            num = int(inner[1][:-1].replace(']', ''))
+            a_soup = get_soup(a_soup, inner[0], num)
     return a_soup
 
 
@@ -131,7 +130,7 @@ def get_image_html_text(doc: BeautifulSoup, xpathes: List[str], image_id: str) -
         text_range = round(count_tags * xpath_threshold)
 
         # text_rang must be >= 1
-        if text_range < 1 and count_tags > 1 and len(xpathes) < 2:
+        if (text_range < 1) and (count_tags > 1) and (len(xpathes) < 2):
             text_range = 1
 
         # extract texts of parent tags in HTML-File till text length >= extract_texts_till_length

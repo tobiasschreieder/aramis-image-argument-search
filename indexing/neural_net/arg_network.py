@@ -1,8 +1,6 @@
 import abc
-import os
-
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 import keras
 import numpy as np
@@ -30,6 +28,7 @@ class NArgumentModel(abc.ABC):
     dir_path: Path = cfg.working_dir.joinpath(Path('models/arg/'))
 
     def __init__(self, name: str):
+        self.use_textposition = False
         self.dir_path.mkdir(parents=True, exist_ok=True)
         self.name = name
         self.topics_to_skip = [22, 45]
@@ -54,7 +53,7 @@ class NArgumentModel(abc.ABC):
         arg_model.model = load_model(model_path.as_posix(), compile=False)
         return arg_model
 
-    def train(self, data: pd.DataFrame, test: List[int]) -> None:
+    def train(self, data: pd.DataFrame, test: List[int]) -> None or Dict:
         pass
 
     def predict(self, data: pd.DataFrame) -> List[float]:
@@ -65,6 +64,9 @@ class NArgumentModel(abc.ABC):
 
     def set_cols_primary(self, cols_to_use_primary):
         self.cols_to_use_primary = cols_to_use_primary
+
+    def set_use_textposition(self, use_textposition):
+        self.use_textposition = use_textposition
 
 
 class NArgumentModelV3(NArgumentModel):
@@ -93,17 +95,12 @@ class NArgumentModelV3(NArgumentModel):
         ]
         self.use_textposition = True
 
-    def train(self, data: pd.DataFrame, test: List[int]) -> None:
+    def train(self, data: pd.DataFrame, test: List[int]) -> Dict:
 
         data = data.loc[~data['topic'].isin(self.topics_to_skip)]
         df_train, df_test = split_data(data, test)
         y_train = np.asarray(df_train['arg_eval'])
         y_test = np.asarray(df_test['arg_eval'])
-
-        if self.use_textposition:
-            tp_in_train = get_text_position_data(df_train)
-            tp_in_test = get_text_position_data(df_test)
-            tp_model = create_test_position_model((len(tp_in_train[0]), len(tp_in_train[0][0]), 1))
 
         color_in_train = get_color_data(df_train, cols_to_use=self.cols_to_use_color)
         color_in_test = get_color_data(df_test, cols_to_use=self.cols_to_use_color)
@@ -116,6 +113,10 @@ class NArgumentModelV3(NArgumentModel):
         primary_inputs = Input(shape=len(primary_in_train[0]))
 
         if self.use_textposition:
+            tp_in_train = get_text_position_data(df_train)
+            tp_in_test = get_text_position_data(df_test)
+            tp_model = create_test_position_model((len(tp_in_train[0]), len(tp_in_train[0][0]), 1))
+
             combined_in = concatenate([tp_model.output, color_model.output, primary_inputs])
             inputs = [tp_in_train, color_in_train, primary_in_train]
             inputs_inputs = [tp_model.input, color_model.input, primary_inputs]
@@ -153,16 +154,13 @@ class NArgumentModelV3(NArgumentModel):
         primary_in = get_primary_arg_data(data, self.cols_to_use_primary)
 
         if self.use_textposition:
-            input = [tp_in, color_in, primary_in]
+            model_input = [tp_in, color_in, primary_in]
         else:
-            input = [color_in, primary_in]
+            model_input = [color_in, primary_in]
 
-        print("prediction: ", len(input))
-        predictions = self.model.predict(x=input)
+        print("prediction: ", len(model_input))
+        predictions = self.model.predict(x=model_input)
         return [val[0] for val in predictions]
-
-    def set_use_textposition(self, use_textposition):
-        self.use_textposition = use_textposition
 
 
 class NArgumentModelV2(NArgumentModel):

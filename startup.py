@@ -8,14 +8,14 @@ from typing import Any, Dict
 import pandas as pd
 
 from config import Config
+from evaluation.analysis import main as analysis_main
+from evaluation.plot_eval import plot_arg_scoring_eval, plot_stance_confusion_eval
 from frontend import start_server
 from indexing import FeatureIndex, TopicQueryTermIndex, get_all_topic_indexes, \
     Topic, preprocessed_data, scale_data, DataEntry, NArgumentModel, NStanceModel
 from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel, \
     NNArgumentModel, NNStanceModel
-from evaluation.analysis import main as analysis_main
 from utils import setup_logger_handler
-from evaluation import crossvalidation
 
 args: Dict[str, Any] = None
 
@@ -216,30 +216,43 @@ def main():
     """
 
     log.info('do main stuff')
-    # qrel_scoring('test_final_2')
-
-    # findex = FeatureIndex.create_index()
-    # findex.save()
-
-    # start_server(None)
 
     eval_topics = [9, 27, 31, 33]
     skip_topics = [15, 31, 36, 37, 43, 45, 48]
     rest_topics = [1, 2, 4, 8, 10, 20, 21, 22, 40, 47]
 
-    # findex = FeatureIndex.load(23158)
-    # topics_no = [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
-    # topics = [Topic.get(t) for t in topics_no]
-    #
-    # prep_data = preprocessed_data(findex, topics, train=True)
-    # data = scale_data(prep_data)
-    #
-    # NArgumentModel.get('test_fix', version=3).train(data, test=[])
-    # NStanceModel.get('test_fix', version=3).train(data, test=[])
+    findex = FeatureIndex.load(23158)
+    topics_no = [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
+    topics = [Topic.get(t) for t in topics_no]
 
-    # analysis_main(model_name='test_final_2', topics_no=rest_topics, version=3)
-    # analysis_main(model_name='test_final_2', topics_no=eval_topics, version=3)
-    # analysis_main(model_name='test_fix', topics_no=topics_no, version=3)
+    prep_data = preprocessed_data(findex, topics, train=True)
+    data = scale_data(prep_data)
+
+    best_arg_model_name = 'none'
+    best_stance_model_name = 'none'
+    best_p = [0, 0]
+    best_acc = 0
+    best_arg = 0
+    best_stance = 0
+    for i in range(20):
+        NArgumentModel.get(f'find_{best_arg}', version=3).train(data, test=[])
+        NStanceModel.get(f'find_{best_stance}', version=3).train(data, test=[])
+
+        _, pstrong, pboth = plot_arg_scoring_eval(NNArgumentModel(findex, f'find_{best_arg}', version=3), topics_no)
+        if pboth > best_p[1]:
+            best_model_name = f'find_{best_arg}'
+            best_arg += 1
+            best_p = [pstrong, pboth]
+
+        _, acc = plot_stance_confusion_eval(NNStanceModel(findex, f'find_{best_stance}', version=3), topics_no)
+        if acc > best_acc:
+            best_stance_model_name = f'find_{best_stance}'
+            best_stance += 1
+            best_acc = acc
+    print()
+
+    analysis_main(model_name='model_1', topics_no=topics_no, version=3)
+
     # retrieval_system_analysis.eval_nn_model()
     # retrieval_system_analysis.eval_standard_model()
     # retrieval_system_analysis.eval_baseline()
@@ -247,7 +260,7 @@ def main():
     # analyse_network_features_arg(data)
     # analyse_network_features_stance(data)
 
-    crossvalidation.run_evaluation(runs=10)
+    # crossvalidation.run_evaluation(runs=10)
 
 
 if __name__ == '__main__':

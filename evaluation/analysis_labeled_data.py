@@ -175,6 +175,7 @@ def preprocess_string(s: str) -> str:
 def create_eda_md_table(analysis: Dict, eda: Dict):
     """
     Create Markdown File with Table of EDA
+    :param eda: eda Dictionary
     :param analysis: Dictionary
     """
     text = list()
