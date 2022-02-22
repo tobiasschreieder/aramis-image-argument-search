@@ -15,6 +15,7 @@ from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceMode
     NNArgumentModel, NNStanceModel
 from evaluation.analysis import main as analysis_main
 from utils import setup_logger_handler
+from evaluation import crossvalidation
 
 args: Dict[str, Any] = None
 
@@ -226,25 +227,27 @@ def main():
     skip_topics = [15, 31, 36, 37, 43, 45, 48]
     rest_topics = [1, 2, 4, 8, 10, 20, 21, 22, 40, 47]
 
-    findex = FeatureIndex.load(23158)
-    topics_no = [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
-    topics = [Topic.get(t) for t in topics_no]
-
-    prep_data = preprocessed_data(findex, topics, train=True)
-    data = scale_data(prep_data)
+    # findex = FeatureIndex.load(23158)
+    # topics_no = [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]
+    # topics = [Topic.get(t) for t in topics_no]
     #
-    NArgumentModel.get('test_fix', version=3).train(data, test=[])
-    NStanceModel.get('test_fix', version=3).train(data, test=[])
+    # prep_data = preprocessed_data(findex, topics, train=True)
+    # data = scale_data(prep_data)
+    #
+    # NArgumentModel.get('test_fix', version=3).train(data, test=[])
+    # NStanceModel.get('test_fix', version=3).train(data, test=[])
 
     # analysis_main(model_name='test_final_2', topics_no=rest_topics, version=3)
     # analysis_main(model_name='test_final_2', topics_no=eval_topics, version=3)
-    analysis_main(model_name='test_fix', topics_no=topics_no, version=3)
+    # analysis_main(model_name='test_fix', topics_no=topics_no, version=3)
     # retrieval_system_analysis.eval_nn_model()
     # retrieval_system_analysis.eval_standard_model()
     # retrieval_system_analysis.eval_baseline()
 
     # analyse_network_features_arg(data)
     # analyse_network_features_stance(data)
+
+    crossvalidation.run_evaluation(runs=10)
 
 
 if __name__ == '__main__':

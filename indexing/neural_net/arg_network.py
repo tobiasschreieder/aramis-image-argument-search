@@ -32,7 +32,7 @@ class NArgumentModel(abc.ABC):
     def __init__(self, name: str):
         self.dir_path.mkdir(parents=True, exist_ok=True)
         self.name = name
-        self.topics_to_skip = [15, 31, 36, 37, 43, 45, 48]
+        self.topics_to_skip = [22, 45]
         self.cols_to_use_color = []
         self.cols_to_use_primary = []
 
