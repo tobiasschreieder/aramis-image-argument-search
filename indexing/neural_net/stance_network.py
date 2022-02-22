@@ -1,4 +1,5 @@
 import abc
+import logging
 import os
 from pathlib import Path
 from typing import List, Dict
@@ -18,6 +19,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 pd.options.mode.chained_assignment = None
 overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=8)
 cfg = Config.get()
+log = logging.getLogger('stance_network')
 
 
 class NStanceModel(abc.ABC):
@@ -127,7 +129,7 @@ class NStanceModelV3(NStanceModel):
                         1: 1,  # neutral 1
                         2: count_neutral / count_pro}  # pro 3.3
 
-        print(class_weight)
+        log.debug('Class weight for train %s', class_weight)
 
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=["accuracy"])
 

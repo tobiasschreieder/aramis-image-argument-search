@@ -1,4 +1,5 @@
 import abc
+import logging
 from pathlib import Path
 from typing import List, Dict
 
@@ -20,6 +21,7 @@ pd.options.mode.chained_assignment = None
 tf.get_logger().setLevel('ERROR')
 overfitCallback = EarlyStopping(monitor='val_accuracy', min_delta=0, patience=8)
 cfg = Config.get()
+log = logging.getLogger('arg_network')
 
 
 class NArgumentModel(abc.ABC):
@@ -132,7 +134,7 @@ class NArgumentModelV3(NArgumentModel):
         x = Dense(5, activation="relu")(x)
         x = Dense(1, activation="sigmoid")(x)
 
-        print("train: ", len(inputs_inputs))
+        log.debug("train: %s", len(inputs_inputs))
 
         model = Model(inputs=inputs_inputs, outputs=x)
         model.compile(loss="mse", optimizer="Adam", metrics=["accuracy"])
@@ -158,7 +160,7 @@ class NArgumentModelV3(NArgumentModel):
         else:
             model_input = [color_in, primary_in]
 
-        print("prediction: ", len(model_input))
+        log.debug("prediction: %s", len(model_input))
         predictions = self.model.predict(x=model_input)
         return [val[0] for val in predictions]
 

@@ -41,7 +41,7 @@ def get_text_position_data(data: pd.DataFrame) -> np.ndarray:
 
 
 def get_color_data(data: pd.DataFrame, cols_to_use: List[str] = None) -> np.ndarray:
-    if cols_to_use is None:
+    if cols_to_use is None or len(cols_to_use) == 0:
         cols = [
             'image_average_color_r',
             'image_average_color_g',
@@ -57,7 +57,7 @@ def get_color_data(data: pd.DataFrame, cols_to_use: List[str] = None) -> np.ndar
 
 
 def get_primary_arg_data(data: pd.DataFrame, cols_to_use: List[str] = None) -> np.ndarray:
-    if cols_to_use is None:
+    if cols_to_use is None or len(cols_to_use) == 0:
         cols = [
             'image_percentage_green',
             'image_percentage_red',
@@ -78,7 +78,7 @@ def get_primary_arg_data(data: pd.DataFrame, cols_to_use: List[str] = None) -> n
 
 
 def get_primary_stance_data(data: pd.DataFrame, cols_to_use: List[str] = None) -> np.ndarray:
-    if cols_to_use is None:
+    if cols_to_use is None or len(cols_to_use) == 0:
         cols = [
             'image_percentage_green',
             'image_percentage_red',

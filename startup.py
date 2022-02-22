@@ -234,7 +234,7 @@ def main():
     best_acc = 0
     best_arg = 0
     best_stance = 0
-    for i in range(20):
+    for i in range(50):
         NArgumentModel.get(f'find_{best_arg}', version=3).train(data, test=[])
         NStanceModel.get(f'find_{best_stance}', version=3).train(data, test=[])
 
