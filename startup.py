@@ -232,13 +232,13 @@ def main():
 
     prep_data = preprocessed_data(findex, topics, train=True)
     data = scale_data(prep_data)
+    #
+    NArgumentModel.get('test_fix', version=3).train(data, test=[])
+    NStanceModel.get('test_fix', version=3).train(data, test=[])
 
-    NArgumentModel.get('test_fix', version=3).train(data, test=eval_topics)
-    NStanceModel.get('test_fix', version=3).train(data, test=eval_topics)
-
-    analysis_main(model_name='test_final_2', topics_no=rest_topics, version=3)
-    analysis_main(model_name='test_final_2', topics_no=eval_topics, version=3)
-    analysis_main(model_name='test_final_2', topics_no=topics_no, version=3)
+    # analysis_main(model_name='test_final_2', topics_no=rest_topics, version=3)
+    # analysis_main(model_name='test_final_2', topics_no=eval_topics, version=3)
+    analysis_main(model_name='test_fix', topics_no=topics_no, version=3)
     # retrieval_system_analysis.eval_nn_model()
     # retrieval_system_analysis.eval_standard_model()
     # retrieval_system_analysis.eval_baseline()

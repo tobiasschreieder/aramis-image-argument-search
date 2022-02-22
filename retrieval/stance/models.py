@@ -195,11 +195,13 @@ class NNStanceModel(StanceModel):
         data = preprocess_data(self.index, argument_relevant.index.unique(0).to_list(), query, topic=topic)
         results = self.model.predict(scale_data(data))
 
+        results_df = pd.Series(results, index=data.index)
+
         argument_relevant.loc[:, 'stance'] = np.nan
         pro_scores = argument_relevant.copy()
         con_scores = argument_relevant.copy()
-        for i, doc_id in enumerate(argument_relevant.index):
-            score = results[i]
+        for doc_id in argument_relevant.index:
+            score = results_df.loc[doc_id]
             argument_relevant.loc[doc_id, 'stance'] = score
             if score > 0:
                 pro_scores.loc[doc_id, 'stance'] = score

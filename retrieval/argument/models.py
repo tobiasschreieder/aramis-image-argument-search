@@ -184,7 +184,9 @@ class NNArgumentModel(ArgumentModel):
         data = preprocess_data(self.index, topic_relevant.index.unique(0).to_list(), query, topic=topic)
         results = self.model.predict(scale_data(data))
 
-        for i, doc_id in enumerate(topic_relevant.index):
-            topic_relevant.loc[doc_id, 'argument'] = results[i]
+        results_df = pd.Series(results, index=data.index)
+
+        for doc_id in topic_relevant.index:
+            topic_relevant.loc[doc_id, 'argument'] = results_df.loc[doc_id]
 
         return topic_relevant.nlargest(top_k, 'argument', keep='all')
