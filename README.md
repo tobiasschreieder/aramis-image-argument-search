@@ -44,7 +44,7 @@ An Example run can be seen in [scripts/tira-run.sh](scripts/tira-run.sh).
 For a complete view of the possible parameter use ``-help``. We provide our final models in ``working/models/``.
 
 ### Method tag
-The method tag ``aramis|{ArgumentModel}|{StanceModel}|w{topic_weight}`` for retrieval run has three parameters:
+The method tag ``aramis#{ArgumentModel}#{StanceModel}#w{topic_weight}`` for retrieval run has three parameters:
  - ArgumentModel: ``standard`` or ``NN_{model_name}`` where ``model_name`` is the name of a trained neural net 
  - StanceModel: ``standard`` or ``NN_{model_name}`` where ``model_name`` is the name of a trained neural net 
  - Topic weight: a float in ``[0,1]`` wich represents the use of the topic score in the retrieval process

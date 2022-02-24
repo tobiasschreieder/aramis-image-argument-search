@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument('-tidx', '--test-indexing', action='store_true', dest='test_indexing')
     parser.add_argument('-njobs', '--number-jobs', type=int, dest='n_jobs', default=-1)
     parser.add_argument('-qrel', '--qrel', action='store_true', dest='qrel')
-    parser.add_argument('-mtag', '--method_tag', type=str, dest='method_tag', default='aramis|standard|standard|w0.5')
+    parser.add_argument('-mtag', '--method_tag', type=str, dest='method_tag', default='aramis#standard#standard#w0.5')
 
     parser.add_argument('-web', '--web-frontend', action='store_true', dest='frontend')
     parser.add_argument('-p', '--port', type=int, dest='port', default=5000)
@@ -139,7 +139,7 @@ def get_rs(tw: float, model_arg: str = None, model_stance: str = None) -> Retrie
 def parse_method_tag(method_tag: str) -> RetrievalSystem:
     """
     Create RetrievalSystem for given method tag.
-    Method tag should have format 'aramis|{ArgumentModel}|{StanceModel}|w{topic_weight}' where
+    Method tag should have format 'aramis#{ArgumentModel}#{StanceModel}#w{topic_weight}' where
      - ArgumentModel is 'standard' or 'NN-{model_name}'
      - StanceModel is 'standard' or 'NN-{model_name}'
      - topic_weight is float in [0,1]
@@ -147,7 +147,7 @@ def parse_method_tag(method_tag: str) -> RetrievalSystem:
     :return: RetrievalSystem for parsed method tag
     :raise ValueError: if method tag is faulty
     """
-    split = method_tag.split('|')
+    split = method_tag.split('#')
     if len(split) == 4 and split[0] == 'aramis':
         # ArgumentModel
         if split[1] == 'standard':
@@ -175,7 +175,7 @@ def parse_method_tag(method_tag: str) -> RetrievalSystem:
 
         return get_rs(t_w, arg_model, stance_model)
     raise ValueError('Method tag "%s" is not correctly formatted. '
-                     'Correct format: "aramis|{ArgumentModel}|{StanceModel}|w{topic_weight}"')
+                     'Correct format: "aramis#{ArgumentModel}#{StanceModel}#w{topic_weight}"')
 
 
 def qrel_scoring(method_tag: str):
