@@ -9,10 +9,9 @@ import pandas as pd
 
 from config import Config
 from evaluation.analysis import main as analysis_main
-from evaluation.plot_eval import plot_arg_scoring_eval, plot_stance_confusion_eval
 from frontend import start_server
 from indexing import FeatureIndex, TopicQueryTermIndex, get_all_topic_indexes, \
-    Topic, preprocessed_data, scale_data, DataEntry, NArgumentModel, NStanceModel
+    Topic, preprocessed_data, DataEntry
 from retrieval import RetrievalSystem, TopicRankingDirichlet, StandardStanceModel, StandardArgumentModel, \
     NNArgumentModel, NNStanceModel
 from utils import setup_logger_handler
@@ -155,7 +154,7 @@ def parse_method_tag(method_tag: str) -> RetrievalSystem:
         elif split[1][:3] == 'NN_':
             arg_model = split[1][3:]
         else:
-            raise ValueError('ArgumentModel %s not found', split[1])
+            raise ValueError('ArgumentModel {} not found'.format(split[1]))
 
         # StanceModel
         if split[2] == 'standard':
@@ -163,7 +162,7 @@ def parse_method_tag(method_tag: str) -> RetrievalSystem:
         elif split[2][:3] == 'NN_':
             stance_model = split[2][3:]
         else:
-            raise ValueError('StanceModel %s not found', split[1])
+            raise ValueError('StanceModel {} not found'.format(split[2]))
 
         # TopicWeight
         try:
@@ -171,7 +170,7 @@ def parse_method_tag(method_tag: str) -> RetrievalSystem:
             if not (0 <= t_w <= 1):
                 raise ValueError
         except ValueError:
-            raise ValueError('Topic weight %s is not a number in [0,1]', split[3])
+            raise ValueError('Topic weight {} is not a number in [0,1]'.format(split[3]))
 
         return get_rs(t_w, arg_model, stance_model)
     raise ValueError('Method tag "%s" is not correctly formatted. '
