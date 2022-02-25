@@ -34,23 +34,40 @@ def init_logging():
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input-dir", default=pathlib.Path('data'), type=pathlib.Path, dest='data_dir')
-    parser.add_argument("-o", "--output-dir", default=pathlib.Path('out'), type=pathlib.Path, dest='out_dir')
+    parser.add_argument("-i", "--input-dir", default=pathlib.Path('data'), type=pathlib.Path,
+                        dest='data_dir', help='Path to input directory.')
+    parser.add_argument("-o", "--output-dir", default=pathlib.Path('out'), type=pathlib.Path,
+                        dest='out_dir', help='Path to output directory.')
 
-    parser.add_argument("-w", "--working-dir", default=pathlib.Path('working'), type=pathlib.Path, dest='work_dir')
-    parser.add_argument("-cfg", "--config", default=pathlib.Path('config.json'), type=pathlib.Path, dest='config')
-    parser.add_argument("-f", "--image_format", action='store_true', dest='image_format')
+    parser.add_argument("-w", "--working-dir", default=pathlib.Path('working'), type=pathlib.Path,
+                        dest='work_dir', help='Path to working directory. (Location of index/neural net models)')
+    parser.add_argument("-cfg", "--config", default=pathlib.Path('config.json'), type=pathlib.Path,
+                        dest='config', help='Path to config.json file.')
+    parser.add_argument("-f", "--image_format", action='store_true',
+                        dest='image_format', help='Specifies format of input data. See README for definition.')
 
-    parser.add_argument('-c', '--count_images', action='store_true', dest='count_ids')
-    parser.add_argument('-idx', '--indexing', action='store_true', dest='indexing')
-    parser.add_argument('-tidx', '--test-indexing', action='store_true', dest='test_indexing')
-    parser.add_argument('-njobs', '--number-jobs', type=int, dest='n_jobs', default=-1)
-    parser.add_argument('-qrel', '--qrel', action='store_true', dest='qrel')
-    parser.add_argument('-mtag', '--method_tag', type=str, dest='method_tag', default='aramis#standard#standard#w0.5')
+    parser.add_argument('-c', '--count_images', action='store_true',
+                        dest='count_ids', help='Performs a count of found images in input.')
+    parser.add_argument('-idx', '--indexing', action='store_true', dest='indexing',
+                        help='Calculate the index on the given input.')
+    parser.add_argument('-tidx', '--test-indexing', action='store_true', dest='test_indexing',
+                        help='Perform a small indexing run with only 5 images to test the indexing.')
+    parser.add_argument('-njobs', '--number-jobs', type=int, dest='n_jobs', default=-1,
+                        help='Number of processors to use in parallel indexing process. -1 = all Processors,'
+                             ' -2 = all processors but one')
+    parser.add_argument('-qrel', '--qrel', action='store_true', dest='qrel',
+                        help='Perform a retrieval run over all topics and create run.txt')
+    parser.add_argument('-mtag', '--method_tag', type=str, dest='method_tag', default='aramis#standard#standard#w0.5',
+                        help='Retrieval method tag for retrival run. '
+                             'Format: "aramis#{ArgumentModel}#{StanceModel}#w{topic_weight}"'
+                             'ArgumentModel/StanceModel: standard or NN_{model_name}, topic_weight: float in [0,1]')
 
-    parser.add_argument('-web', '--web-frontend', action='store_true', dest='frontend')
-    parser.add_argument('-p', '--port', type=int, dest='port', default=5000)
-    parser.add_argument('-host', '--host', type=str, dest='host', default='0.0.0.0')
+    parser.add_argument('-web', '--website', action='store_true', dest='frontend',
+                        help='Start flask web server.')
+    parser.add_argument('-p', '--port', type=int, dest='port', default=5000,
+                        help='Port for web server.')
+    parser.add_argument('-host', '--host', type=str, dest='host', default='0.0.0.0',
+                        help='Host address for web server.')
 
     global args
     args = parser.parse_args()

@@ -40,7 +40,8 @@ The programm has different functions:
  - Retrieval run ``-qrel`` + ``-mtag {method tag}``
  - Web application with search/evaluation interface ``-web``
 
-An Example run can be seen in [scripts/tira-run.sh](scripts/tira-run.sh).
+In the script [scripts/tira-run.sh](scripts/tira-run.sh) is an example docker run, where only the input/output directories and the function parameter are needed.
+To start for example the indexing process run ``sh ./tira-run.sh -i $inputDir -o $outDir -idx``.
 For a complete view of the possible parameter use ``-help``. We provide our final models in ``working/models/``.
 
 ### Method tag
