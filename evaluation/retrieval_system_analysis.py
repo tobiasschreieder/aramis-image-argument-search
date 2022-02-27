@@ -224,7 +224,7 @@ def eval_standard_model():
         ),
         argument_model=StandardArgumentModel(findex),
         stance_model=StandardStanceModel(findex),
-        topic_weight=0.454,
+        topic_weight=0,
     )
     log.info('StandardModel')
     # topics = [Topic.get(t) for t in [1, 2, 4, 8, 10, 20, 21, 22, 40, 47]]
@@ -239,13 +239,13 @@ def eval_nn_model():
         topic_model=TopicRankingDirichlet(
             t_indexes=topic_indexes, tq_index=tq_index, alpha=1000, tq_alpha=1000
         ),
-        argument_model=NNArgumentModel(findex, 'test_final_2'),
-        stance_model=NNStanceModel(findex, 'test_final_2'),
-        topic_weight=1,
+        argument_model=NNArgumentModel(findex, 'model_1'),
+        stance_model=NNStanceModel(findex, 'model_1'),
+        topic_weight=0,
     )
     log.info('NNModel')
-    topics = [Topic.get(t) for t in [1, 2, 4, 8, 10, 20, 21, 22, 40, 47]]
-    binary_search_rs_weight(rs, topics)
+    # topics = [Topic.get(t) for t in [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]]
+    # binary_search_rs_weight(rs, topics)
     print_precision_recall(rs)
 
 
@@ -254,9 +254,10 @@ def eval_baseline():
     topic_model = TopicRankingDirichlet(
         t_indexes=topic_indexes, tq_index=tq_index, alpha=1000, tq_alpha=1000
     )
-    topics = [Topic.get(t) for t in [9, 27, 31, 33]]
+    topics = [Topic.get(t) for t in [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]]
     strong = avg_baseline_precision_recall(topic_model, topics, 20, strong=True, filter_topic=True)
     both = avg_baseline_precision_recall(topic_model, topics, 20, strong=False, filter_topic=True)
+    log.info('Baseline')
     log.info('PStrongPRO@20: %s', round(strong[0], 5))
     log.info('PStrongCON@20: %s', round(strong[1], 5))
     log.info('PStrongAVG@20: %s', round(strong[2], 5))
@@ -272,7 +273,7 @@ def eval_baseline():
 
 
 def print_precision_recall(rs: RetrievalSystem):
-    topics = [Topic.get(t) for t in [9, 27, 31, 33]]
+    topics = [Topic.get(t) for t in [1, 2, 4, 8, 9, 10, 15, 20, 21, 22, 27, 31, 33, 36, 37, 40, 43, 45, 47, 48]]
     strong = avg_topic_precision_recall(rs, topics, 20, strong=True, filter_topic=True)
     both = avg_topic_precision_recall(rs, topics, 20, strong=False, filter_topic=True)
     log.info('PStrongPRO@20: %s', round(strong[0], 5))
@@ -291,6 +292,7 @@ def print_precision_recall(rs: RetrievalSystem):
 
 def main():
     eval_standard_model()
+    eval_nn_model()
 
     # model_name = 'test_3'
     # rs = get_retrieval_system(Configuration(), model_name, model_name)

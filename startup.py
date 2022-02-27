@@ -26,7 +26,7 @@ def init_logging():
 
     root = logging.getLogger()
     setup_logger_handler(root)
-    root.setLevel(logging.DEBUG)
+    root.setLevel(logging.INFO)
 
     root.info('Logging initialised')
     root.debug('Set to debug level')
